@@ -3,6 +3,9 @@
 ## Overview
 A full-stack mission control dashboard designed for tracking and managing space exploration missions. It features a dark mode, industrial-themed UI inspired by SpaceX, offering real-time telemetry, mission management, fleet tracking, personnel management, and system health monitoring. The application includes an AI assistant for natural language queries and mission control actions, aiming to provide a comprehensive and intuitive interface for mission operations.
 
+## Recent Changes
+- **November 20, 2025**: Added comprehensive Settings page (`/settings`) with six configuration sections. User profile in sidebar now navigates to Settings. All preferences persist in localStorage and survive navigation/page refresh. Features include profile editing, system preferences, notification controls, visualization options, security settings, and API key management with regeneration capability.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
@@ -36,7 +39,8 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Telemetry**: WebSocket broadcasts every 5 seconds, line chart visualization, frontend displays last 24 data points.
 - **Dynamic System Metrics**: Real-time fleet status, active personnel, system load, and threat level calculated from mission data, broadcast every 10 seconds.
 - **Global Search & Filters**: Cmd+K search for missions, filtering by status and priority.
-- **Multi-Page Navigation**: Dashboard, Fleet Administration, Personnel Administration, Data Center Administration, and Analytics pages, all with full CRUD capabilities using real API data.
+- **Multi-Page Navigation**: Dashboard, Fleet Administration, Personnel Administration, Data Center Administration, Analytics, and Settings pages, all with full CRUD capabilities using real API data.
+- **Settings/Configuration**: Comprehensive settings page accessible via sidebar user profile. Includes six configuration sections: Profile (name, email, role, clearance, avatar initials), System Preferences (theme, language, timezone), Notifications (mission/telemetry/system alerts, email toggles), Visualization (refresh rate, measurement units, chart animations), Security (password change prepared for auth), and API/Integrations (API key management with regeneration, webhook configuration). All settings persist in localStorage under "mission-control-settings" key, survive navigation and page refresh. Features real-time validation, toast notifications for save operations, and API key regeneration with immediate feedback.
 - **Data Export**: Client-side CSV and JSON export for missions.
 - **AI Agent Integration**: GPT-5 powered assistant (via Replit AI Integrations) for natural language queries and actions (create, update, delete missions). Features mandatory approval system for all mutation actions, smart context via OpenAI function calling, and comprehensive validation.
 - **Seed Script**: `server/seed.ts` populates the database with realistic test data for all tables.
