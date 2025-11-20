@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
 
 // Mock Data
 const performanceData = [
@@ -62,14 +63,17 @@ export default function MissionControl() {
       
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm sticky top-0 h-screen z-30">
-        <div className="p-6 flex items-center gap-3 border-b border-border">
-          <div className="size-8 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
-            <Rocket className="size-5" />
-          </div>
-          <div>
-            <h2 className="font-display font-bold text-lg tracking-wider leading-none">COHETE</h2>
-            <span className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">Brands OS</span>
-          </div>
+        <div className="p-6 flex items-center justify-center border-b border-border h-24">
+          {/* Logo Integration Strategy: 
+              The original logo is black. In dark mode, it disappears.
+              Solution: Apply CSS filter to invert colors (Black -> White) 
+              AND rotate hue 180deg to preserve the Yellow rocket (Yellow -> Blue -> Yellow).
+          */}
+          <img 
+            src={logoUrl} 
+            alt="Cohete Brands" 
+            className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
+          />
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -103,14 +107,12 @@ export default function MissionControl() {
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-64 p-0 border-r border-border bg-sidebar">
-          <div className="p-6 flex items-center gap-3 border-b border-border">
-            <div className="size-8 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
-              <Rocket className="size-5" />
-            </div>
-            <div>
-              <h2 className="font-display font-bold text-lg tracking-wider leading-none">COHETE</h2>
-              <span className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">Brands OS</span>
-            </div>
+          <div className="p-6 flex items-center justify-center border-b border-border h-24">
+             <img 
+              src={logoUrl} 
+              alt="Cohete Brands" 
+              className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
+            />
           </div>
           <nav className="flex-1 p-4 space-y-1">
             <NavButton icon={LayoutDashboard} label="Mission Control" active />
