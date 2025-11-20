@@ -127,8 +127,10 @@ export default function MissionControl() {
 
   const createMissionMutation = useMutation({
     mutationFn: createMission,
-    onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ["missions"] });
+    onSuccess: async (newMission) => {
+      queryClient.setQueryData(["missions"], (oldMissions: Mission[] = []) => {
+        return [...oldMissions, newMission];
+      });
       setCreateDialogOpen(false);
       setNewMission({
         missionCode: "",
@@ -153,8 +155,12 @@ export default function MissionControl() {
 
   const updateMissionMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => updateMission(id, data),
-    onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ["missions"] });
+    onSuccess: async (updatedMission) => {
+      queryClient.setQueryData(["missions"], (oldMissions: Mission[] = []) => {
+        return oldMissions.map((mission) =>
+          mission.id === updatedMission.id ? updatedMission : mission
+        );
+      });
       setEditDialogOpen(false);
       setProgressDialogOpen(false);
       toast({
@@ -166,8 +172,10 @@ export default function MissionControl() {
 
   const deleteMissionMutation = useMutation({
     mutationFn: deleteMission,
-    onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ["missions"] });
+    onSuccess: async (data, variables) => {
+      queryClient.setQueryData(["missions"], (oldMissions: Mission[] = []) => {
+        return oldMissions.filter((mission) => mission.id !== variables);
+      });
       setDeleteDialogOpen(false);
       toast({
         title: "Mission Deleted",
@@ -249,7 +257,7 @@ export default function MissionControl() {
           return newData.slice(-24);
         });
       } else if (lastMessage.type === "mission_update") {
-        queryClient.refetchQueries({ queryKey: ["missions"] });
+        queryClient.invalidateQueries({ queryKey: ["missions"] });
       } else if (lastMessage.type === "metrics_update") {
         setSystemMetrics(lastMessage.data);
       }
