@@ -249,7 +249,7 @@ export default function MissionControl() {
           return newData.slice(-24);
         });
       } else if (lastMessage.type === "mission_update") {
-        queryClient.invalidateQueries({ queryKey: ["missions"] });
+        queryClient.refetchQueries({ queryKey: ["missions"] });
       } else if (lastMessage.type === "metrics_update") {
         setSystemMetrics(lastMessage.data);
       }
@@ -803,9 +803,26 @@ export default function MissionControl() {
           </DialogHeader>
           <div className="space-y-6 py-6">
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-xs font-mono uppercase">Progress</Label>
-                <span className="text-2xl font-display font-bold text-primary">{progressValue}%</span>
+              <div className="flex justify-between items-center gap-4">
+                <div className="flex-1">
+                  <Label className="text-xs font-mono uppercase">Progress</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={progressValue}
+                    onChange={(e) => {
+                      const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                      setProgressValue(val);
+                    }}
+                    className="w-20 rounded-sm border-border bg-background text-center font-display font-bold"
+                    data-testid="input-progress"
+                  />
+                  <span className="text-xl font-display font-bold text-primary">%</span>
+                </div>
               </div>
               <Slider
                 value={[progressValue]}

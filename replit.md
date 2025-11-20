@@ -29,6 +29,7 @@ Preferred communication style: Simple, everyday language.
 - **TanStack Query (React Query)**: Server state management with automatic caching, background refetching, and optimistic updates
 - **Custom Query Client**: Configured with infinite stale time and disabled automatic refetching to reduce network overhead
 - **API Layer**: Type-safe API functions using shared TypeScript schemas
+- **WebSocket Integration**: Real-time updates use `refetchQueries` (not `invalidateQueries`) to guarantee immediate UI updates after mission changes
 
 ### Backend Architecture
 
@@ -64,9 +65,15 @@ Preferred communication style: Simple, everyday language.
 
 **Database Schema**
 - **Users Table**: Authentication and user management with UUID primary keys
-- **Missions Table**: Core mission tracking with status, progress, priority fields
+- **Missions Table**: Core mission tracking with status, progress, priority fields (no description field)
 - **System Metrics Table**: Time-series metrics data with flexible value storage
 - **Telemetry Data Table**: Mission telemetry readings and sensor data
+
+**Data Retention Policy**
+- **Telemetry**: Backend maintains last 50 records with automated cleanup using SQL CTEs
+- **Metrics**: Backend maintains last 50 records with automated cleanup using SQL CTEs
+- **Cleanup Strategy**: Uses `WITH keep AS (SELECT id ... ORDER BY timestamp DESC, id DESC LIMIT N)` for deterministic row retention
+- **Frontend Display**: Telemetry chart displays last 24 data points with `.slice(-24)`
 
 **Validation**
 - **Zod**: Runtime type validation for API inputs
@@ -96,3 +103,74 @@ Preferred communication style: Simple, everyday language.
 
 **Fonts**
 - Google Fonts: Architects Daughter, DM Sans, Fira Code, Geist Mono (loaded via CDN)
+
+## Key Features Implemented
+
+### 1. Mission CRUD Operations
+- Create, Read, Update, Delete missions with full validation
+- Update mission progress via **dual input method**: numeric input (for precision/accessibility) + visual slider
+- Mark missions as complete
+- Real-time synchronization across all clients via WebSocket
+
+### 2. Real-Time Telemetry System
+- WebSocket broadcasts telemetry data every 5 seconds
+- Line chart visualization with smooth animations
+- Frontend displays last 24 data points
+- Backend maintains 50 records with automated cleanup
+
+### 3. Dynamic System Metrics
+- Calculated from real mission data (not mock data)
+- Fleet Status: Operational vs total missions
+- Active Personnel: Dynamic count based on active missions
+- System Load: Percentage based on mission capacity
+- Threat Level: Derived from mission priorities
+- Updates broadcast every 10 seconds via WebSocket
+
+### 4. Global Search & Filters
+- Command+K (Cmd+K or Ctrl+K) opens global search dialog
+- Real-time mission search by name
+- Filter missions by status (Pending/Active/Completed)
+- Filter missions by priority (Low/Medium/High/Critical)
+
+### 5. Multi-Page Navigation
+- Dashboard (main control panel)
+- Fleet Tracking
+- Data Center
+- Personnel
+- Analytics
+- Implemented with Wouter for lightweight client-side routing
+
+### 6. Data Export
+- Export all missions to CSV format
+- Export all missions to JSON format
+- Client-side generation with proper formatting
+
+## Accessibility Improvements
+
+**Progress Update Dialog**:
+- Dual input method: Numeric input field + visual slider
+- Numeric input (`data-testid="input-progress"`) allows typing exact values (0-100)
+- Visual slider provides intuitive graphical adjustment
+- Both inputs stay synchronized automatically
+- Improves accessibility for keyboard-only users and automated testing
+
+## Technical Decisions
+
+**WebSocket vs Polling**: 
+- Chose WebSocket for real-time updates to reduce server load and improve responsiveness
+- Events: `telemetry` (5s), `metrics_update` (10s), `mission_update` (on changes)
+
+**Query Invalidation Strategy**:
+- Mission updates use `queryClient.refetchQueries()` instead of `invalidateQueries()`
+- Guarantees immediate UI updates when WebSocket events arrive
+- Prevents stale data display after operations
+
+**Data Cleanup Implementation**:
+- Uses SQL CTEs with deterministic ordering: `ORDER BY timestamp DESC, id DESC`
+- Prevents arbitrary row deletion when timestamps tie
+- Ensures newest records are always retained
+
+**Slider Accessibility**:
+- Added numeric input alongside slider for better testability with Playwright
+- Slider requires complex drag events; numeric input accepts simple type events
+- Both methods update the same state, providing flexibility for users and tests
