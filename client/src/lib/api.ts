@@ -93,6 +93,13 @@ export async function updateFleetPosition(missionId: number, position: Partial<I
   return res.json();
 }
 
+export async function deleteFleetPosition(missionId: number): Promise<void> {
+  const res = await fetch(`/api/fleet/${missionId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete fleet position");
+}
+
 export async function fetchPersonnel(): Promise<Personnel[]> {
   const res = await fetch("/api/personnel");
   if (!res.ok) throw new Error("Failed to fetch personnel");
@@ -163,6 +170,23 @@ export async function createDataHealth(health: InsertDataHealth): Promise<DataHe
   });
   if (!res.ok) throw new Error("Failed to create data health entry");
   return res.json();
+}
+
+export async function updateDataHealth(id: number, health: Partial<InsertDataHealth>): Promise<DataHealth> {
+  const res = await fetch(`/api/data-health/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(health),
+  });
+  if (!res.ok) throw new Error("Failed to update data health entry");
+  return res.json();
+}
+
+export async function deleteDataHealth(id: number): Promise<void> {
+  const res = await fetch(`/api/data-health/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete data health entry");
 }
 
 export interface Analytics {

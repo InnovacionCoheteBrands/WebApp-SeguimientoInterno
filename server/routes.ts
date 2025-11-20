@@ -163,6 +163,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/fleet/:missionId", async (req, res) => {
+    try {
+      const missionId = parseInt(req.params.missionId);
+      const deleted = await storage.deleteFleetPosition(missionId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Fleet position not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete fleet position" });
+    }
+  });
+
   app.get("/api/personnel", async (req, res) => {
     try {
       const allPersonnel = await storage.getPersonnel();
@@ -269,6 +282,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to create data health entry" });
+    }
+  });
+
+  app.patch("/api/data-health/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertDataHealthSchema.partial().parse(req.body);
+      const health = await storage.updateDataHealth(id, validatedData);
+      if (!health) {
+        return res.status(404).json({ error: "Data health entry not found" });
+      }
+      res.json(health);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update data health entry" });
+    }
+  });
+
+  app.delete("/api/data-health/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteDataHealth(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Data health entry not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete data health entry" });
     }
   });
 
