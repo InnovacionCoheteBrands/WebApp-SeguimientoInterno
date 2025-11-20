@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { Rocket, ArrowLeft, Globe, MapPin, Navigation, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { fetchMissions, fetchFleetPositions } from "@/lib/api";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
-export default function FleetTracking() {
+const FleetTracking = memo(function FleetTracking() {
   const { data: missions = [] } = useQuery({
     queryKey: ["missions"],
     queryFn: fetchMissions,
@@ -146,4 +146,6 @@ export default function FleetTracking() {
       </div>
     </div>
   );
-}
+});
+
+export default FleetTracking;

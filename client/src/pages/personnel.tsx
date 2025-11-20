@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { ArrowLeft, Users, Shield, Clock, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPersonnel, fetchPersonnelAssignments, fetchMissions } from "@/lib/api";
 
-export default function Personnel() {
+const Personnel = memo(function Personnel() {
   const { data: allPersonnel = [] } = useQuery({
     queryKey: ["personnel"],
     queryFn: fetchPersonnel,
@@ -207,4 +207,6 @@ export default function Personnel() {
       </div>
     </div>
   );
-}
+});
+
+export default Personnel;

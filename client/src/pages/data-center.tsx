@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { ArrowLeft, Database, HardDrive, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchDataHealth } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 
-export default function DataCenter() {
+const DataCenter = memo(function DataCenter() {
   const { data: healthData = [] } = useQuery({
     queryKey: ["data-health"],
     queryFn: fetchDataHealth,
@@ -217,4 +217,6 @@ export default function DataCenter() {
       </div>
     </div>
   );
-}
+});
+
+export default DataCenter;

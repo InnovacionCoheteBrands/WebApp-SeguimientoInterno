@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { 
   LayoutDashboard, 
   Rocket, 
@@ -176,7 +176,7 @@ export default function MissionControl() {
     },
   });
 
-  const handleCreateMission = () => {
+  const handleCreateMission = useCallback(() => {
     if (!newMission.missionCode || !newMission.name) {
       toast({
         title: "Validation Error",
@@ -186,30 +186,30 @@ export default function MissionControl() {
       return;
     }
     createMissionMutation.mutate(newMission);
-  };
+  }, [newMission, createMissionMutation, toast]);
 
-  const handleEditMission = () => {
+  const handleEditMission = useCallback(() => {
     if (!selectedMission) return;
     updateMissionMutation.mutate({
       id: selectedMission.id,
       data: editMission,
     });
-  };
+  }, [selectedMission, editMission, updateMissionMutation]);
 
-  const handleUpdateProgress = () => {
+  const handleUpdateProgress = useCallback(() => {
     if (!selectedMission) return;
     updateMissionMutation.mutate({
       id: selectedMission.id,
       data: { progress: progressValue },
     });
-  };
+  }, [selectedMission, progressValue, updateMissionMutation]);
 
-  const handleDeleteMission = () => {
+  const handleDeleteMission = useCallback(() => {
     if (!selectedMission) return;
     deleteMissionMutation.mutate(selectedMission.id);
-  };
+  }, [selectedMission, deleteMissionMutation]);
 
-  const openEditDialog = (mission: Mission) => {
+  const openEditDialog = useCallback((mission: Mission) => {
     setSelectedMission(mission);
     setEditMission({
       missionCode: mission.missionCode,
@@ -218,25 +218,25 @@ export default function MissionControl() {
       status: mission.status,
     });
     setEditDialogOpen(true);
-  };
+  }, []);
 
-  const openProgressDialog = (mission: Mission) => {
+  const openProgressDialog = useCallback((mission: Mission) => {
     setSelectedMission(mission);
     setProgressValue(mission.progress);
     setProgressDialogOpen(true);
-  };
+  }, []);
 
-  const openDeleteDialog = (mission: Mission) => {
+  const openDeleteDialog = useCallback((mission: Mission) => {
     setSelectedMission(mission);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleCompleteMission = (id: number) => {
+  const handleCompleteMission = useCallback((id: number) => {
     updateMissionMutation.mutate({
       id,
       data: { status: "Completed", progress: 100 },
     });
-  };
+  }, [updateMissionMutation]);
 
   useEffect(() => {
     if (lastMessage) {
@@ -268,18 +268,24 @@ export default function MissionControl() {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  let filteredMissions = missions.filter(m => m.status === "Active" || m.status === "Pending");
-  
-  if (statusFilter !== "all") {
-    filteredMissions = filteredMissions.filter(m => m.status === statusFilter);
-  }
-  
-  if (priorityFilter !== "all") {
-    filteredMissions = filteredMissions.filter(m => m.priority === priorityFilter);
-  }
-  
-  const activeMissions = filteredMissions;
-  const operationalCount = missions.filter(m => m.status === "Active").length;
+  const activeMissions = useMemo(() => {
+    let filtered = missions.filter(m => m.status === "Active" || m.status === "Pending");
+    
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(m => m.status === statusFilter);
+    }
+    
+    if (priorityFilter !== "all") {
+      filtered = filtered.filter(m => m.priority === priorityFilter);
+    }
+    
+    return filtered;
+  }, [missions, statusFilter, priorityFilter]);
+
+  const operationalCount = useMemo(() => 
+    missions.filter(m => m.status === "Active").length,
+    [missions]
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground flex overflow-hidden font-sans">

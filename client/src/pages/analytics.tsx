@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { ArrowLeft, TrendingUp, BarChart3, PieChart, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAnalytics } from "@/lib/api";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from "recharts";
 
-export default function Analytics() {
+const Analytics = memo(function Analytics() {
   const { data: analytics } = useQuery({
     queryKey: ["analytics"],
     queryFn: fetchAnalytics,
@@ -250,4 +250,6 @@ export default function Analytics() {
       </div>
     </div>
   );
-}
+});
+
+export default Analytics;
