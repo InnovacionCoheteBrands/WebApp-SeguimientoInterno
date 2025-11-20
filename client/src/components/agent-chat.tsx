@@ -21,7 +21,6 @@ export function AgentChat() {
   const [messages, setMessages] = useState<MessageWithActions[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [pendingAction, setPendingAction] = useState<ProposedAction | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,9 +63,6 @@ export function AgentChat() {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      if (response.proposedActions && response.proposedActions.length > 0) {
-        setPendingAction(response.proposedActions[0]);
-      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -78,12 +74,32 @@ export function AgentChat() {
     }
   };
 
-  const handleApproveAction = async (action: ProposedAction) => {
+  const handleApproveAction = async (messageId: string, actionIndex: number) => {
     setIsLoading(true);
-    setPendingAction(null);
 
     try {
+      const message = messages.find(m => m.id === messageId);
+      const action = message?.proposedActions?.[actionIndex];
+      
+      if (!action) {
+        throw new Error("Action not found");
+      }
+
       const response = await executeAgentAction(action.actionType, action.actionData);
+
+      // Mark action as handled ONLY after successful execution
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId && m.proposedActions
+            ? {
+                ...m,
+                proposedActions: m.proposedActions.map((a, idx) =>
+                  idx === actionIndex ? { ...a, handled: true } : a
+                ),
+              }
+            : m
+        )
+      );
 
       const executionMessage: MessageWithActions = {
         id: Date.now().toString(),
@@ -105,16 +121,30 @@ export function AgentChat() {
     } catch (error: any) {
       toast({
         title: "Execution Failed",
-        description: error.message || "Failed to execute action",
+        description: error.message || "Failed to execute action. You can try again.",
         variant: "destructive",
       });
+      // Don't mark as handled on failure - user can retry
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRejectAction = () => {
-    setPendingAction(null);
+  const handleRejectAction = (messageId: string, actionIndex: number) => {
+    // Mark action as handled after rejection
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId && m.proposedActions
+          ? {
+              ...m,
+              proposedActions: m.proposedActions.map((a, idx) =>
+                idx === actionIndex ? { ...a, handled: true } : a
+              ),
+            }
+          : m
+      )
+    );
+
     const rejectionMessage: MessageWithActions = {
       id: Date.now().toString(),
       role: "user",
@@ -203,39 +233,45 @@ export function AgentChat() {
 
                     {message.proposedActions && message.proposedActions.length > 0 && (
                       <div className="space-y-2">
-                        {message.proposedActions.map((action, idx) => (
-                          <Alert key={idx} className="border-primary/50 bg-primary/5">
-                            <AlertDescription className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <p className="font-medium text-sm mb-1">Action Requires Approval</p>
-                                <p className="text-xs text-muted-foreground">{action.description}</p>
-                              </div>
-                              {pendingAction === action && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleApproveAction(action)}
-                                    disabled={isLoading}
-                                    data-testid="button-approve-action"
-                                  >
-                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleRejectAction}
-                                    disabled={isLoading}
-                                    data-testid="button-reject-action"
-                                  >
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                    Reject
-                                  </Button>
+                        {message.proposedActions.map((action, idx) => {
+                          const actionKey = `${message.id}-${idx}`;
+                          
+                          return (
+                            <Alert key={idx} className="border-primary/50 bg-primary/5">
+                              <AlertDescription className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm mb-1">
+                                    {action.handled ? "Action Handled" : "Action Requires Approval"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">{action.description}</p>
                                 </div>
-                              )}
-                            </AlertDescription>
-                          </Alert>
-                        ))}
+                                {!action.handled && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleApproveAction(message.id, idx)}
+                                      disabled={isLoading}
+                                      data-testid={`button-approve-action-${actionKey}`}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleRejectAction(message.id, idx)}
+                                      disabled={isLoading}
+                                      data-testid={`button-reject-action-${actionKey}`}
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                )}
+                              </AlertDescription>
+                            </Alert>
+                          );
+                        })}
                       </div>
                     )}
 

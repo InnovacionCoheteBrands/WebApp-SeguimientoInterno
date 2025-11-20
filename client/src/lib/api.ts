@@ -169,6 +169,7 @@ export interface ProposedAction {
   actionType: string;
   actionData: any;
   description: string;
+  handled?: boolean;
 }
 
 export interface AgentResponse {
