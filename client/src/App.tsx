@@ -4,7 +4,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AgentChat } from "@/components/agent-chat";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const MissionControl = lazy(() => import("@/pages/dashboard"));
@@ -14,6 +13,7 @@ const Personnel = lazy(() => import("@/pages/personnel"));
 const Analytics = lazy(() => import("@/pages/analytics"));
 const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
+const AgentChat = lazy(() => import("@/components/agent-chat").then(m => ({ default: m.AgentChat })));
 
 function LoadingFallback() {
   return (
@@ -51,7 +51,9 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
-        <AgentChat />
+        <Suspense fallback={null}>
+          <AgentChat />
+        </Suspense>
       </TooltipProvider>
     </QueryClientProvider>
   );
