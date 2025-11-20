@@ -8,10 +8,23 @@ import {
   type InsertSystemMetric,
   type TelemetryData,
   type InsertTelemetryData,
+  type FleetPosition,
+  type InsertFleetPosition,
+  type Personnel,
+  type InsertPersonnel,
+  type UpdatePersonnel,
+  type PersonnelAssignment,
+  type InsertPersonnelAssignment,
+  type DataHealth,
+  type InsertDataHealth,
   users,
   missions,
   systemMetrics,
   telemetryData,
+  fleetPositions,
+  personnel,
+  personnelAssignments,
+  dataHealth,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -34,6 +47,27 @@ export interface IStorage {
   createTelemetryData(data: InsertTelemetryData): Promise<TelemetryData>;
   cleanupOldTelemetry(keepLast: number): Promise<void>;
   cleanupOldMetrics(keepLast: number): Promise<void>;
+  
+  getFleetPositions(): Promise<FleetPosition[]>;
+  getFleetPositionByMissionId(missionId: number): Promise<FleetPosition | undefined>;
+  createFleetPosition(position: InsertFleetPosition): Promise<FleetPosition>;
+  updateFleetPosition(missionId: number, position: Partial<InsertFleetPosition>): Promise<FleetPosition | undefined>;
+  
+  getPersonnel(): Promise<Personnel[]>;
+  getPersonnelById(id: number): Promise<Personnel | undefined>;
+  createPersonnel(person: InsertPersonnel): Promise<Personnel>;
+  updatePersonnel(id: number, person: UpdatePersonnel): Promise<Personnel | undefined>;
+  deletePersonnel(id: number): Promise<boolean>;
+  
+  getPersonnelAssignments(): Promise<PersonnelAssignment[]>;
+  getAssignmentsByMissionId(missionId: number): Promise<PersonnelAssignment[]>;
+  getAssignmentsByPersonnelId(personnelId: number): Promise<PersonnelAssignment[]>;
+  createPersonnelAssignment(assignment: InsertPersonnelAssignment): Promise<PersonnelAssignment>;
+  deletePersonnelAssignment(id: number): Promise<boolean>;
+  
+  getDataHealth(): Promise<DataHealth[]>;
+  createDataHealth(health: InsertDataHealth): Promise<DataHealth>;
+  cleanupOldDataHealth(keepLast: number): Promise<void>;
 }
 
 export class DBStorage implements IStorage {
@@ -127,6 +161,121 @@ export class DBStorage implements IStorage {
         LIMIT ${keepLast}
       )
       DELETE FROM ${systemMetrics}
+      WHERE id NOT IN (SELECT id FROM keep)
+    `);
+  }
+
+  async getFleetPositions(): Promise<FleetPosition[]> {
+    return await db
+      .select()
+      .from(fleetPositions)
+      .orderBy(desc(fleetPositions.timestamp));
+  }
+
+  async getFleetPositionByMissionId(missionId: number): Promise<FleetPosition | undefined> {
+    const [position] = await db
+      .select()
+      .from(fleetPositions)
+      .where(eq(fleetPositions.missionId, missionId))
+      .orderBy(desc(fleetPositions.timestamp))
+      .limit(1);
+    return position;
+  }
+
+  async createFleetPosition(position: InsertFleetPosition): Promise<FleetPosition> {
+    const [newPosition] = await db.insert(fleetPositions).values(position).returning();
+    return newPosition;
+  }
+
+  async updateFleetPosition(missionId: number, position: Partial<InsertFleetPosition>): Promise<FleetPosition | undefined> {
+    const existing = await this.getFleetPositionByMissionId(missionId);
+    if (!existing) return undefined;
+    
+    const [updated] = await db
+      .update(fleetPositions)
+      .set({ ...position, timestamp: new Date() })
+      .where(eq(fleetPositions.id, existing.id))
+      .returning();
+    return updated;
+  }
+
+  async getPersonnel(): Promise<Personnel[]> {
+    return await db.select().from(personnel).orderBy(desc(personnel.createdAt));
+  }
+
+  async getPersonnelById(id: number): Promise<Personnel | undefined> {
+    const [person] = await db.select().from(personnel).where(eq(personnel.id, id));
+    return person;
+  }
+
+  async createPersonnel(person: InsertPersonnel): Promise<Personnel> {
+    const [newPerson] = await db.insert(personnel).values(person).returning();
+    return newPerson;
+  }
+
+  async updatePersonnel(id: number, person: UpdatePersonnel): Promise<Personnel | undefined> {
+    const [updated] = await db
+      .update(personnel)
+      .set(person)
+      .where(eq(personnel.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePersonnel(id: number): Promise<boolean> {
+    const result = await db.delete(personnel).where(eq(personnel.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getPersonnelAssignments(): Promise<PersonnelAssignment[]> {
+    return await db.select().from(personnelAssignments).orderBy(desc(personnelAssignments.assignedAt));
+  }
+
+  async getAssignmentsByMissionId(missionId: number): Promise<PersonnelAssignment[]> {
+    return await db
+      .select()
+      .from(personnelAssignments)
+      .where(eq(personnelAssignments.missionId, missionId));
+  }
+
+  async getAssignmentsByPersonnelId(personnelId: number): Promise<PersonnelAssignment[]> {
+    return await db
+      .select()
+      .from(personnelAssignments)
+      .where(eq(personnelAssignments.personnelId, personnelId));
+  }
+
+  async createPersonnelAssignment(assignment: InsertPersonnelAssignment): Promise<PersonnelAssignment> {
+    const [newAssignment] = await db.insert(personnelAssignments).values(assignment).returning();
+    return newAssignment;
+  }
+
+  async deletePersonnelAssignment(id: number): Promise<boolean> {
+    const result = await db.delete(personnelAssignments).where(eq(personnelAssignments.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getDataHealth(): Promise<DataHealth[]> {
+    return await db
+      .select()
+      .from(dataHealth)
+      .orderBy(desc(dataHealth.timestamp))
+      .limit(10);
+  }
+
+  async createDataHealth(health: InsertDataHealth): Promise<DataHealth> {
+    const [newHealth] = await db.insert(dataHealth).values(health).returning();
+    return newHealth;
+  }
+
+  async cleanupOldDataHealth(keepLast: number): Promise<void> {
+    await db.execute(sql`
+      WITH keep AS (
+        SELECT id FROM ${dataHealth}
+        ORDER BY timestamp DESC, id DESC
+        LIMIT ${keepLast}
+      )
+      DELETE FROM ${dataHealth}
       WHERE id NOT IN (SELECT id FROM keep)
     `);
   }

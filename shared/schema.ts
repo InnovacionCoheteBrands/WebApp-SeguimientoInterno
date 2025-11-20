@@ -72,3 +72,80 @@ export const insertTelemetryDataSchema = createInsertSchema(telemetryData).omit(
 
 export type TelemetryData = typeof telemetryData.$inferSelect;
 export type InsertTelemetryData = z.infer<typeof insertTelemetryDataSchema>;
+
+export const fleetPositions = pgTable("fleet_positions", {
+  id: serial("id").primaryKey(),
+  missionId: integer("mission_id").notNull().references(() => missions.id, { onDelete: "cascade" }),
+  sector: text("sector").notNull(),
+  coordinates: text("coordinates").notNull(),
+  velocity: integer("velocity").notNull(),
+  distance: integer("distance").notNull(),
+  lastContact: timestamp("last_contact").defaultNow().notNull(),
+  status: text("status").notNull().default("Active"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertFleetPositionSchema = createInsertSchema(fleetPositions).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type FleetPosition = typeof fleetPositions.$inferSelect;
+export type InsertFleetPosition = z.infer<typeof insertFleetPositionSchema>;
+
+export const personnel = pgTable("personnel", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  clearance: text("clearance").notNull(),
+  status: text("status").notNull().default("On Duty"),
+  avatarUrl: text("avatar_url"),
+  shiftStart: text("shift_start").notNull(),
+  shiftEnd: text("shift_end").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPersonnelSchema = createInsertSchema(personnel).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updatePersonnelSchema = insertPersonnelSchema.partial();
+
+export type Personnel = typeof personnel.$inferSelect;
+export type InsertPersonnel = z.infer<typeof insertPersonnelSchema>;
+export type UpdatePersonnel = z.infer<typeof updatePersonnelSchema>;
+
+export const personnelAssignments = pgTable("personnel_assignments", {
+  id: serial("id").primaryKey(),
+  personnelId: integer("personnel_id").notNull().references(() => personnel.id, { onDelete: "cascade" }),
+  missionId: integer("mission_id").notNull().references(() => missions.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+});
+
+export const insertPersonnelAssignmentSchema = createInsertSchema(personnelAssignments).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export type PersonnelAssignment = typeof personnelAssignments.$inferSelect;
+export type InsertPersonnelAssignment = z.infer<typeof insertPersonnelAssignmentSchema>;
+
+export const dataHealth = pgTable("data_health", {
+  id: serial("id").primaryKey(),
+  component: text("component").notNull(),
+  status: text("status").notNull(),
+  replicationLag: integer("replication_lag"),
+  lastBackup: timestamp("last_backup"),
+  storageUsed: integer("storage_used"),
+  storageTotal: integer("storage_total"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertDataHealthSchema = createInsertSchema(dataHealth).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type DataHealth = typeof dataHealth.$inferSelect;
+export type InsertDataHealth = z.infer<typeof insertDataHealthSchema>;
