@@ -1,24 +1,72 @@
-import { ArrowLeft, Users, Shield, Clock, Award } from "lucide-react";
+import { useMemo } from "react";
+import { ArrowLeft, Users, Shield, Clock, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-
-const personnelData = [
-  { id: 1, name: "Commander Shepard", role: "Mission Director", clearance: "Level 5", status: "Active", initials: "CS" },
-  { id: 2, name: "Lt. Anderson", role: "Tactical Officer", clearance: "Level 4", status: "Active", initials: "LA" },
-  { id: 3, name: "Dr. Liara", role: "Research Lead", clearance: "Level 4", status: "Active", initials: "DL" },
-  { id: 4, name: "Garrus Vakarian", role: "Security Chief", clearance: "Level 4", status: "On Duty", initials: "GV" },
-  { id: 5, name: "Tali'Zorah", role: "Engineering Lead", clearance: "Level 3", status: "Active", initials: "TZ" },
-  { id: 6, name: "Wrex", role: "Combat Specialist", clearance: "Level 3", status: "On Leave", initials: "WX" },
-];
+import { useQuery } from "@tanstack/react-query";
+import { fetchPersonnel, fetchPersonnelAssignments, fetchMissions } from "@/lib/api";
 
 export default function Personnel() {
+  const { data: allPersonnel = [] } = useQuery({
+    queryKey: ["personnel"],
+    queryFn: fetchPersonnel,
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["personnel-assignments"],
+    queryFn: fetchPersonnelAssignments,
+  });
+
+  const { data: missions = [] } = useQuery({
+    queryKey: ["missions"],
+    queryFn: fetchMissions,
+  });
+
+  const stats = useMemo(() => {
+    const onDuty = allPersonnel.filter(p => p.status === "On Duty").length;
+    const securityCount = allPersonnel.filter(p => 
+      p.role.toLowerCase().includes("security") || 
+      p.role.toLowerCase().includes("tactical") ||
+      p.clearance === "Level 5"
+    ).length;
+    
+    return {
+      total: allPersonnel.length,
+      onDuty,
+      security: securityCount,
+      assigned: new Set(assignments.map(a => a.personnelId)).size,
+    };
+  }, [allPersonnel, assignments]);
+
+  const personnelWithAssignments = useMemo(() => {
+    return allPersonnel.map((person) => {
+      const personAssignments = assignments.filter(a => a.personnelId === person.id);
+      const assignedMissions = personAssignments
+        .map(a => missions.find(m => m.id === a.missionId))
+        .filter(Boolean);
+      
+      return {
+        ...person,
+        assignedMissions: assignedMissions.length,
+        missionNames: assignedMissions.map(m => m?.missionCode).join(", "),
+      };
+    });
+  }, [allPersonnel, assignments, missions]);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -35,7 +83,6 @@ export default function Personnel() {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
@@ -44,7 +91,9 @@ export default function Personnel() {
                 <Users className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">1,284</h3>
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-total">
+                  {stats.total}
+                </h3>
                 <p className="text-xs text-muted-foreground">Active Personnel</p>
               </div>
             </CardContent>
@@ -57,7 +106,9 @@ export default function Personnel() {
                 <Clock className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">892</h3>
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-on-duty">
+                  {stats.onDuty}
+                </h3>
                 <p className="text-xs text-muted-foreground">Current Shift</p>
               </div>
             </CardContent>
@@ -66,12 +117,14 @@ export default function Personnel() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Security</span>
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">High Clearance</span>
                 <Shield className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">156</h3>
-                <p className="text-xs text-muted-foreground">Security Staff</p>
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-security">
+                  {stats.security}
+                </h3>
+                <p className="text-xs text-muted-foreground">Level 4-5 Clearance</p>
               </div>
             </CardContent>
           </Card>
@@ -79,25 +132,26 @@ export default function Personnel() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Top Rated</span>
-                <Award className="size-4 text-muted-foreground" />
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Assigned</span>
+                <UserCheck className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">98%</h3>
-                <p className="text-xs text-muted-foreground">Performance</p>
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-assigned">
+                  {stats.assigned}
+                </h3>
+                <p className="text-xs text-muted-foreground">On Missions</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Personnel List */}
         <Card className="border-border bg-card/50 rounded-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Key Personnel</CardTitle>
+            <CardTitle className="text-lg font-display">Personnel Roster</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {personnelData.map((person) => (
+              {personnelWithAssignments.map((person) => (
                 <div
                   key={person.id}
                   className="flex items-center justify-between p-4 border border-border rounded-sm hover:bg-muted/30 transition-colors"
@@ -106,25 +160,36 @@ export default function Personnel() {
                   <div className="flex items-center gap-4">
                     <Avatar className="size-12 border-2 border-primary/20">
                       <AvatarFallback className="font-display font-bold bg-primary/10 text-primary">
-                        {person.initials}
+                        {getInitials(person.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
-                      <p className="font-medium text-sm">{person.name}</p>
-                      <p className="text-xs text-muted-foreground">{person.role}</p>
+                      <p className="font-medium text-sm" data-testid={`personnel-name-${person.id}`}>{person.name}</p>
+                      <p className="text-xs text-muted-foreground" data-testid={`personnel-role-${person.id}`}>{person.role}</p>
+                      {person.assignedMissions > 0 && (
+                        <p className="text-xs text-primary font-mono" data-testid={`personnel-missions-${person.id}`}>
+                          {person.missionNames}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-xs font-mono text-muted-foreground">{person.clearance}</p>
+                      <p className="text-xs font-mono text-muted-foreground mb-1" data-testid={`personnel-clearance-${person.id}`}>
+                        {person.clearance}
+                      </p>
+                      <p className="text-xs font-mono text-muted-foreground" data-testid={`personnel-shift-${person.id}`}>
+                        {person.shiftStart} - {person.shiftEnd}
+                      </p>
                     </div>
                     <Badge
                       variant="outline"
                       className={`rounded-sm text-xs ${
-                        person.status === "Active" || person.status === "On Duty"
+                        person.status === "On Duty"
                           ? "border-green-500 text-green-500"
                           : "border-yellow-500 text-yellow-500"
                       }`}
+                      data-testid={`personnel-status-${person.id}`}
                     >
                       {person.status}
                     </Badge>
@@ -132,6 +197,11 @@ export default function Personnel() {
                 </div>
               ))}
             </div>
+            {allPersonnel.length === 0 && (
+              <div className="py-12 text-center">
+                <p className="text-muted-foreground">No personnel records found</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

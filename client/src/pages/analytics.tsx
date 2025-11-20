@@ -1,37 +1,53 @@
-import { ArrowLeft, TrendingUp, BarChart3, PieChart } from "lucide-react";
+import { useMemo } from "react";
+import { ArrowLeft, TrendingUp, BarChart3, PieChart, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { fetchMissions } from "@/lib/api";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { fetchAnalytics } from "@/lib/api";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from "recharts";
 
 export default function Analytics() {
-  const { data: missions = [] } = useQuery({
-    queryKey: ["missions"],
-    queryFn: fetchMissions,
+  const { data: analytics } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: fetchAnalytics,
   });
 
-  const statusData = [
-    { name: "Active", count: missions.filter(m => m.status === "Active").length },
-    { name: "Pending", count: missions.filter(m => m.status === "Pending").length },
-    { name: "Completed", count: missions.filter(m => m.status === "Completed").length },
-  ];
+  const statusData = useMemo(() => {
+    if (!analytics) return [];
+    return [
+      { name: "Active", count: analytics.activeMissions },
+      { name: "Pending", count: analytics.totalMissions - analytics.activeMissions - analytics.completedMissions },
+      { name: "Completed", count: analytics.completedMissions },
+    ];
+  }, [analytics]);
 
-  const priorityData = [
-    { name: "High", count: missions.filter(m => m.priority === "High").length },
-    { name: "Medium", count: missions.filter(m => m.priority === "Medium").length },
-    { name: "Low", count: missions.filter(m => m.priority === "Low").length },
-  ];
+  const priorityData = useMemo(() => {
+    if (!analytics) return [];
+    return [
+      { name: "Critical", count: analytics.priorityBreakdown.critical },
+      { name: "High", count: analytics.priorityBreakdown.high },
+      { name: "Medium", count: analytics.priorityBreakdown.medium },
+      { name: "Low", count: analytics.priorityBreakdown.low },
+    ];
+  }, [analytics]);
 
-  const avgProgress = missions.length > 0
-    ? Math.round(missions.reduce((sum, m) => sum + m.progress, 0) / missions.length)
-    : 0;
+  const recentActivity = useMemo(() => {
+    if (!analytics) return [];
+    return analytics.recentActivity.slice(-10).map((item) => ({
+      time: item.name,
+      value: item.value,
+    }));
+  }, [analytics]);
+
+  const successRate = useMemo(() => {
+    if (!analytics || analytics.totalMissions === 0) return 0;
+    return Math.round((analytics.completedMissions / analytics.totalMissions) * 100);
+  }, [analytics]);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -48,8 +64,7 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -57,8 +72,25 @@ export default function Analytics() {
                 <BarChart3 className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">{missions.length}</h3>
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-total">
+                  {analytics?.totalMissions || 0}
+                </h3>
                 <p className="text-xs text-muted-foreground">All Time</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 rounded-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Active</span>
+                <Activity className="size-4 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-active">
+                  {analytics?.activeMissions || 0}
+                </h3>
+                <p className="text-xs text-muted-foreground">In Progress</p>
               </div>
             </CardContent>
           </Card>
@@ -70,7 +102,9 @@ export default function Analytics() {
                 <TrendingUp className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">{avgProgress}%</h3>
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-progress">
+                  {analytics?.averageProgress || 0}%
+                </h3>
                 <p className="text-xs text-muted-foreground">Completion Rate</p>
               </div>
             </CardContent>
@@ -83,10 +117,8 @@ export default function Analytics() {
                 <PieChart className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight">
-                  {missions.length > 0 
-                    ? Math.round((missions.filter(m => m.status === "Completed").length / missions.length) * 100)
-                    : 0}%
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-success">
+                  {successRate}%
                 </h3>
                 <p className="text-xs text-muted-foreground">Completed</p>
               </div>
@@ -94,7 +126,6 @@ export default function Analytics() {
           </Card>
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border-border bg-card/50 rounded-sm">
             <CardHeader>
@@ -176,6 +207,46 @@ export default function Analytics() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border-border bg-card/50 rounded-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-display">Recent Activity</CardTitle>
+            <CardDescription className="font-mono text-xs uppercase tracking-wider">Last 10 Data Points</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={recentActivity}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} vertical={false} />
+                  <XAxis
+                    dataKey="time"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    fontFamily="var(--font-mono)"
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    fontFamily="var(--font-mono)"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: '2px',
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  />
+                  <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
