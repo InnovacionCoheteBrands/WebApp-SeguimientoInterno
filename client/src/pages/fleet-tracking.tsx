@@ -1,14 +1,27 @@
-import { useMemo, memo } from "react";
-import { Rocket, ArrowLeft, Globe, MapPin, Navigation, Clock } from "lucide-react";
+import { useMemo, memo, useState } from "react";
+import { Rocket, ArrowLeft, Globe, MapPin, Navigation, Clock, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { fetchMissions, fetchFleetPositions } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchMissions, fetchFleetPositions, createFleetPosition, updateFleetPosition } from "@/lib/api";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import type { InsertFleetPosition, FleetPosition } from "@shared/schema";
 
 const FleetTracking = memo(function FleetTracking() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingPosition, setEditingPosition] = useState<FleetPosition | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: missions = [] } = useQuery({
     queryKey: ["missions"],
     queryFn: fetchMissions,
@@ -29,6 +42,90 @@ const FleetTracking = memo(function FleetTracking() {
     });
   }, [missions, fleetPositions]);
 
+  const [formData, setFormData] = useState<Partial<InsertFleetPosition>>({
+    missionId: 0,
+    sector: "",
+    coordinates: "",
+    velocity: 0,
+    distance: 0,
+    status: "Active",
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createFleetPosition,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({ title: "Success", description: "Fleet position created successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ missionId, data }: { missionId: number; data: Partial<InsertFleetPosition> }) =>
+      updateFleetPosition(missionId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
+      setIsDialogOpen(false);
+      setEditingPosition(null);
+      resetForm();
+      toast({ title: "Success", description: "Fleet position updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      missionId: 0,
+      sector: "",
+      coordinates: "",
+      velocity: 0,
+      distance: 0,
+      status: "Active",
+    });
+    setEditingPosition(null);
+  };
+
+  const handleOpenDialog = (position?: FleetPosition) => {
+    if (position) {
+      setEditingPosition(position);
+      setFormData({
+        missionId: position.missionId,
+        sector: position.sector,
+        coordinates: position.coordinates,
+        velocity: position.velocity,
+        distance: position.distance,
+        status: position.status,
+      });
+    } else {
+      resetForm();
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.missionId || !formData.sector || !formData.coordinates) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+      return;
+    }
+
+    if (editingPosition) {
+      updateMutation.mutate({ 
+        missionId: editingPosition.missionId, 
+        data: formData 
+      });
+    } else {
+      createMutation.mutate(formData as InsertFleetPosition);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -40,15 +137,25 @@ const FleetTracking = memo(function FleetTracking() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight">Fleet Tracking</h1>
+              <h1 className="text-3xl font-display font-bold tracking-tight">Fleet Administration</h1>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
-                Real-time Mission Locations
+                Manage Fleet Positions & Tracking
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5">
-            {fleetData.length} VESSELS
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5">
+              {fleetData.length} VESSELS
+            </Badge>
+            <Button 
+              onClick={() => handleOpenDialog()} 
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              data-testid="button-new-fleet"
+            >
+              <Plus className="size-4 mr-2" />
+              New Position
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -113,10 +220,35 @@ const FleetTracking = memo(function FleetTracking() {
                         {position.coordinates}
                       </p>
                     </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDialog(position)}
+                        className="flex-1 rounded-sm"
+                        data-testid={`button-edit-fleet-${mission.id}`}
+                      >
+                        <Pencil className="size-3 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   <div className="py-4 text-center">
-                    <p className="text-sm text-muted-foreground">Position data unavailable</p>
+                    <p className="text-sm text-muted-foreground mb-3">Position data unavailable</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFormData({ ...formData, missionId: mission.id });
+                        setIsDialogOpen(true);
+                      }}
+                      className="rounded-sm"
+                      data-testid={`button-create-fleet-${mission.id}`}
+                    >
+                      <Plus className="size-3 mr-1" />
+                      Add Position
+                    </Button>
                   </div>
                 )}
                 <div className="pt-2 border-t border-border">
@@ -144,6 +276,121 @@ const FleetTracking = memo(function FleetTracking() {
           </Card>
         )}
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-sm">
+          <DialogHeader>
+            <DialogTitle>{editingPosition ? "Edit Fleet Position" : "New Fleet Position"}</DialogTitle>
+            <DialogDescription>
+              {editingPosition ? "Update the fleet position details" : "Add a new fleet position for a mission"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mission">Mission *</Label>
+              <Select
+                value={formData.missionId?.toString()}
+                onValueChange={(value) => setFormData({ ...formData, missionId: parseInt(value) })}
+                disabled={!!editingPosition}
+              >
+                <SelectTrigger id="mission" data-testid="select-mission">
+                  <SelectValue placeholder="Select a mission" />
+                </SelectTrigger>
+                <SelectContent>
+                  {missions.map((mission) => (
+                    <SelectItem key={mission.id} value={mission.id.toString()}>
+                      {mission.missionCode} - {mission.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sector">Sector *</Label>
+              <Input
+                id="sector"
+                value={formData.sector}
+                onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                placeholder="e.g., Alpha-7"
+                data-testid="input-sector"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="coordinates">Coordinates *</Label>
+              <Input
+                id="coordinates"
+                value={formData.coordinates}
+                onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
+                placeholder="e.g., 45.2°N, 122.3°W"
+                data-testid="input-coordinates"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="velocity">Velocity (km/h) *</Label>
+                <Input
+                  id="velocity"
+                  type="number"
+                  value={formData.velocity}
+                  onChange={(e) => setFormData({ ...formData, velocity: parseFloat(e.target.value) || 0 })}
+                  data-testid="input-velocity"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="distance">Distance (km) *</Label>
+                <Input
+                  id="distance"
+                  type="number"
+                  value={formData.distance}
+                  onChange={(e) => setFormData({ ...formData, distance: parseFloat(e.target.value) || 0 })}
+                  data-testid="input-distance"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value as "Active" | "Standby" | "Docked" })}
+              >
+                <SelectTrigger id="status" data-testid="select-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Standby">Standby</SelectItem>
+                  <SelectItem value="Docked">Docked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                className="rounded-sm"
+                data-testid="button-cancel-fleet"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="rounded-sm"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                data-testid="button-submit-fleet"
+              >
+                {editingPosition ? "Update" : "Create"} Position
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });
