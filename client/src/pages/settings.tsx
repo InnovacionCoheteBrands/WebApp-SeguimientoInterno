@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { ArrowLeft, User, Globe, Bell, Eye, Lock, Plug, Save, Upload } from "lucide-react";
+import { ArrowLeft, Globe, Bell, Eye, Plug, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,16 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Settings {
-  // Profile
-  name: string;
-  email: string;
-  role: string;
-  clearance: string;
-  initials: string;
-  
   // System
   theme: string;
   language: string;
@@ -41,11 +33,6 @@ interface Settings {
 }
 
 const defaultSettings: Settings = {
-  name: "Cmdr. Shepard",
-  email: "shepard@cohete.space",
-  role: "Mission Commander",
-  clearance: "Level 5",
-  initials: "CM",
   theme: "dark",
   language: "en",
   timezone: "UTC",
@@ -114,7 +101,7 @@ const Settings = memo(function Settings() {
               <div>
                 <h1 className="text-2xl font-display font-bold tracking-wide">SYSTEM CONFIGURATION</h1>
                 <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
-                  Manage preferences and settings
+                  Application preferences and settings
                 </p>
               </div>
             </div>
@@ -134,100 +121,6 @@ const Settings = memo(function Settings() {
       {/* Content */}
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Profile Section */}
-          <Card className="border-border bg-card/50 rounded-sm lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-primary/10 border border-primary/20">
-                  <User className="size-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-display">User Profile</CardTitle>
-                  <CardDescription className="font-mono text-xs uppercase tracking-wider">
-                    Personal information and credentials
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="size-20 border-2 border-primary/20">
-                  <AvatarFallback className="bg-muted text-2xl font-display font-bold">
-                    {settings.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <Label htmlFor="initials" className="text-xs font-mono uppercase">Avatar Initials</Label>
-                  <Input
-                    id="initials"
-                    value={settings.initials}
-                    onChange={(e) => updateSetting("initials", e.target.value.toUpperCase().slice(0, 2))}
-                    className="rounded-sm border-border bg-background mt-1 max-w-[100px]"
-                    maxLength={2}
-                    data-testid="input-initials"
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-xs font-mono uppercase">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={settings.name}
-                    onChange={(e) => updateSetting("name", e.target.value)}
-                    className="rounded-sm border-border bg-background"
-                    data-testid="input-name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs font-mono uppercase">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={settings.email}
-                    onChange={(e) => updateSetting("email", e.target.value)}
-                    className="rounded-sm border-border bg-background"
-                    data-testid="input-email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role" className="text-xs font-mono uppercase">Role / Position</Label>
-                  <Input
-                    id="role"
-                    value={settings.role}
-                    onChange={(e) => updateSetting("role", e.target.value)}
-                    className="rounded-sm border-border bg-background"
-                    data-testid="input-role"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="clearance" className="text-xs font-mono uppercase">Clearance Level</Label>
-                  <Select
-                    value={settings.clearance}
-                    onValueChange={(value) => updateSetting("clearance", value)}
-                  >
-                    <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-clearance">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Level 1">Level 1 - Basic</SelectItem>
-                      <SelectItem value="Level 2">Level 2 - Standard</SelectItem>
-                      <SelectItem value="Level 3">Level 3 - Advanced</SelectItem>
-                      <SelectItem value="Level 4">Level 4 - Classified</SelectItem>
-                      <SelectItem value="Level 5">Level 5 - Top Secret</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* System Preferences */}
           <Card className="border-border bg-card/50 rounded-sm">
@@ -442,41 +335,8 @@ const Settings = memo(function Settings() {
             </CardContent>
           </Card>
 
-          {/* Security */}
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-primary/10 border border-primary/20">
-                  <Lock className="size-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-display">Security</CardTitle>
-                  <CardDescription className="font-mono text-xs uppercase tracking-wider">
-                    Authentication settings
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-sm bg-muted/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Authentication system is not yet configured. Password management will be available once user authentication is implemented.
-                </p>
-                <Button
-                  variant="outline"
-                  className="rounded-sm w-full"
-                  disabled
-                  data-testid="button-change-password"
-                >
-                  <Lock className="size-4 mr-2" />
-                  Change Password
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* API & Integrations */}
-          <Card className="border-border bg-card/50 rounded-sm lg:col-span-2">
+          <Card className="border-border bg-card/50 rounded-sm lg:col-span-3">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-sm bg-primary/10 border border-primary/20">
@@ -491,46 +351,46 @@ const Settings = memo(function Settings() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="api-key" className="text-xs font-mono uppercase">API Key</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="api-key"
-                    value={settings.apiKey}
-                    readOnly
-                    className="rounded-sm border-border bg-background font-mono text-sm"
-                    data-testid="input-api-key"
-                  />
-                  <Button
-                    onClick={handleGenerateApiKey}
-                    variant="outline"
-                    className="rounded-sm"
-                    data-testid="button-regenerate-api-key"
-                  >
-                    Regenerate
-                  </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="api-key" className="text-xs font-mono uppercase">API Key</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="api-key"
+                      value={settings.apiKey}
+                      readOnly
+                      className="rounded-sm border-border bg-background font-mono text-sm"
+                      data-testid="input-api-key"
+                    />
+                    <Button
+                      onClick={handleGenerateApiKey}
+                      variant="outline"
+                      className="rounded-sm"
+                      data-testid="button-regenerate-api-key"
+                    >
+                      Regenerate
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use this key to authenticate API requests. Keep it secure.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Use this key to authenticate API requests. Keep it secure.
-                </p>
-              </div>
 
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="webhook-url" className="text-xs font-mono uppercase">Webhook URL</Label>
-                <Input
-                  id="webhook-url"
-                  type="url"
-                  value={settings.webhookUrl}
-                  onChange={(e) => updateSetting("webhookUrl", e.target.value)}
-                  placeholder="https://your-domain.com/webhook"
-                  className="rounded-sm border-border bg-background"
-                  data-testid="input-webhook-url"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Receive real-time mission updates at this endpoint.
-                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="webhook-url" className="text-xs font-mono uppercase">Webhook URL</Label>
+                  <Input
+                    id="webhook-url"
+                    type="url"
+                    value={settings.webhookUrl}
+                    onChange={(e) => updateSetting("webhookUrl", e.target.value)}
+                    placeholder="https://your-domain.com/webhook"
+                    className="rounded-sm border-border bg-background"
+                    data-testid="input-webhook-url"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Receive real-time mission updates at this endpoint.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
