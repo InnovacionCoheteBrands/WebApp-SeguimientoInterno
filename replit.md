@@ -27,7 +27,11 @@ Preferred communication style: Simple, everyday language.
 
 **State Management & Data Fetching**
 - **TanStack Query (React Query)**: Server state management with automatic caching, background refetching, and optimistic updates
-- **Custom Query Client**: Configured with infinite stale time and disabled automatic refetching to reduce network overhead
+- **Query Client Optimization**: 
+  - staleTime: 30 seconds (data considered fresh for 30s, then refetched in background)
+  - gcTime: 5 minutes (cache retention period)
+  - refetchOnWindowFocus: true (auto-refresh when user returns to tab)
+  - Prevents excessive network requests while ensuring data freshness
 - **API Layer**: Type-safe API functions using shared TypeScript schemas
 - **WebSocket Integration**: Real-time updates use `refetchQueries` (not `invalidateQueries`) to guarantee immediate UI updates after mission changes
 
@@ -212,6 +216,35 @@ All pages implemented with Wouter for lightweight client-side routing
 - Visual slider provides intuitive graphical adjustment
 - Both inputs stay synchronized automatically
 - Improves accessibility for keyboard-only users and automated testing
+
+## Performance Optimizations
+
+**React Query Cache Strategy**:
+- **staleTime**: 30 seconds - Data marked fresh for 30s to reduce redundant network requests
+- **gcTime**: 5 minutes - Inactive queries cached for 5min before garbage collection
+- **refetchOnWindowFocus**: true - Automatically refresh data when user returns to tab
+- **networkMode**: 'online' - Only execute queries when network is available
+- Balances data freshness with network efficiency
+
+**Component Memoization**:
+- **React.memo**: All page components wrapped (Analytics, Personnel, DataCenter, FleetTracking)
+  - Prevents unnecessary re-renders when parent components update
+  - Particularly effective for chart-heavy pages (Analytics with Recharts)
+- **useMemo**: Computed values cached in Dashboard
+  - `activeMissions`: Filtered missions by status and priority
+  - `operationalCount`: Active mission count
+  - Recalculates only when dependencies change
+- **useCallback**: Event handlers memoized in Dashboard
+  - Prevents function recreation on every render
+  - Maintains referential equality for child component props
+  - Applied to: handleCreateMission, handleEditMission, handleUpdateProgress, etc.
+
+**Benefits**:
+- Reduced unnecessary re-renders across all pages
+- Lower memory consumption through optimized garbage collection
+- Better cache hit rates with 30s freshness window
+- Automatic data refresh when users return to tab
+- Improved responsiveness in chart-heavy pages (Analytics)
 
 ## Technical Decisions
 
