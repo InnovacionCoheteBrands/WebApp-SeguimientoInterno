@@ -41,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertMissionSchema.parse(req.body);
       const mission = await storage.createMission(validatedData);
-      broadcastMissionUpdate(mission);
+      await broadcastMissionUpdate(mission);
       res.status(201).json(mission);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!mission) {
         return res.status(404).json({ error: "Mission not found" });
       }
-      broadcastMissionUpdate(mission);
+      await broadcastMissionUpdate(mission);
       res.json(mission);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -76,7 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ error: "Mission not found" });
       }
-      broadcastMissionUpdate();
+      await broadcastMissionUpdate();
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete mission" });

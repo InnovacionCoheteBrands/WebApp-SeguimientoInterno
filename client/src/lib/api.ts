@@ -1,4 +1,18 @@
-import type { Mission, InsertMission, UpdateMission, SystemMetric, TelemetryData } from "@shared/schema";
+import type { 
+  Mission, 
+  InsertMission, 
+  UpdateMission, 
+  SystemMetric, 
+  TelemetryData,
+  FleetPosition,
+  InsertFleetPosition,
+  Personnel,
+  InsertPersonnel,
+  UpdatePersonnel,
+  PersonnelAssignment,
+  InsertPersonnelAssignment,
+  DataHealth
+} from "@shared/schema";
 
 export async function fetchMissions(): Promise<Mission[]> {
   const res = await fetch("/api/missions");
@@ -49,5 +63,96 @@ export async function fetchTelemetryData(limit?: number): Promise<TelemetryData[
   const url = limit ? `/api/telemetry?limit=${limit}` : "/api/telemetry";
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch telemetry");
+  return res.json();
+}
+
+export async function fetchFleetPositions(): Promise<FleetPosition[]> {
+  const res = await fetch("/api/fleet");
+  if (!res.ok) throw new Error("Failed to fetch fleet positions");
+  return res.json();
+}
+
+export async function createFleetPosition(position: InsertFleetPosition): Promise<FleetPosition> {
+  const res = await fetch("/api/fleet", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(position),
+  });
+  if (!res.ok) throw new Error("Failed to create fleet position");
+  return res.json();
+}
+
+export async function fetchPersonnel(): Promise<Personnel[]> {
+  const res = await fetch("/api/personnel");
+  if (!res.ok) throw new Error("Failed to fetch personnel");
+  return res.json();
+}
+
+export async function createPersonnel(person: InsertPersonnel): Promise<Personnel> {
+  const res = await fetch("/api/personnel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(person),
+  });
+  if (!res.ok) throw new Error("Failed to create personnel");
+  return res.json();
+}
+
+export async function updatePersonnel(id: number, person: UpdatePersonnel): Promise<Personnel> {
+  const res = await fetch(`/api/personnel/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(person),
+  });
+  if (!res.ok) throw new Error("Failed to update personnel");
+  return res.json();
+}
+
+export async function deletePersonnel(id: number): Promise<void> {
+  const res = await fetch(`/api/personnel/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete personnel");
+}
+
+export async function fetchPersonnelAssignments(): Promise<PersonnelAssignment[]> {
+  const res = await fetch("/api/personnel/assignments");
+  if (!res.ok) throw new Error("Failed to fetch assignments");
+  return res.json();
+}
+
+export async function createPersonnelAssignment(assignment: InsertPersonnelAssignment): Promise<PersonnelAssignment> {
+  const res = await fetch("/api/personnel/assignments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(assignment),
+  });
+  if (!res.ok) throw new Error("Failed to create assignment");
+  return res.json();
+}
+
+export async function fetchDataHealth(): Promise<DataHealth[]> {
+  const res = await fetch("/api/data-health");
+  if (!res.ok) throw new Error("Failed to fetch data health");
+  return res.json();
+}
+
+export interface Analytics {
+  totalMissions: number;
+  activeMissions: number;
+  completedMissions: number;
+  averageProgress: number;
+  priorityBreakdown: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  recentActivity: TelemetryData[];
+}
+
+export async function fetchAnalytics(): Promise<Analytics> {
+  const res = await fetch("/api/analytics");
+  if (!res.ok) throw new Error("Failed to fetch analytics");
   return res.json();
 }

@@ -110,12 +110,18 @@ function startTelemetrySimulator() {
   }, 5000);
 }
 
-export function broadcastMissionUpdate(mission: any) {
+export async function broadcastMissionUpdate(mission?: any) {
   if (!wss) return;
+
+  let missionData = mission;
+  if (!missionData) {
+    const missions = await storage.getMissions();
+    missionData = missions;
+  }
 
   const message = JSON.stringify({
     type: "mission_update",
-    data: mission,
+    data: missionData,
   });
 
   wss.clients.forEach((client) => {
