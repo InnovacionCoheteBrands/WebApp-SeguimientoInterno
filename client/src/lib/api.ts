@@ -11,7 +11,8 @@ import type {
   UpdatePersonnel,
   PersonnelAssignment,
   InsertPersonnelAssignment,
-  DataHealth
+  DataHealth,
+  InsertDataHealth
 } from "@shared/schema";
 
 export async function fetchMissions(): Promise<Mission[]> {
@@ -82,6 +83,16 @@ export async function createFleetPosition(position: InsertFleetPosition): Promis
   return res.json();
 }
 
+export async function updateFleetPosition(missionId: number, position: Partial<InsertFleetPosition>): Promise<FleetPosition> {
+  const res = await fetch(`/api/fleet/${missionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(position),
+  });
+  if (!res.ok) throw new Error("Failed to update fleet position");
+  return res.json();
+}
+
 export async function fetchPersonnel(): Promise<Personnel[]> {
   const res = await fetch("/api/personnel");
   if (!res.ok) throw new Error("Failed to fetch personnel");
@@ -131,9 +142,26 @@ export async function createPersonnelAssignment(assignment: InsertPersonnelAssig
   return res.json();
 }
 
+export async function deletePersonnelAssignment(id: number): Promise<void> {
+  const res = await fetch(`/api/personnel/assignments/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete assignment");
+}
+
 export async function fetchDataHealth(): Promise<DataHealth[]> {
   const res = await fetch("/api/data-health");
   if (!res.ok) throw new Error("Failed to fetch data health");
+  return res.json();
+}
+
+export async function createDataHealth(health: InsertDataHealth): Promise<DataHealth> {
+  const res = await fetch("/api/data-health", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(health),
+  });
+  if (!res.ok) throw new Error("Failed to create data health entry");
   return res.json();
 }
 

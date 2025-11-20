@@ -146,6 +146,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/fleet/:missionId", async (req, res) => {
+    try {
+      const missionId = parseInt(req.params.missionId);
+      const validatedData = insertFleetPositionSchema.partial().parse(req.body);
+      const position = await storage.updateFleetPosition(missionId, validatedData);
+      if (!position) {
+        return res.status(404).json({ error: "Fleet position not found" });
+      }
+      res.json(position);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update fleet position" });
+    }
+  });
+
   app.get("/api/personnel", async (req, res) => {
     try {
       const allPersonnel = await storage.getPersonnel();
@@ -220,12 +237,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/personnel/assignments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deletePersonnelAssignment(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete assignment" });
+    }
+  });
+
   app.get("/api/data-health", async (req, res) => {
     try {
       const healthData = await storage.getDataHealth();
       res.json(healthData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch data health" });
+    }
+  });
+
+  app.post("/api/data-health", async (req, res) => {
+    try {
+      const validatedData = insertDataHealthSchema.parse(req.body);
+      const health = await storage.createDataHealth(validatedData);
+      res.status(201).json(health);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create data health entry" });
     }
   });
 
