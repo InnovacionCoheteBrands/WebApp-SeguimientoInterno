@@ -43,6 +43,11 @@ Preferred communication style: Simple, everyday language.
   - `/api/missions` - Mission CRUD operations
   - `/api/metrics` - System metrics
   - `/api/telemetry` - Telemetry data
+  - `/api/fleet` - Fleet position tracking and updates
+  - `/api/personnel` - Personnel roster management
+  - `/api/personnel/assignments` - Mission-personnel assignments
+  - `/api/data-health` - System health monitoring
+  - `/api/analytics` - Computed analytics and insights
 
 **Development Features**
 - **Custom Vite Integration**: Middleware mode for seamless development experience
@@ -68,6 +73,10 @@ Preferred communication style: Simple, everyday language.
 - **Missions Table**: Core mission tracking with status, progress, priority fields (no description field)
 - **System Metrics Table**: Time-series metrics data with flexible value storage
 - **Telemetry Data Table**: Mission telemetry readings and sensor data
+- **Fleet Positions Table**: Real-time tracking of mission fleet positions with sector, coordinates (lat/lon), velocity, distance, and contact timestamps
+- **Personnel Table**: Staff roster with name, role, clearance level, status (On Duty/Off Duty), and shift schedules
+- **Personnel Assignments Table**: Many-to-many relationship linking personnel to missions with role descriptions
+- **Data Health Table**: System component health monitoring with storage metrics, replication lag, backup timestamps, and operational status
 
 **Data Retention Policy**
 - **Telemetry**: Backend maintains last 50 records with automated cleanup using SQL CTEs
@@ -133,17 +142,67 @@ Preferred communication style: Simple, everyday language.
 - Filter missions by priority (Low/Medium/High/Critical)
 
 ### 5. Multi-Page Navigation
-- Dashboard (main control panel)
-- Fleet Tracking
-- Data Center
-- Personnel
-- Analytics
-- Implemented with Wouter for lightweight client-side routing
+All pages are fully functional with real API data (no mock data):
+
+**Dashboard** (main control panel)
+- Mission grid with real-time status updates
+- System metrics overview
+- Telemetry visualization chart
+- Global search and filtering
+
+**Fleet Tracking** (`/fleet-tracking`)
+- Real-time fleet position monitoring
+- Displays missions with their associated fleet data
+- Shows sector, coordinates (latitude/longitude), velocity, distance
+- Last contact timestamp for each vessel
+- Status indicators (Active/On Mission/Docked)
+- Progress tracking per mission
+- Automatic position updates via WebSocket
+
+**Personnel** (`/personnel`)
+- Complete personnel roster from database
+- Statistics: Total Staff, On Duty, High Clearance (Level 4-5), Assigned to Missions
+- Personnel cards showing: name, role, clearance level, shift schedule (start-end times), status
+- Mission assignments displayed for each person
+- Dynamic avatar initials
+- Real-time assignment tracking
+
+**Data Center** (`/data-center`)
+- System health monitoring dashboard
+- Metrics: Storage Used/Total, System Health (Operational/Total), Replication Lag, Components Count
+- Component health cards with detailed info
+- Storage utilization per component
+- Replication lag monitoring
+- Last backup timestamps using date-fns formatting
+- Operational status badges
+
+**Analytics** (`/analytics`)
+- Comprehensive mission analytics and insights
+- KPIs: Total Missions, Active Missions, Average Progress, Success Rate
+- Mission distribution by status (bar chart)
+- Mission distribution by priority (bar chart with Critical/High/Medium/Low)
+- Recent activity trend line (last 10 data points)
+- All charts use Recharts with proper theming
+- Real-time data from analytics API with 60s cache
+
+All pages implemented with Wouter for lightweight client-side routing
 
 ### 6. Data Export
 - Export all missions to CSV format
 - Export all missions to JSON format
 - Client-side generation with proper formatting
+
+### 7. Seed Script & Test Data
+- **Location**: `server/seed.ts`
+- **Purpose**: Populates database with realistic test data for all tables
+- **Data Created**:
+  - 5 missions with varied statuses and priorities
+  - 5 fleet positions (one per mission) with unique sectors and coordinates
+  - 6 personnel records with different roles and clearance levels
+  - Personnel-mission assignments linking staff to active missions
+  - 4 data health components (Mission Database, Telemetry System, Fleet Tracking, Personnel System)
+- **Execution**: Run `npm run seed` to populate fresh data
+- **Idempotent**: Safe to run multiple times (clears and recreates data)
 
 ## Accessibility Improvements
 
@@ -174,3 +233,21 @@ Preferred communication style: Simple, everyday language.
 - Added numeric input alongside slider for better testability with Playwright
 - Slider requires complex drag events; numeric input accepts simple type events
 - Both methods update the same state, providing flexibility for users and tests
+
+**Analytics Caching**:
+- Analytics computations cached for 60 seconds to reduce CPU load
+- Analytics service aggregates data from multiple sources (missions, fleet, personnel)
+- Priority breakdown includes all four levels (Critical, High, Medium, Low)
+- Recent activity generates simulated trend data for visualization
+
+**Real-Time Fleet Updates**:
+- Fleet positions updated automatically via metrics loop every 10 seconds
+- Position changes broadcasted to all connected clients via WebSocket
+- Frontend receives instant updates without manual refresh
+- Combines mission data with fleet position data for complete view
+
+**Data Health Monitoring**:
+- Tracks operational status of critical system components
+- Monitors storage utilization and capacity
+- Measures replication lag for data consistency
+- Records backup timestamps for disaster recovery readiness
