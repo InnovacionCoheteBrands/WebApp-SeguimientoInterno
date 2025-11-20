@@ -52,6 +52,7 @@ export interface IStorage {
   getFleetPositionByMissionId(missionId: number): Promise<FleetPosition | undefined>;
   createFleetPosition(position: InsertFleetPosition): Promise<FleetPosition>;
   updateFleetPosition(missionId: number, position: Partial<InsertFleetPosition>): Promise<FleetPosition | undefined>;
+  deleteFleetPosition(missionId: number): Promise<boolean>;
   
   getPersonnel(): Promise<Personnel[]>;
   getPersonnelById(id: number): Promise<Personnel | undefined>;
@@ -67,6 +68,8 @@ export interface IStorage {
   
   getDataHealth(): Promise<DataHealth[]>;
   createDataHealth(health: InsertDataHealth): Promise<DataHealth>;
+  updateDataHealth(id: number, health: Partial<InsertDataHealth>): Promise<DataHealth | undefined>;
+  deleteDataHealth(id: number): Promise<boolean>;
   cleanupOldDataHealth(keepLast: number): Promise<void>;
 }
 
@@ -199,6 +202,11 @@ export class DBStorage implements IStorage {
     return updated;
   }
 
+  async deleteFleetPosition(missionId: number): Promise<boolean> {
+    const result = await db.delete(fleetPositions).where(eq(fleetPositions.missionId, missionId));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
   async getPersonnel(): Promise<Personnel[]> {
     return await db.select().from(personnel).orderBy(desc(personnel.createdAt));
   }
@@ -266,6 +274,20 @@ export class DBStorage implements IStorage {
   async createDataHealth(health: InsertDataHealth): Promise<DataHealth> {
     const [newHealth] = await db.insert(dataHealth).values(health).returning();
     return newHealth;
+  }
+
+  async updateDataHealth(id: number, health: Partial<InsertDataHealth>): Promise<DataHealth | undefined> {
+    const [updatedHealth] = await db
+      .update(dataHealth)
+      .set({ ...health, timestamp: new Date() })
+      .where(eq(dataHealth.id, id))
+      .returning();
+    return updatedHealth;
+  }
+
+  async deleteDataHealth(id: number): Promise<boolean> {
+    const result = await db.delete(dataHealth).where(eq(dataHealth.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   async cleanupOldDataHealth(keepLast: number): Promise<void> {

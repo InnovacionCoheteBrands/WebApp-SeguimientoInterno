@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMissions, fetchFleetPositions, createFleetPosition, updateFleetPosition } from "@/lib/api";
+import { fetchMissions, fetchFleetPositions, createFleetPosition, updateFleetPosition, deleteFleetPosition } from "@/lib/api";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,7 @@ import type { InsertFleetPosition, FleetPosition } from "@shared/schema";
 const FleetTracking = memo(function FleetTracking() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPosition, setEditingPosition] = useState<FleetPosition | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteMissionId, setDeleteMissionId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,6 +73,18 @@ const FleetTracking = memo(function FleetTracking() {
       setEditingPosition(null);
       resetForm();
       toast({ title: "Success", description: "Fleet position updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteFleetPosition,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
+      setDeleteMissionId(null);
+      toast({ title: "Success", description: "Fleet position deleted successfully" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -230,6 +242,16 @@ const FleetTracking = memo(function FleetTracking() {
                       >
                         <Pencil className="size-3 mr-1" />
                         Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDeleteMissionId(mission.id)}
+                        className="flex-1 rounded-sm text-destructive hover:text-destructive"
+                        data-testid={`button-delete-fleet-${mission.id}`}
+                      >
+                        <Trash2 className="size-3 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   </>
@@ -391,6 +413,27 @@ const FleetTracking = memo(function FleetTracking() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteMissionId !== null} onOpenChange={() => setDeleteMissionId(null)}>
+        <AlertDialogContent className="rounded-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fleet Position</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this fleet position? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete-fleet">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMissionId && deleteMutation.mutate(deleteMissionId)}
+              className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-fleet"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
