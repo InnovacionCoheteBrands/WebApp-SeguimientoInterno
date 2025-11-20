@@ -12,6 +12,7 @@ const FleetTracking = lazy(() => import("@/pages/fleet-tracking"));
 const DataCenter = lazy(() => import("@/pages/data-center"));
 const Personnel = lazy(() => import("@/pages/personnel"));
 const Analytics = lazy(() => import("@/pages/analytics"));
+const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
 
 function LoadingFallback() {
@@ -36,6 +37,7 @@ function Router() {
         <Route path="/data-center" component={DataCenter} />
         <Route path="/personnel" component={Personnel} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

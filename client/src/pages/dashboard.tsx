@@ -315,24 +315,30 @@ export default function MissionControl() {
         </nav>
 
         <div className="p-4 border-t border-border">
-          <Link href="/settings">
-            <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-settings">
-              <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
-                <span className="font-display font-bold">CM</span>
+          <div className="flex items-center gap-2">
+            <Link href="/profile" className="flex-1">
+              <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-profile">
+                <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                  <span className="font-display font-bold">CM</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
+                  <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
-                <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
-              </div>
-              <Settings className="size-4 text-muted-foreground" />
-            </div>
-          </Link>
+            </Link>
+            <Link href="/settings">
+              <Button variant="ghost" size="icon" className="rounded-sm shrink-0" data-testid="button-settings">
+                <Settings className="size-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="w-64 p-0 border-r border-border bg-sidebar">
+        <SheetContent side="left" className="w-64 p-0 border-r border-border bg-sidebar flex flex-col">
           <div className="p-6 flex items-center justify-center border-b border-border h-24">
              <img 
               src={logoUrl} 
@@ -352,6 +358,26 @@ export default function MissionControl() {
               <NavButton icon={ShieldAlert} label="Security" />
             </div>
           </nav>
+          <div className="p-4 border-t border-border">
+            <div className="flex items-center gap-2">
+              <Link href="/profile" className="flex-1">
+                <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-profile-mobile">
+                  <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                    <span className="font-display font-bold">CM</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
+                    <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
+                  </div>
+                </div>
+              </Link>
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" className="rounded-sm shrink-0" data-testid="button-settings-mobile">
+                  <Settings className="size-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
 
