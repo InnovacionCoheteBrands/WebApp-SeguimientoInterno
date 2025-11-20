@@ -82,7 +82,7 @@ const FleetTracking = memo(function FleetTracking() {
   const deleteMutation = useMutation({
     mutationFn: deleteFleetPosition,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
+      queryClient.refetchQueries({ queryKey: ["fleet-positions"] });
       setDeleteMissionId(null);
       toast({ title: "Success", description: "Fleet position deleted successfully" });
     },

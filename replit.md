@@ -29,22 +29,38 @@ Preferred communication style: Simple, everyday language.
 - **Validation**: Zod for runtime API input validation, integrated with Drizzle for schema consistency.
 
 ### Key Features
-- **Mission Management**: CRUD operations for missions, real-time synchronization via WebSockets, progress updates with dual input.
+- **Mission Management**: Full CRUD operations for missions, real-time synchronization via WebSockets, progress updates with dual input.
+- **Fleet Administration**: Complete CRUD for fleet positions with create/edit/delete capabilities. Mission cards always displayed; shows "Position data unavailable" when no fleet position exists for a mission.
+- **Personnel Administration**: Full CRUD for personnel records including create/edit/delete. Supports mission assignments. Personnel cards removed from DOM when deleted.
+- **Data Center Administration**: Complete CRUD for system health components with create/edit/delete. Component cards removed from DOM when deleted. Status indicators: Operational (green), Warning/Degraded (yellow), Critical (red), Offline (gray).
 - **Real-time Telemetry**: WebSocket broadcasts every 5 seconds, line chart visualization, frontend displays last 24 data points.
 - **Dynamic System Metrics**: Real-time fleet status, active personnel, system load, and threat level calculated from mission data, broadcast every 10 seconds.
 - **Global Search & Filters**: Cmd+K search for missions, filtering by status and priority.
-- **Multi-Page Navigation**: Dashboard, Fleet Tracking, Personnel, Data Center, and Analytics pages, all using real API data.
+- **Multi-Page Navigation**: Dashboard, Fleet Administration, Personnel Administration, Data Center Administration, and Analytics pages, all with full CRUD capabilities using real API data.
 - **Data Export**: Client-side CSV and JSON export for missions.
 - **AI Agent Integration**: GPT-5 powered assistant (via Replit AI Integrations) for natural language queries and actions (create, update, delete missions). Features mandatory approval system for all mutation actions, smart context via OpenAI function calling, and comprehensive validation.
 - **Seed Script**: `server/seed.ts` populates the database with realistic test data for all tables.
 
 ### Technical Decisions
 - **WebSockets over Polling**: For real-time updates and reduced server load.
-- **Query Invalidation**: `queryClient.refetchQueries()` used for mission updates to ensure immediate UI consistency.
+- **Query Invalidation**: `queryClient.refetchQueries()` used for all mutations to ensure immediate UI consistency and prevent cache staleness.
+- **Cache-Control Headers**: GET /api/fleet includes no-store, no-cache headers to prevent browser caching of fleet position data.
 - **Data Cleanup**: SQL CTEs with deterministic ordering for record retention.
 - **Analytics Caching**: 60-second cache for analytics computations to optimize performance.
 - **Real-Time Fleet Updates**: Fleet positions updated and broadcast every 10 seconds via WebSockets.
 - **Data Health Monitoring**: Tracks component health, storage, replication lag, and backup timestamps.
+
+### CRUD Administration Pattern
+All admin pages (Fleet, Personnel, Data Center) follow a consistent design pattern:
+- **Header Actions**: "New [Entity]" button in page header for creating new records
+- **Card-Based Display**: Each record displayed in a card with relevant information
+- **Inline Actions**: Edit and Delete buttons on each card
+- **Dialog Forms**: Modal dialogs for create/edit operations with Zod validation
+- **Delete Confirmations**: AlertDialog component for delete operations requiring user confirmation
+- **Toast Notifications**: Success/error toasts for all mutations
+- **React Query Integration**: All operations use TanStack Query mutations with automatic refetch on success
+- **Fleet-Specific Behavior**: Mission cards always remain in DOM; content toggles between position data and "Position data unavailable" state
+- **Personnel/Data Center Behavior**: Cards are completely removed from DOM when deleted
 
 ## External Dependencies
 
