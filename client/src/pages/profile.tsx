@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 import { ArrowLeft, User, Lock, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,19 +28,18 @@ const defaultProfile: Profile = {
 
 const ProfilePage = memo(function ProfilePage() {
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile>(defaultProfile);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
+  const [profile, setProfile] = useState<Profile>(() => {
     const saved = localStorage.getItem("mission-control-profile");
     if (saved) {
       try {
-        setProfile({ ...defaultProfile, ...JSON.parse(saved) });
+        return { ...defaultProfile, ...JSON.parse(saved) };
       } catch (e) {
         console.error("Failed to load profile:", e);
       }
     }
-  }, []);
+    return defaultProfile;
+  });
+  const [hasChanges, setHasChanges] = useState(false);
 
   const handleSave = () => {
     localStorage.setItem("mission-control-profile", JSON.stringify(profile));

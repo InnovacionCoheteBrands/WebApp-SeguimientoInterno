@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 import { ArrowLeft, Globe, Bell, Eye, Plug, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -49,19 +49,18 @@ const defaultSettings: Settings = {
 
 const Settings = memo(function Settings() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
+  const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem("mission-control-settings");
     if (saved) {
       try {
-        setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+        return { ...defaultSettings, ...JSON.parse(saved) };
       } catch (e) {
         console.error("Failed to load settings:", e);
       }
     }
-  }, []);
+    return defaultSettings;
+  });
+  const [hasChanges, setHasChanges] = useState(false);
 
   const handleSave = () => {
     localStorage.setItem("mission-control-settings", JSON.stringify(settings));
