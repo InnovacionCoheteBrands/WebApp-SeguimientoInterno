@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertMissionSchema, updateMissionSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupWebSocket, broadcastMissionUpdate } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -32,6 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertMissionSchema.parse(req.body);
       const mission = await storage.createMission(validatedData);
+      broadcastMissionUpdate(mission);
       res.status(201).json(mission);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -49,6 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!mission) {
         return res.status(404).json({ error: "Mission not found" });
       }
+      broadcastMissionUpdate(mission);
       res.json(mission);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -65,6 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ error: "Mission not found" });
       }
+      broadcastMissionUpdate();
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete mission" });
@@ -91,6 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  setupWebSocket(httpServer);
 
   return httpServer;
 }

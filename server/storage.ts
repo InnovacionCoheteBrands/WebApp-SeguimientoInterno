@@ -32,6 +32,8 @@ export interface IStorage {
   
   getTelemetryData(limit?: number): Promise<TelemetryData[]>;
   createTelemetryData(data: InsertTelemetryData): Promise<TelemetryData>;
+  cleanupOldTelemetry(keepLast: number): Promise<void>;
+  cleanupOldMetrics(keepLast: number): Promise<void>;
 }
 
 export class DBStorage implements IStorage {
@@ -103,6 +105,30 @@ export class DBStorage implements IStorage {
   async createTelemetryData(data: InsertTelemetryData): Promise<TelemetryData> {
     const [newData] = await db.insert(telemetryData).values(data).returning();
     return newData;
+  }
+
+  async cleanupOldTelemetry(keepLast: number): Promise<void> {
+    await db.execute(sql`
+      WITH keep AS (
+        SELECT id FROM ${telemetryData}
+        ORDER BY timestamp DESC, id DESC
+        LIMIT ${keepLast}
+      )
+      DELETE FROM ${telemetryData}
+      WHERE id NOT IN (SELECT id FROM keep)
+    `);
+  }
+
+  async cleanupOldMetrics(keepLast: number): Promise<void> {
+    await db.execute(sql`
+      WITH keep AS (
+        SELECT id FROM ${systemMetrics}
+        ORDER BY timestamp DESC, id DESC
+        LIMIT ${keepLast}
+      )
+      DELETE FROM ${systemMetrics}
+      WHERE id NOT IN (SELECT id FROM keep)
+    `);
   }
 }
 

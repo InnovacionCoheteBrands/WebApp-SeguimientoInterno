@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   Rocket, 
@@ -13,8 +13,14 @@ import {
   Cpu,
   ShieldAlert,
   Plus,
-  X,
-  CheckCircle2
+  CheckCircle2,
+  MoreVertical,
+  Edit,
+  Trash2,
+  TrendingUp,
+  Download,
+  FileJson,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,6 +37,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -42,27 +65,50 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { fetchMissions, createMission, updateMission, deleteMission, fetchTelemetryData } from "@/lib/api";
-import type { InsertMission } from "@shared/schema";
+import type { InsertMission, Mission } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-
-const performanceData = [
-  { name: "00:00", value: 40 },
-  { name: "04:00", value: 30 },
-  { name: "08:00", value: 65 },
-  { name: "12:00", value: 85 },
-  { name: "16:00", value: 55 },
-  { name: "20:00", value: 70 },
-  { name: "23:59", value: 60 },
-];
+import { useWebSocket } from "@/hooks/use-websocket";
+import { exportToCSV, exportToJSON } from "@/lib/export";
 
 export default function MissionControl() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [editMission, setEditMission] = useState<Partial<InsertMission>>({});
+  const [progressValue, setProgressValue] = useState(0);
+  const [telemetryData, setTelemetryData] = useState<Array<{name: string, value: number}>>([
+    { name: "00:00", value: 40 },
+    { name: "04:00", value: 30 },
+    { name: "08:00", value: 65 },
+    { name: "12:00", value: 85 },
+    { name: "16:00", value: 55 },
+    { name: "20:00", value: 70 },
+    { name: "23:59", value: 60 },
+  ]);
+  const [systemMetrics, setSystemMetrics] = useState<any>(null);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  
   const [newMission, setNewMission] = useState<InsertMission>({
     missionCode: "",
     name: "",
@@ -72,6 +118,7 @@ export default function MissionControl() {
   });
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isConnected, lastMessage } = useWebSocket("/ws");
 
   const { data: missions = [], isLoading } = useQuery({
     queryKey: ["missions"],
@@ -80,8 +127,8 @@ export default function MissionControl() {
 
   const createMissionMutation = useMutation({
     mutationFn: createMission,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missions"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["missions"] });
       setCreateDialogOpen(false);
       setNewMission({
         missionCode: "",
@@ -106,19 +153,22 @@ export default function MissionControl() {
 
   const updateMissionMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => updateMission(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missions"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["missions"] });
+      setEditDialogOpen(false);
+      setProgressDialogOpen(false);
       toast({
         title: "Mission Updated",
-        description: "Mission status has been updated.",
+        description: "Mission has been successfully updated.",
       });
     },
   });
 
   const deleteMissionMutation = useMutation({
     mutationFn: deleteMission,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missions"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["missions"] });
+      setDeleteDialogOpen(false);
       toast({
         title: "Mission Deleted",
         description: "Mission has been removed from the system.",
@@ -138,6 +188,49 @@ export default function MissionControl() {
     createMissionMutation.mutate(newMission);
   };
 
+  const handleEditMission = () => {
+    if (!selectedMission) return;
+    updateMissionMutation.mutate({
+      id: selectedMission.id,
+      data: editMission,
+    });
+  };
+
+  const handleUpdateProgress = () => {
+    if (!selectedMission) return;
+    updateMissionMutation.mutate({
+      id: selectedMission.id,
+      data: { progress: progressValue },
+    });
+  };
+
+  const handleDeleteMission = () => {
+    if (!selectedMission) return;
+    deleteMissionMutation.mutate(selectedMission.id);
+  };
+
+  const openEditDialog = (mission: Mission) => {
+    setSelectedMission(mission);
+    setEditMission({
+      missionCode: mission.missionCode,
+      name: mission.name,
+      priority: mission.priority,
+      status: mission.status,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const openProgressDialog = (mission: Mission) => {
+    setSelectedMission(mission);
+    setProgressValue(mission.progress);
+    setProgressDialogOpen(true);
+  };
+
+  const openDeleteDialog = (mission: Mission) => {
+    setSelectedMission(mission);
+    setDeleteDialogOpen(true);
+  };
+
   const handleCompleteMission = (id: number) => {
     updateMissionMutation.mutate({
       id,
@@ -145,7 +238,47 @@ export default function MissionControl() {
     });
   };
 
-  const activeMissions = missions.filter(m => m.status === "Active" || m.status === "Pending");
+  useEffect(() => {
+    if (lastMessage) {
+      if (lastMessage.type === "telemetry") {
+        setTelemetryData((prev) => {
+          const newData = [...prev, {
+            name: lastMessage.data.name,
+            value: lastMessage.data.value
+          }];
+          return newData.slice(-24);
+        });
+      } else if (lastMessage.type === "mission_update") {
+        queryClient.invalidateQueries({ queryKey: ["missions"] });
+      } else if (lastMessage.type === "metrics_update") {
+        setSystemMetrics(lastMessage.data);
+      }
+    }
+  }, [lastMessage, queryClient]);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  let filteredMissions = missions.filter(m => m.status === "Active" || m.status === "Pending");
+  
+  if (statusFilter !== "all") {
+    filteredMissions = filteredMissions.filter(m => m.status === statusFilter);
+  }
+  
+  if (priorityFilter !== "all") {
+    filteredMissions = filteredMissions.filter(m => m.priority === priorityFilter);
+  }
+  
+  const activeMissions = filteredMissions;
   const operationalCount = missions.filter(m => m.status === "Active").length;
 
   return (
@@ -162,11 +295,11 @@ export default function MissionControl() {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          <NavButton icon={LayoutDashboard} label="Mission Control" active />
-          <NavButton icon={Globe} label="Fleet Tracking" />
-          <NavButton icon={Database} label="Data Center" />
-          <NavButton icon={Users} label="Personnel" />
-          <NavButton icon={Activity} label="Analytics" />
+          <NavButton icon={LayoutDashboard} label="Mission Control" active href="/" />
+          <NavButton icon={Globe} label="Fleet Tracking" href="/fleet-tracking" />
+          <NavButton icon={Database} label="Data Center" href="/data-center" />
+          <NavButton icon={Users} label="Personnel" href="/personnel" />
+          <NavButton icon={Activity} label="Analytics" href="/analytics" />
           
           <div className="pt-4 pb-2">
             <p className="px-4 text-[10px] uppercase tracking-widest text-muted-foreground font-display mb-2">Systems</p>
@@ -200,11 +333,11 @@ export default function MissionControl() {
             />
           </div>
           <nav className="flex-1 p-4 space-y-1">
-            <NavButton icon={LayoutDashboard} label="Mission Control" active />
-            <NavButton icon={Globe} label="Fleet Tracking" />
-            <NavButton icon={Database} label="Data Center" />
-            <NavButton icon={Users} label="Personnel" />
-            <NavButton icon={Activity} label="Analytics" />
+            <NavButton icon={LayoutDashboard} label="Mission Control" active href="/" />
+            <NavButton icon={Globe} label="Fleet Tracking" href="/fleet-tracking" />
+            <NavButton icon={Database} label="Data Center" href="/data-center" />
+            <NavButton icon={Users} label="Personnel" href="/personnel" />
+            <NavButton icon={Activity} label="Analytics" href="/analytics" />
             <div className="pt-4 pb-2">
               <p className="px-4 text-[10px] uppercase tracking-widest text-muted-foreground font-display mb-2">Systems</p>
               <NavButton icon={Cpu} label="Hardware" />
@@ -247,6 +380,42 @@ export default function MissionControl() {
             <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground">
               <Bell className="size-4" />
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground" data-testid="button-export">
+                  <Download className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => {
+                    exportToCSV(missions);
+                    toast({
+                      title: "Export Successful",
+                      description: "Missions exported as CSV",
+                    });
+                  }}
+                  data-testid="export-csv"
+                >
+                  <FileText className="size-4 mr-2" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    exportToJSON(missions);
+                    toast({
+                      title: "Export Successful",
+                      description: "Missions exported as JSON",
+                    });
+                  }}
+                  data-testid="export-json"
+                >
+                  <FileJson className="size-4 mr-2" />
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
@@ -338,15 +507,37 @@ export default function MissionControl() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatusCard 
               title="Fleet Status" 
-              value={`${operationalCount}/${missions.length}`} 
-              label="Operational" 
+              value={systemMetrics?.fleetStatus?.value || `${operationalCount}/${missions.length}`} 
+              label={systemMetrics?.fleetStatus?.label || "Operational"} 
               icon={Rocket} 
-              trend={`+${operationalCount}`} 
-              trendLabel="active missions" 
+              trend={systemMetrics?.fleetStatus?.trend || `+${operationalCount}`} 
+              trendLabel={systemMetrics?.fleetStatus?.trendLabel || "active missions"} 
             />
-            <StatusCard title="Active Personnel" value="1,284" label="On Duty" icon={Users} trend="+12%" trendLabel="vs last shift" />
-            <StatusCard title="System Load" value="42%" label="Capacity Used" icon={Cpu} trend="-5%" trendLabel="optimized" success />
-            <StatusCard title="Threat Level" value="LOW" label="Secure" icon={ShieldAlert} trend="0" trendLabel="incidents" />
+            <StatusCard 
+              title="Active Personnel" 
+              value={systemMetrics?.activePersonnel?.value || "1,284"} 
+              label={systemMetrics?.activePersonnel?.label || "On Duty"} 
+              icon={Users} 
+              trend={systemMetrics?.activePersonnel?.trend || "+12%"} 
+              trendLabel={systemMetrics?.activePersonnel?.trendLabel || "vs last shift"} 
+            />
+            <StatusCard 
+              title="System Load" 
+              value={systemMetrics?.systemLoad?.value || "42%"} 
+              label={systemMetrics?.systemLoad?.label || "Capacity Used"} 
+              icon={Cpu} 
+              trend={systemMetrics?.systemLoad?.trend || "-5%"} 
+              trendLabel={systemMetrics?.systemLoad?.trendLabel || "optimized"} 
+              success={systemMetrics?.systemLoad?.success !== undefined ? systemMetrics.systemLoad.success : true} 
+            />
+            <StatusCard 
+              title="Threat Level" 
+              value={systemMetrics?.threatLevel?.value || "LOW"} 
+              label={systemMetrics?.threatLevel?.label || "Secure"} 
+              icon={ShieldAlert} 
+              trend={systemMetrics?.threatLevel?.trend || "0"} 
+              trendLabel={systemMetrics?.threatLevel?.trendLabel || "incidents"} 
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -362,7 +553,7 @@ export default function MissionControl() {
               <CardContent>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={performanceData}>
+                    <AreaChart data={telemetryData}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="hsl(43 100% 50%)" stopOpacity={0.3}/>
@@ -411,8 +602,35 @@ export default function MissionControl() {
             {/* Active Missions List */}
             <Card className="border-border bg-card/50 rounded-sm flex flex-col">
               <CardHeader>
-                <CardTitle className="text-lg font-display">Active Missions</CardTitle>
-                <CardDescription className="font-mono text-xs uppercase tracking-wider">Priority Queue</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-display">Active Missions</CardTitle>
+                    <CardDescription className="font-mono text-xs uppercase tracking-wider">Priority Queue</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[100px] h-8 text-xs rounded-sm border-border" data-testid="select-status-filter">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                      <SelectTrigger className="w-[100px] h-8 text-xs rounded-sm border-border" data-testid="select-priority-filter">
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="flex-1 overflow-auto">
                 {isLoading ? (
@@ -440,7 +658,7 @@ export default function MissionControl() {
                             <span data-testid={`mission-priority-${mission.id}`}>{mission.priority} Priority</span>
                           </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex items-center gap-2">
                           <div className="w-24">
                             <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
                               <span>PROG</span>
@@ -448,18 +666,38 @@ export default function MissionControl() {
                             </div>
                             <Progress value={mission.progress} className="h-1 bg-muted" indicatorClassName={mission.progress === 100 ? "bg-green-500" : "bg-primary"} />
                           </div>
-                          {mission.status !== "Completed" && (
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              className="w-full h-6 text-[10px] font-mono hover:bg-green-500/20 hover:text-green-400"
-                              onClick={() => handleCompleteMission(mission.id)}
-                              data-testid={`button-complete-${mission.id}`}
-                            >
-                              <CheckCircle2 className="size-3 mr-1" />
-                              COMPLETE
-                            </Button>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-menu-${mission.id}`}>
+                                <MoreVertical className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-card border-border">
+                              <DropdownMenuItem onClick={() => openEditDialog(mission)} data-testid={`menu-edit-${mission.id}`}>
+                                <Edit className="size-3 mr-2" />
+                                Edit Mission
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openProgressDialog(mission)} data-testid={`menu-progress-${mission.id}`}>
+                                <TrendingUp className="size-3 mr-2" />
+                                Update Progress
+                              </DropdownMenuItem>
+                              {mission.status !== "Completed" && (
+                                <DropdownMenuItem onClick={() => handleCompleteMission(mission.id)} data-testid={`menu-complete-${mission.id}`}>
+                                  <CheckCircle2 className="size-3 mr-2" />
+                                  Mark Complete
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => openDeleteDialog(mission)}
+                                className="text-destructive focus:text-destructive"
+                                data-testid={`menu-delete-${mission.id}`}
+                              >
+                                <Trash2 className="size-3 mr-2" />
+                                Delete Mission
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     ))}
@@ -482,22 +720,216 @@ export default function MissionControl() {
 
         </div>
       </main>
+
+      {/* Edit Mission Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Edit Mission</DialogTitle>
+            <DialogDescription className="font-mono text-xs uppercase tracking-wider">
+              Update mission parameters
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase">Mission Code</Label>
+              <Input
+                value={editMission.missionCode || ""}
+                onChange={(e) => setEditMission({ ...editMission, missionCode: e.target.value })}
+                className="rounded-sm border-border bg-background"
+                data-testid="input-edit-code"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase">Mission Name</Label>
+              <Input
+                value={editMission.name || ""}
+                onChange={(e) => setEditMission({ ...editMission, name: e.target.value })}
+                className="rounded-sm border-border bg-background"
+                data-testid="input-edit-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase">Priority</Label>
+              <Select value={editMission.priority} onValueChange={(val) => setEditMission({ ...editMission, priority: val })}>
+                <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-edit-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase">Status</Label>
+              <Select value={editMission.status} onValueChange={(val) => setEditMission({ ...editMission, status: val })}>
+                <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-edit-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-sm">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEditMission}
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={updateMissionMutation.isPending}
+              data-testid="button-save-edit"
+            >
+              {updateMissionMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Progress Dialog */}
+      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Update Mission Progress</DialogTitle>
+            <DialogDescription className="font-mono text-xs uppercase tracking-wider">
+              Adjust completion percentage
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-mono uppercase">Progress</Label>
+                <span className="text-2xl font-display font-bold text-primary">{progressValue}%</span>
+              </div>
+              <Slider
+                value={[progressValue]}
+                onValueChange={(val) => setProgressValue(val[0])}
+                max={100}
+                step={5}
+                className="w-full"
+                data-testid="slider-progress"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProgressDialogOpen(false)} className="rounded-sm">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateProgress}
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={updateMissionMutation.isPending}
+              data-testid="button-save-progress"
+            >
+              {updateMissionMutation.isPending ? "Updating..." : "Update Progress"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-xl">Confirm Mission Deletion</AlertDialogTitle>
+            <AlertDialogDescription className="font-mono text-xs">
+              Are you sure you want to delete mission <span className="text-primary font-bold">{selectedMission?.missionCode}</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteMission}
+              className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {deleteMissionMutation.isPending ? "Deleting..." : "Delete Mission"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Command Menu */}
+      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
+        <CommandInput placeholder="Search missions..." data-testid="input-search-command" />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Missions">
+            {missions.map((mission) => (
+              <CommandItem
+                key={mission.id}
+                onSelect={() => {
+                  setSelectedMission(mission);
+                  setCommandOpen(false);
+                  openProgressDialog(mission);
+                }}
+                data-testid={`command-mission-${mission.id}`}
+              >
+                <Rocket className="mr-2 h-4 w-4" />
+                <span className="font-mono text-xs mr-2">{mission.missionCode}</span>
+                <span>{mission.name}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandGroup heading="Actions">
+            <CommandItem
+              onSelect={() => {
+                setCommandOpen(false);
+                setCreateDialogOpen(true);
+              }}
+              data-testid="command-new-mission"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span>Create New Mission</span>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </div>
   );
 }
 
-function NavButton({ icon: Icon, label, active = false }: { icon: any, label: string, active?: boolean }) {
-  return (
-    <Button 
-      variant="ghost" 
-      className={`w-full justify-start gap-3 px-4 py-2 h-10 rounded-sm transition-all duration-200 ${
-        active 
-          ? "bg-sidebar-accent text-primary border-r-2 border-primary" 
-          : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
-      }`}
-    >
+function NavButton({ icon: Icon, label, active = false, href }: { icon: any, label: string, active?: boolean, href?: string }) {
+  const content = (
+    <>
       <Icon className={`size-4 ${active ? "text-primary" : ""}`} />
       <span className="font-medium tracking-wide text-sm">{label}</span>
+    </>
+  );
+
+  const className = `w-full justify-start gap-3 px-4 py-2 h-10 rounded-sm transition-all duration-200 ${
+    active 
+      ? "bg-sidebar-accent text-primary border-r-2 border-primary" 
+      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+  }`;
+
+  if (href) {
+    return (
+      <Link href={href}>
+        <Button variant="ghost" className={className}>
+          {content}
+        </Button>
+      </Link>
+    );
+  }
+
+  return (
+    <Button variant="ghost" className={className}>
+      {content}
     </Button>
   );
 }
