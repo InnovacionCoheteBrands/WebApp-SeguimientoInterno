@@ -4,6 +4,12 @@
 A full-stack mission control dashboard designed for tracking and managing space exploration missions. It features a dark mode, industrial-themed UI inspired by SpaceX, offering real-time telemetry, mission management, fleet tracking, personnel management, and system health monitoring. The application includes an AI assistant for natural language queries and mission control actions, aiming to provide a comprehensive and intuitive interface for mission operations.
 
 ## Recent Changes
+- **November 20, 2025 - Performance Optimizations**: 
+  - Optimized localStorage hydration in Profile and Settings pages using lazy initialization in useState to eliminate extra renders
+  - Disabled refetchOnWindowFocus in React Query global config - WebSocket updates provide real-time sync
+  - Made AgentChat lazy-loaded to reduce initial bundle size
+  - Replaced refetchQueries with setQueryData in dashboard mutations for instant cache updates without network requests
+  - Changed mission_update WebSocket handler to use invalidateQueries instead of refetchQueries for smarter cache management
 - **November 20, 2025**: Separated Profile and Settings into two distinct pages:
   - **Profile Page** (`/profile`): Personal information (name, email, role, clearance, avatar initials) and security settings. Accessible via user avatar/name area in sidebar.
   - **Settings Page** (`/settings`): System configuration including preferences (theme, language, timezone), notifications, visualization options, and API integrations. Accessible via gear icon in sidebar.
