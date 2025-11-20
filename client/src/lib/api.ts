@@ -156,3 +156,53 @@ export async function fetchAnalytics(): Promise<Analytics> {
   if (!res.ok) throw new Error("Failed to fetch analytics");
   return res.json();
 }
+
+// AI Agent Types and Functions
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface ProposedAction {
+  requiresApproval: true;
+  actionType: string;
+  actionData: any;
+  description: string;
+}
+
+export interface AgentResponse {
+  role: "assistant";
+  content: string;
+  proposedActions?: ProposedAction[];
+  executedAction?: boolean;
+}
+
+export async function sendAgentMessage(messages: ChatMessage[]): Promise<AgentResponse> {
+  const res = await fetch("/api/agent/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.details || "Failed to send message to agent");
+  }
+  return res.json();
+}
+
+export async function executeAgentAction(actionType: string, actionData: any): Promise<AgentResponse> {
+  const res = await fetch("/api/agent/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      messages: [],
+      executeAction: { actionType, actionData }
+    }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.details || "Failed to execute action");
+  }
+  return res.json();
+}

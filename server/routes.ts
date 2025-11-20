@@ -333,6 +333,8 @@ Remember: Actions require explicit user approval before execution.`,
         const toolResults = [];
 
         for (const toolCall of responseMessage.tool_calls) {
+          if (toolCall.type !== 'function') continue;
+          
           const functionName = toolCall.function.name;
           const functionArgs = JSON.parse(toolCall.function.arguments);
 

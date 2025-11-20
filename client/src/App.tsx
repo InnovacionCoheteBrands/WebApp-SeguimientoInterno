@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AgentChat } from "@/components/agent-chat";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const MissionControl = lazy(() => import("@/pages/dashboard"));
@@ -46,6 +47,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <AgentChat />
       </TooltipProvider>
     </QueryClientProvider>
   );
