@@ -315,16 +315,18 @@ export default function MissionControl() {
         </nav>
 
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors">
-            <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
-              <span className="font-display font-bold">CM</span>
+          <Link href="/settings">
+            <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-settings">
+              <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                <span className="font-display font-bold">CM</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
+                <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
+              </div>
+              <Settings className="size-4 text-muted-foreground" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
-              <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
-            </div>
-            <Settings className="size-4 text-muted-foreground" />
-          </div>
+          </Link>
         </div>
       </aside>
 
