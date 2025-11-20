@@ -12,32 +12,44 @@ import {
   Database,
   Cpu,
   ShieldAlert,
-  ChevronRight,
-  Command
+  Plus,
+  X,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchMissions, createMission, updateMission, deleteMission, fetchTelemetryData } from "@/lib/api";
+import type { InsertMission } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
-// Mock Data
 const performanceData = [
   { name: "00:00", value: 40 },
   { name: "04:00", value: 30 },
@@ -48,15 +60,93 @@ const performanceData = [
   { name: "23:59", value: 60 },
 ];
 
-const activeMissions = [
-  { id: "MSN-001", name: "Falcon Deployment", status: "Active", progress: 75, priority: "High" },
-  { id: "MSN-002", name: "Lunar Orbit", status: "Pending", progress: 0, priority: "Medium" },
-  { id: "MSN-003", name: "Starlink Mesh", status: "Active", progress: 32, priority: "High" },
-  { id: "MSN-004", name: "Mars Rover Update", status: "Completed", progress: 100, priority: "Low" },
-];
-
 export default function MissionControl() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newMission, setNewMission] = useState<InsertMission>({
+    missionCode: "",
+    name: "",
+    status: "Pending",
+    progress: 0,
+    priority: "Medium",
+  });
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: missions = [], isLoading } = useQuery({
+    queryKey: ["missions"],
+    queryFn: fetchMissions,
+  });
+
+  const createMissionMutation = useMutation({
+    mutationFn: createMission,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["missions"] });
+      setCreateDialogOpen(false);
+      setNewMission({
+        missionCode: "",
+        name: "",
+        status: "Pending",
+        progress: 0,
+        priority: "Medium",
+      });
+      toast({
+        title: "Mission Created",
+        description: "New mission has been successfully registered.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create mission. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMissionMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => updateMission(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["missions"] });
+      toast({
+        title: "Mission Updated",
+        description: "Mission status has been updated.",
+      });
+    },
+  });
+
+  const deleteMissionMutation = useMutation({
+    mutationFn: deleteMission,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["missions"] });
+      toast({
+        title: "Mission Deleted",
+        description: "Mission has been removed from the system.",
+      });
+    },
+  });
+
+  const handleCreateMission = () => {
+    if (!newMission.missionCode || !newMission.name) {
+      toast({
+        title: "Validation Error",
+        description: "Mission code and name are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    createMissionMutation.mutate(newMission);
+  };
+
+  const handleCompleteMission = (id: number) => {
+    updateMissionMutation.mutate({
+      id,
+      data: { status: "Completed", progress: 100 },
+    });
+  };
+
+  const activeMissions = missions.filter(m => m.status === "Active" || m.status === "Pending");
+  const operationalCount = missions.filter(m => m.status === "Active").length;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex overflow-hidden font-sans">
@@ -64,11 +154,6 @@ export default function MissionControl() {
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm sticky top-0 h-screen z-30">
         <div className="p-6 flex items-center justify-center border-b border-border h-24">
-          {/* Logo Integration Strategy: 
-              The original logo is black. In dark mode, it disappears.
-              Solution: Apply CSS filter to invert colors (Black -> White) 
-              AND rotate hue 180deg to preserve the Yellow rocket (Yellow -> Blue -> Yellow).
-          */}
           <img 
             src={logoUrl} 
             alt="Cohete Brands" 
@@ -162,9 +247,87 @@ export default function MissionControl() {
             <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground">
               <Bell className="size-4" />
             </Button>
-            <Button className="rounded-sm font-display font-bold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,184,0,0.3)]">
-              INITIATE LAUNCH
-            </Button>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  className="rounded-sm font-display font-bold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,184,0,0.3)]"
+                  data-testid="button-create-mission"
+                >
+                  <Plus className="size-4 mr-2" />
+                  NEW MISSION
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-xl">Create New Mission</DialogTitle>
+                  <DialogDescription className="font-mono text-xs uppercase tracking-wider">
+                    Initialize mission parameters
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="mission-code" className="text-xs font-mono uppercase">Mission Code</Label>
+                    <Input
+                      id="mission-code"
+                      placeholder="MSN-XXX"
+                      value={newMission.missionCode}
+                      onChange={(e) => setNewMission({ ...newMission, missionCode: e.target.value })}
+                      className="rounded-sm border-border bg-background"
+                      data-testid="input-mission-code"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mission-name" className="text-xs font-mono uppercase">Mission Name</Label>
+                    <Input
+                      id="mission-name"
+                      placeholder="Enter mission name"
+                      value={newMission.name}
+                      onChange={(e) => setNewMission({ ...newMission, name: e.target.value })}
+                      className="rounded-sm border-border bg-background"
+                      data-testid="input-mission-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="priority" className="text-xs font-mono uppercase">Priority Level</Label>
+                    <Select value={newMission.priority} onValueChange={(val) => setNewMission({ ...newMission, priority: val })}>
+                      <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status" className="text-xs font-mono uppercase">Status</Label>
+                    <Select value={newMission.status} onValueChange={(val) => setNewMission({ ...newMission, status: val })}>
+                      <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Active">Active</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm" data-testid="button-cancel">
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCreateMission}
+                    className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={createMissionMutation.isPending}
+                    data-testid="button-submit-mission"
+                  >
+                    {createMissionMutation.isPending ? "Creating..." : "Create Mission"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </header>
 
@@ -173,7 +336,14 @@ export default function MissionControl() {
           
           {/* Status Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatusCard title="Fleet Status" value="14/15" label="Operational" icon={Rocket} trend="+2" trendLabel="new deployments" />
+            <StatusCard 
+              title="Fleet Status" 
+              value={`${operationalCount}/${missions.length}`} 
+              label="Operational" 
+              icon={Rocket} 
+              trend={`+${operationalCount}`} 
+              trendLabel="active missions" 
+            />
             <StatusCard title="Active Personnel" value="1,284" label="On Duty" icon={Users} trend="+12%" trendLabel="vs last shift" />
             <StatusCard title="System Load" value="42%" label="Capacity Used" icon={Cpu} trend="-5%" trendLabel="optimized" success />
             <StatusCard title="Threat Level" value="LOW" label="Secure" icon={ShieldAlert} trend="0" trendLabel="incidents" />
@@ -245,36 +415,61 @@ export default function MissionControl() {
                 <CardDescription className="font-mono text-xs uppercase tracking-wider">Priority Queue</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 overflow-auto">
-                <div className="space-y-4">
-                  {activeMissions.map((mission) => (
-                    <div key={mission.id} className="group flex items-center justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-primary">{mission.id}</span>
-                          <span className="font-medium text-sm">{mission.name}</span>
+                {isLoading ? (
+                  <div className="text-center text-muted-foreground py-8">Loading missions...</div>
+                ) : activeMissions.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <p className="mb-2">No active missions</p>
+                    <p className="text-xs">Create a new mission to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {activeMissions.slice(0, 4).map((mission) => (
+                      <div key={mission.id} className="group flex items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all" data-testid={`mission-card-${mission.id}`}>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-primary" data-testid={`mission-code-${mission.id}`}>{mission.missionCode}</span>
+                            <span className="font-medium text-sm" data-testid={`mission-name-${mission.id}`}>{mission.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className={
+                              mission.status === "Active" ? "text-green-400" : 
+                              mission.status === "Pending" ? "text-yellow-400" : "text-blue-400"
+                            } data-testid={`mission-status-${mission.id}`}>● {mission.status}</span>
+                            <span>•</span>
+                            <span data-testid={`mission-priority-${mission.id}`}>{mission.priority} Priority</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className={
-                            mission.status === "Active" ? "text-green-400" : 
-                            mission.status === "Pending" ? "text-yellow-400" : "text-blue-400"
-                          }>● {mission.status}</span>
-                          <span>•</span>
-                          <span>{mission.priority} Priority</span>
+                        <div className="space-y-2">
+                          <div className="w-24">
+                            <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
+                              <span>PROG</span>
+                              <span data-testid={`mission-progress-${mission.id}`}>{mission.progress}%</span>
+                            </div>
+                            <Progress value={mission.progress} className="h-1 bg-muted" indicatorClassName={mission.progress === 100 ? "bg-green-500" : "bg-primary"} />
+                          </div>
+                          {mission.status !== "Completed" && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="w-full h-6 text-[10px] font-mono hover:bg-green-500/20 hover:text-green-400"
+                              onClick={() => handleCompleteMission(mission.id)}
+                              data-testid={`button-complete-${mission.id}`}
+                            >
+                              <CheckCircle2 className="size-3 mr-1" />
+                              COMPLETE
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="w-24">
-                        <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
-                          <span>PROG</span>
-                          <span>{mission.progress}%</span>
-                        </div>
-                        <Progress value={mission.progress} className="h-1 bg-muted" indicatorClassName={mission.progress === 100 ? "bg-green-500" : "bg-primary"} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase">
-                  View All Missions
-                </Button>
+                    ))}
+                  </div>
+                )}
+                {activeMissions.length > 4 && (
+                  <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase">
+                    View All Missions ({activeMissions.length})
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
