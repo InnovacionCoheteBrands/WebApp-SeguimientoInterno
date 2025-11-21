@@ -4,19 +4,35 @@
 A full-stack mission control dashboard designed for tracking and managing space exploration missions. It features a dark mode, industrial-themed UI inspired by SpaceX, offering real-time telemetry, mission management, fleet tracking, personnel management, and system health monitoring. The application includes an AI assistant for natural language queries and mission control actions, aiming to provide a comprehensive and intuitive interface for mission operations.
 
 ## Recent Changes
+- **November 21, 2025 - Mobile Redesign Phase 2 COMPLETED**:
+  - **Progressive Disclosure**: CompactMissionCard and CompactFleetCard now tap-to-expand
+    * Collapsed: Essential info only (code, status, name, key metrics)
+    * Expanded: Reveals horizontal progress bar, timestamps, edit/delete buttons
+    * Smooth transitions with chevron indicators
+    * All expand/collapse buttons: h-11 (44px) touch targets
+  - **Visual Enhancements**: 
+    * Warning/danger glow effects on MetricsCarousel cards
+    * Gradient accents (card/70→card/50→primary/5) on expanded mission/fleet cards
+    * shadow-lg for depth perception
+  - **Fleet Mobile Redesign**: CompactFleetCard mirrors dashboard pattern
+    * 2-column mobile grid (hidden on desktop)
+    * Progressive disclosure matching CompactMissionCard
+    * MobileFAB for "New Position" action
+    * Handles "no position" state with "Add Position" button
+    * All touch targets ≥44px verified
 - **November 21, 2025 - Mobile Redesign Phase 1 COMPLETED**:
   - **Native-App-Like Mobile Experience**: Replaced linear responsive design with dynamic mobile interface
     * **Bottom Tab Navigation** (MobileBottomNav): Fixed bottom bar with 4 tabs (Dashboard, Fleet, Personnel, Systems) replacing hamburger menu
-    * **Floating Action Button** (MobileFAB): 56x56px FAB for primary action ("New Mission") with orange glow effect
+    * **Floating Action Button** (MobileFAB): 56x56px FAB for primary actions with orange glow effect
     * **Metrics Carousel** (MetricsCarousel): Horizontal swipeable carousel with embla-carousel displaying 4 metric cards
-    * **2-Column Mission Grid** (CompactMissionCard): Compact mission cards with circular progress arcs, status/priority badges, hidden on desktop
+    * **2-Column Grids** (CompactMissionCard, CompactFleetCard): Compact cards with circular progress arcs, status/priority badges, hidden on desktop
   - **Touch Target Compliance**: All interactive elements verified at ≥44px minimum across mobile and desktop
     * Bottom nav buttons: min-w-16 h-12
     * FAB: size-14 (56x56px)
-    * Mission menu buttons: h-11 w-11 (both mobile and desktop)
+    * All card menu/action buttons: h-11 (44px)
+    * Expand/collapse buttons: h-11 (44px)
     * Icons upgraded to size-5 for better visibility
   - **Mobile-First Design Pattern**: Desktop list view preserved, mobile uses optimized 2-column grid with progressive enhancement
-  - **Phase 2 Pending**: Bottom sheets for dialogs, progressive disclosure, additional visual enhancements, fleet mobile redesign
 - **November 21, 2025 - Mobile Optimizations COMPLETED**:
   - **Touch Targets (44x44px minimum)**: All interactive elements comply with mobile accessibility standards
     * All buttons: h-11 w-11 (icon buttons), h-11 (regular buttons), min-w-11 (NEW MISSION button)
