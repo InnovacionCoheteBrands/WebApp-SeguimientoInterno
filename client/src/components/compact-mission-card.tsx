@@ -59,10 +59,10 @@ export const CompactMissionCard = memo(({
         <div className="flex items-start justify-between mb-2">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex-1 min-w-0 text-left touch-manipulation"
+            className="flex-1 min-w-0 text-left touch-manipulation h-11 flex items-center"
             data-testid={`button-expand-${id}`}
           >
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-1">
               <p className="text-[10px] uppercase tracking-widest text-primary font-display font-bold truncate">
                 {missionCode}
               </p>
