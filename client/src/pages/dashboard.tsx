@@ -714,6 +714,8 @@ export default function MissionControl() {
                           status={mission.status}
                           priority={mission.priority}
                           progress={mission.progress}
+                          createdAt={mission.createdAt}
+                          updatedAt={mission.updatedAt}
                           onMenuClick={() => {
                             setSelectedMission(mission);
                             // Open a dropdown menu or action sheet
