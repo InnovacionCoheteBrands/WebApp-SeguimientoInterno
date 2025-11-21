@@ -6,6 +6,20 @@ A full-stack mission control dashboard for tracking and managing space explorati
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+- **November 21, 2025 - Fixed Tailwind CSS Purging Issue in Production**:
+  - Fixed critical issue where sidebar was invisible in deployed/published application
+  - Root cause: Tailwind CSS v4 wasn't scanning `client/src/components/**` during production build, causing utility classes (`hidden`, `md:flex`, `md:ml-64`) to be purged from final CSS bundle
+  - Solution: Added explicit `@source` directives in `client/src/index.css`: `@source "./**/*.{ts,tsx,js,jsx}"`, `@source "./components/**/*.{ts,tsx}"`, `@source "./pages/**/*.{ts,tsx}"`
+  - This ensures all Tailwind classes from AppLayout component are preserved in production builds
+  - Verified: Sidebar now visible in both development and production deployments with proper spacing and responsive behavior
+- **November 21, 2025 - Implemented Global Navigation Layout**:
+  - Created `AppLayout` component (`client/src/components/app-layout.tsx`) to centralize navigation chrome
+  - AppLayout includes: desktop sidebar (w-64, fixed), mobile bottom navigation, top header with search, command palette (Cmd/Ctrl+K)
+  - Modified `App.tsx` to wrap all routes with AppLayout for consistent navigation across entire application
+  - Simplified `dashboard.tsx` and other pages to only contain page-specific content, removing duplicate navigation elements
+  - All pages now display sidebar, header, and navigation regardless of route (/, /fleet-tracking, /analytics, /personnel, /data-center, /profile, /settings)
+
 ## System Architecture
 
 ### Frontend
