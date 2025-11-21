@@ -1,15 +1,8 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { 
-  LayoutDashboard, 
   Rocket, 
   Activity, 
   Users, 
-  Settings, 
-  Bell, 
-  Search,
-  Menu,
-  Globe,
-  Database,
   Cpu,
   ShieldAlert,
   Plus,
@@ -17,12 +10,8 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  TrendingUp,
-  Download,
-  FileJson,
-  FileText
+  TrendingUp
 } from "lucide-react";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileFAB } from "@/components/mobile-fab";
 import { MetricsCarousel } from "@/components/metrics-carousel";
 import { CompactMissionCard } from "@/components/compact-mission-card";
@@ -38,7 +27,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -64,34 +52,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
-import { fetchMissions, createMission, updateMission, deleteMission, fetchTelemetryData } from "@/lib/api";
+import { fetchMissions, createMission, updateMission, deleteMission } from "@/lib/api";
 import type { InsertMission, Mission } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { exportToCSV, exportToJSON } from "@/lib/export";
 
 export default function MissionControl() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
@@ -109,7 +79,6 @@ export default function MissionControl() {
     { name: "23:59", value: 60 },
   ]);
   const [systemMetrics, setSystemMetrics] = useState<any>(null);
-  const [commandOpen, setCommandOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   
@@ -268,17 +237,6 @@ export default function MissionControl() {
     }
   }, [lastMessage, queryClient]);
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setCommandOpen((open) => !open);
-      }
-    };
-
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
 
   const activeMissions = useMemo(() => {
     let filtered = missions.filter(m => m.status === "Active" || m.status === "Pending");
@@ -300,261 +258,9 @@ export default function MissionControl() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex overflow-hidden font-sans">
-      
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm fixed left-0 top-0 h-screen z-30">
-        <div className="p-6 flex items-center justify-center border-b border-border h-24">
-          <img 
-            src={logoUrl} 
-            alt="Cohete Brands" 
-            className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
-          />
-        </div>
-
-        <nav className="flex-1 p-4 space-y-1">
-          <NavButton icon={LayoutDashboard} label="Mission Control" active href="/" />
-          <NavButton icon={Globe} label="Fleet Tracking" href="/fleet-tracking" />
-          <NavButton icon={Database} label="Data Center" href="/data-center" />
-          <NavButton icon={Users} label="Personnel" href="/personnel" />
-          <NavButton icon={Activity} label="Analytics" href="/analytics" />
-          
-          <div className="pt-4 pb-2">
-            <p className="px-4 text-[10px] uppercase tracking-widest text-muted-foreground font-display mb-2">Systems</p>
-            <NavButton icon={Cpu} label="Hardware" />
-            <NavButton icon={ShieldAlert} label="Security" />
-          </div>
-        </nav>
-
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-2">
-            <Link href="/profile" className="flex-1">
-              <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-profile">
-                <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
-                  <span className="font-display font-bold">CM</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
-                  <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
-                </div>
-              </div>
-            </Link>
-            <Link href="/settings">
-              <Button variant="ghost" size="icon" className="rounded-sm shrink-0 h-11 w-11" data-testid="button-settings">
-                <Settings className="size-5" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar - Hidden, replaced with bottom navigation */}
-      <Sheet open={false} onOpenChange={() => {}}>
-        <SheetContent side="left" className="hidden w-64 p-0 border-r border-border bg-sidebar flex flex-col">
-          <div className="p-6 flex items-center justify-center border-b border-border h-24">
-             <img 
-              src={logoUrl} 
-              alt="Cohete Brands" 
-              className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
-            />
-          </div>
-          <nav className="flex-1 p-4 space-y-1">
-            <NavButton icon={LayoutDashboard} label="Mission Control" active href="/" />
-            <NavButton icon={Globe} label="Fleet Tracking" href="/fleet-tracking" />
-            <NavButton icon={Database} label="Data Center" href="/data-center" />
-            <NavButton icon={Users} label="Personnel" href="/personnel" />
-            <NavButton icon={Activity} label="Analytics" href="/analytics" />
-            <div className="pt-4 pb-2">
-              <p className="px-4 text-[10px] uppercase tracking-widest text-muted-foreground font-display mb-2">Systems</p>
-              <NavButton icon={Cpu} label="Hardware" />
-              <NavButton icon={ShieldAlert} label="Security" />
-            </div>
-          </nav>
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-2">
-              <Link href="/profile" className="flex-1">
-                <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-profile-mobile">
-                  <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
-                    <span className="font-display font-bold">CM</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
-                    <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
-                  </div>
-                </div>
-              </Link>
-              <Link href="/settings">
-                <Button variant="ghost" size="icon" className="rounded-sm shrink-0 h-11 w-11" data-testid="button-settings-mobile">
-                  <Settings className="size-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0 md:ml-64">
-        
-        {/* Top Bar */}
-        <header className="h-14 sm:h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="md:hidden h-11 w-11" 
-              onClick={() => setCommandOpen(true)}
-              data-testid="button-search-mobile"
-            >
-              <Search className="size-5" />
-            </Button>
-            <div className="hidden md:flex items-center gap-2 text-muted-foreground bg-card border border-input rounded-sm px-3 py-1.5 w-64 cursor-pointer" onClick={() => setCommandOpen(true)}>
-              <Search className="size-4" />
-              <input 
-                type="text" 
-                placeholder="Search command..." 
-                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/50 pointer-events-none"
-                readOnly
-              />
-              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-primary">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              SYSTEM OPTIMAL
-            </div>
-            <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground h-11 w-11" data-testid="button-notifications">
-              <Bell className="size-5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground h-11 w-11" data-testid="button-export">
-                  <Download className="size-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => {
-                    exportToCSV(missions);
-                    toast({
-                      title: "Export Successful",
-                      description: "Missions exported as CSV",
-                    });
-                  }}
-                  data-testid="export-csv"
-                >
-                  <FileText className="size-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    exportToJSON(missions);
-                    toast({
-                      title: "Export Successful",
-                      description: "Missions exported as JSON",
-                    });
-                  }}
-                  data-testid="export-json"
-                >
-                  <FileJson className="size-4 mr-2" />
-                  Export as JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="rounded-sm font-display font-bold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,184,0,0.3)] h-11 min-w-11 px-3 sm:px-4"
-                  data-testid="button-create-mission"
-                >
-                  <Plus className="size-5 sm:size-4 sm:mr-2" />
-                  <span className="hidden sm:inline">NEW MISSION</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="font-display text-lg sm:text-xl">Create New Mission</DialogTitle>
-                  <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-                    Initialize mission parameters
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="mission-code" className="text-xs font-mono uppercase">Mission Code</Label>
-                    <Input
-                      id="mission-code"
-                      placeholder="MSN-XXX"
-                      value={newMission.missionCode}
-                      onChange={(e) => setNewMission({ ...newMission, missionCode: e.target.value })}
-                      className="rounded-sm border-border bg-background h-11"
-                      data-testid="input-mission-code"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mission-name" className="text-xs font-mono uppercase">Mission Name</Label>
-                    <Input
-                      id="mission-name"
-                      placeholder="Enter mission name"
-                      value={newMission.name}
-                      onChange={(e) => setNewMission({ ...newMission, name: e.target.value })}
-                      className="rounded-sm border-border bg-background h-11"
-                      data-testid="input-mission-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="priority" className="text-xs font-mono uppercase">Priority Level</Label>
-                    <Select value={newMission.priority} onValueChange={(val) => setNewMission({ ...newMission, priority: val })}>
-                      <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-priority">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status" className="text-xs font-mono uppercase">Status</Label>
-                    <Select value={newMission.status} onValueChange={(val) => setNewMission({ ...newMission, status: val })}>
-                      <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="Active">Active</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm h-11" data-testid="button-cancel">
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleCreateMission}
-                    className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-                    disabled={createMissionMutation.isPending}
-                    data-testid="button-submit-mission"
-                  >
-                    {createMissionMutation.isPending ? "Creating..." : "Create Mission"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </header>
-
-        {/* Dashboard Content */}
-        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <>
+      {/* Dashboard Content */}
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
           
           {/* Mobile Metrics Carousel */}
           <MetricsCarousel
@@ -804,7 +510,80 @@ export default function MissionControl() {
           </div>
 
         </div>
-      </main>
+
+      {/* Create Mission Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg sm:text-xl">Create New Mission</DialogTitle>
+            <DialogDescription className="font-mono text-xs uppercase tracking-wider">
+              Initialize mission parameters
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="mission-code" className="text-xs font-mono uppercase">Mission Code</Label>
+              <Input
+                id="mission-code"
+                placeholder="MSN-XXX"
+                value={newMission.missionCode}
+                onChange={(e) => setNewMission({ ...newMission, missionCode: e.target.value })}
+                className="rounded-sm border-border bg-background h-11"
+                data-testid="input-mission-code"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mission-name" className="text-xs font-mono uppercase">Mission Name</Label>
+              <Input
+                id="mission-name"
+                placeholder="Enter mission name"
+                value={newMission.name}
+                onChange={(e) => setNewMission({ ...newMission, name: e.target.value })}
+                className="rounded-sm border-border bg-background h-11"
+                data-testid="input-mission-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priority" className="text-xs font-mono uppercase">Priority Level</Label>
+              <Select value={newMission.priority} onValueChange={(val) => setNewMission({ ...newMission, priority: val })}>
+                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-xs font-mono uppercase">Status</Label>
+              <Select value={newMission.status} onValueChange={(val) => setNewMission({ ...newMission, status: val })}>
+                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm h-11" data-testid="button-cancel">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateMission}
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+              disabled={createMissionMutation.isPending}
+              data-testid="button-submit-mission"
+            >
+              {createMissionMutation.isPending ? "Creating..." : "Create Mission"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Mission Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -965,82 +744,12 @@ export default function MissionControl() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Command Menu */}
-      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-        <CommandInput placeholder="Search missions..." data-testid="input-search-command" />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Missions">
-            {missions.map((mission) => (
-              <CommandItem
-                key={mission.id}
-                onSelect={() => {
-                  setSelectedMission(mission);
-                  setCommandOpen(false);
-                  openProgressDialog(mission);
-                }}
-                data-testid={`command-mission-${mission.id}`}
-              >
-                <Rocket className="mr-2 h-4 w-4" />
-                <span className="font-mono text-xs mr-2">{mission.missionCode}</span>
-                <span>{mission.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-          <CommandGroup heading="Actions">
-            <CommandItem
-              onSelect={() => {
-                setCommandOpen(false);
-                setCreateDialogOpen(true);
-              }}
-              data-testid="command-new-mission"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Create New Mission</span>
-            </CommandItem>
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
-
       {/* Floating Action Button */}
       <MobileFAB onClick={() => setCreateDialogOpen(true)} />
-    </div>
-  );
-}
-
-function NavButton({ icon: Icon, label, active = false, href }: { icon: any, label: string, active?: boolean, href?: string }) {
-  const content = (
-    <>
-      <Icon className={`size-4 ${active ? "text-primary" : ""}`} />
-      <span className="font-medium tracking-wide text-sm">{label}</span>
     </>
   );
-
-  const className = `w-full justify-start gap-3 px-4 py-2 h-11 rounded-sm transition-all duration-200 ${
-    active 
-      ? "bg-sidebar-accent text-primary border-r-2 border-primary" 
-      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
-  }`;
-
-  if (href) {
-    return (
-      <Link href={href}>
-        <Button variant="ghost" className={className}>
-          {content}
-        </Button>
-      </Link>
-    );
-  }
-
-  return (
-    <Button variant="ghost" className={className}>
-      {content}
-    </Button>
-  );
 }
+
 
 function StatusCard({ title, value, label, icon: Icon, trend, trendLabel, success }: any) {
   return (
