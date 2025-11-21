@@ -22,6 +22,10 @@ import {
   FileJson,
   FileText
 } from "lucide-react";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { MobileFAB } from "@/components/mobile-fab";
+import { MetricsCarousel } from "@/components/metrics-carousel";
+import { CompactMissionCard } from "@/components/compact-mission-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -344,9 +348,9 @@ export default function MissionControl() {
         </div>
       </aside>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="w-64 p-0 border-r border-border bg-sidebar flex flex-col">
+      {/* Mobile Sidebar - Hidden, replaced with bottom navigation */}
+      <Sheet open={false} onOpenChange={() => {}}>
+        <SheetContent side="left" className="hidden w-64 p-0 border-r border-border bg-sidebar flex flex-col">
           <div className="p-6 flex items-center justify-center border-b border-border h-24">
              <img 
               src={logoUrl} 
@@ -390,14 +394,11 @@ export default function MissionControl() {
       </Sheet>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0">
         
         {/* Top Bar */}
         <header className="h-14 sm:h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" className="md:hidden h-11 w-11" onClick={() => setSidebarOpen(true)} data-testid="button-menu-mobile">
-              <Menu className="size-5" />
-            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -555,8 +556,16 @@ export default function MissionControl() {
         {/* Dashboard Content */}
         <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
           
-          {/* Status Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Mobile Metrics Carousel */}
+          <MetricsCarousel
+            fleetStatus={{ operational: operationalCount, total: missions.length }}
+            personnel={{ active: systemMetrics?.activePersonnel?.value ? parseInt(systemMetrics.activePersonnel.value.replace(/,/g, '')) : 1284, trend: systemMetrics?.activePersonnel?.trend || "+12%" }}
+            systemLoad={{ percent: systemMetrics?.systemLoad?.value ? parseInt(systemMetrics.systemLoad.value) : 42, status: systemMetrics?.systemLoad?.trendLabel || "optimized" }}
+            threatLevel={{ level: systemMetrics?.threatLevel?.value || "LOW", incidents: systemMetrics?.threatLevel?.trend ? parseInt(systemMetrics.threatLevel.trend) : 0 }}
+          />
+
+          {/* Status Overview - Desktop */}
+          <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatusCard 
               title="Fleet Status" 
               value={systemMetrics?.fleetStatus?.value || `${operationalCount}/${missions.length}`} 
@@ -693,9 +702,30 @@ export default function MissionControl() {
                     <p className="text-xs">Create a new mission to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 sm:space-y-4">
-                    {activeMissions.slice(0, 4).map((mission) => (
-                      <div key={mission.id} className="group flex flex-col sm:flex-row items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all gap-3" data-testid={`mission-card-${mission.id}`}>
+                  <>
+                    {/* Mobile Grid - 2 Columns */}
+                    <div className="grid grid-cols-2 gap-3 md:hidden">
+                      {activeMissions.slice(0, 6).map((mission) => (
+                        <CompactMissionCard
+                          key={mission.id}
+                          id={mission.id}
+                          missionCode={mission.missionCode}
+                          name={mission.name}
+                          status={mission.status}
+                          priority={mission.priority}
+                          progress={mission.progress}
+                          onMenuClick={() => {
+                            setSelectedMission(mission);
+                            // Open a dropdown menu or action sheet
+                          }}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Desktop List */}
+                    <div className="hidden md:block space-y-3 sm:space-y-4">
+                      {activeMissions.slice(0, 4).map((mission) => (
+                        <div key={mission.id} className="group flex flex-col sm:flex-row items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all gap-3" data-testid={`mission-card-${mission.id}`}>
                         <div className="space-y-1 flex-1 w-full sm:w-auto">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-mono text-xs text-primary" data-testid={`mission-code-${mission.id}`}>{mission.missionCode}</span>
@@ -753,7 +783,8 @@ export default function MissionControl() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  </>
                 )}
                 {activeMissions.length > 4 && (
                   <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase h-11">
@@ -968,6 +999,12 @@ export default function MissionControl() {
           </CommandGroup>
         </CommandList>
       </CommandDialog>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+
+      {/* Floating Action Button */}
+      <MobileFAB onClick={() => setCreateDialogOpen(true)} />
     </div>
   );
 }
