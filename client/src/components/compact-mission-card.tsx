@@ -1,9 +1,11 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, TrendingUp } from "lucide-react";
+import { Progress as ProgressBar } from "@/components/ui/progress";
+import { MoreVertical, TrendingUp, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 interface CompactMissionCardProps {
   id: number;
@@ -12,6 +14,8 @@ interface CompactMissionCardProps {
   status: string;
   priority: string;
   progress: number;
+  createdAt?: string;
+  updatedAt?: string;
   onMenuClick: () => void;
 }
 
@@ -22,8 +26,11 @@ export const CompactMissionCard = memo(({
   status, 
   priority, 
   progress,
+  createdAt,
+  updatedAt,
   onMenuClick 
 }: CompactMissionCardProps) => {
+  const [expanded, setExpanded] = useState(false);
   const statusColors: Record<string, string> = {
     Pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     Active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -45,16 +52,30 @@ export const CompactMissionCard = memo(({
     <Card className="border-border bg-card/50 rounded-sm overflow-hidden">
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-widest text-primary font-display font-bold truncate">
-              {missionCode}
-            </p>
-          </div>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex-1 min-w-0 text-left touch-manipulation"
+            data-testid={`button-expand-${id}`}
+          >
+            <div className="flex items-center gap-1">
+              <p className="text-[10px] uppercase tracking-widest text-primary font-display font-bold truncate">
+                {missionCode}
+              </p>
+              {expanded ? (
+                <ChevronUp className="size-3 text-primary shrink-0" />
+              ) : (
+                <ChevronDown className="size-3 text-primary shrink-0" />
+              )}
+            </div>
+          </button>
           <Button
             variant="ghost"
             size="icon"
             className="h-11 w-11 shrink-0 -mr-2"
-            onClick={onMenuClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMenuClick();
+            }}
             data-testid={`button-menu-${id}`}
           >
             <MoreVertical className="size-5" />
@@ -119,6 +140,43 @@ export const CompactMissionCard = memo(({
             </div>
           )}
         </div>
+
+        {expanded && (
+          <div className="mt-3 pt-3 border-t border-border space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+                  Progress
+                </span>
+                <span className="text-xs font-display font-bold text-primary">
+                  {progress}%
+                </span>
+              </div>
+              <ProgressBar value={progress} className="h-1.5" />
+            </div>
+            
+            {(createdAt || updatedAt) && (
+              <div className="space-y-1">
+                {updatedAt && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <Clock className="size-3" />
+                    <span className="font-mono">
+                      Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                )}
+                {createdAt && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <Clock className="size-3" />
+                    <span className="font-mono">
+                      Created {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
