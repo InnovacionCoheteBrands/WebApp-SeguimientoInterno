@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppLayout } from "@/components/app-layout";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const MissionControl = lazy(() => import("@/pages/dashboard"));
@@ -31,16 +32,18 @@ function LoadingFallback() {
 function Router() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <Switch>
-        <Route path="/" component={MissionControl} />
-        <Route path="/fleet-tracking" component={FleetTracking} />
-        <Route path="/data-center" component={DataCenter} />
-        <Route path="/personnel" component={Personnel} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
+      <AppLayout>
+        <Switch>
+          <Route path="/" component={MissionControl} />
+          <Route path="/fleet-tracking" component={FleetTracking} />
+          <Route path="/data-center" component={DataCenter} />
+          <Route path="/personnel" component={Personnel} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/settings" component={Settings} />
+          <Route component={NotFound} />
+        </Switch>
+      </AppLayout>
     </Suspense>
   );
 }
