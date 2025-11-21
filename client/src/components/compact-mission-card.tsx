@@ -49,7 +49,12 @@ export const CompactMissionCard = memo(({
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <Card className="border-border bg-card/50 rounded-sm overflow-hidden">
+    <Card className={cn(
+      "border-border rounded-sm overflow-hidden transition-all duration-200",
+      expanded 
+        ? "bg-gradient-to-br from-card/70 via-card/50 to-primary/5 shadow-lg" 
+        : "bg-card/50"
+    )}>
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
           <button
