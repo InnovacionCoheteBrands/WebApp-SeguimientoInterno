@@ -1,9 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@source "./**/*.{ts,tsx,js,jsx}";
-@source "./components/**/*.{ts,tsx}";
-@source "./pages/**/*.{ts,tsx}";
+/* Force Tailwind to scan all source files */
+@source "./**/*.{html,ts,tsx,js,jsx}";
+
+/* Safelist critical responsive utilities for sidebar - prevents purging in production */
+@layer utilities {
+  .sidebar-safelist {
+    /* Force inclusion of these classes by referencing them */
+    @apply hidden md:flex w-64 fixed left-0 top-0 h-screen;
+    @apply md:ml-64 md:pb-0 md:hidden;
+  }
+}
 
 @custom-variant dark (&:is(.dark *));
 
