@@ -4,6 +4,11 @@
 A full-stack mission control dashboard designed for tracking and managing space exploration missions. It features a dark mode, industrial-themed UI inspired by SpaceX, offering real-time telemetry, mission management, fleet tracking, personnel management, and system health monitoring. The application includes an AI assistant for natural language queries and mission control actions, aiming to provide a comprehensive and intuitive interface for mission operations.
 
 ## Recent Changes
+- **November 21, 2025 - Optimized Chart Space Usage**:
+  - Reduced padding in Trajectory Analysis card: CardHeader (p-3/sm:p-4 pb-2), CardContent (p-3/sm:p-4 pt-0)
+  - Increased chart height from h-[250px] sm:h-[300px] to h-[320px] sm:h-[380px] for better vertical space utilization
+  - Maintains responsive design and readability while eliminating wasted whitespace
+  - Architect-reviewed and verified: no visual regressions, hierarchy preserved
 - **November 21, 2025 - Fixed Sidebar Positioning**:
   - Changed dashboard sidebar from `sticky` to `fixed` positioning to keep it stationary during page scroll
   - Added left margin (`md:ml-64`) to main content area to prevent overlap with fixed sidebar
