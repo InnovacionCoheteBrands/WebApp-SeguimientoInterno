@@ -604,15 +604,15 @@ export default function MissionControl() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Main Chart */}
             <Card className="lg:col-span-2 border-border bg-card/50 rounded-sm">
-              <CardHeader className="p-4 sm:p-6">
+              <CardHeader className="p-3 sm:p-4 pb-2">
                 <CardTitle className="text-base sm:text-lg font-display flex items-center justify-between">
                   <span>Trajectory Analysis</span>
                   <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs">LIVE</Badge>
                 </CardTitle>
                 <CardDescription className="font-mono text-xs uppercase tracking-wider">Real-time telemetry data</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0">
-                <div className="h-[250px] sm:h-[300px] w-full">
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <div className="h-[320px] sm:h-[380px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={telemetryData}>
                       <defs>
