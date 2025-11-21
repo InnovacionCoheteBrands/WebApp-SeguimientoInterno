@@ -303,7 +303,7 @@ export default function MissionControl() {
     <div className="min-h-screen bg-background text-foreground flex overflow-hidden font-sans">
       
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm sticky top-0 h-screen z-30">
+      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm fixed left-0 top-0 h-screen z-30">
         <div className="p-6 flex items-center justify-center border-b border-border h-24">
           <img 
             src={logoUrl} 
@@ -394,7 +394,7 @@ export default function MissionControl() {
       </Sheet>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0 md:ml-64">
         
         {/* Top Bar */}
         <header className="h-14 sm:h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6">
