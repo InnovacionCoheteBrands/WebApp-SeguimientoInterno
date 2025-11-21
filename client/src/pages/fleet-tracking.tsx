@@ -1,5 +1,7 @@
 import { useMemo, memo, useState } from "react";
 import { Rocket, ArrowLeft, Globe, MapPin, Navigation, Clock, Plus, Pencil, Trash2 } from "lucide-react";
+import { CompactFleetCard } from "@/components/compact-fleet-card";
+import { MobileFAB } from "@/components/mobile-fab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -171,7 +173,35 @@ const FleetTracking = memo(function FleetTracking() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {/* Mobile Grid - 2 Columns */}
+        <div className="grid grid-cols-2 gap-3 md:hidden">
+          {fleetData.map(({ mission, position }) => (
+            <CompactFleetCard
+              key={mission.id}
+              missionId={mission.id}
+              missionCode={mission.missionCode}
+              missionName={mission.name}
+              position={position ? {
+                sector: position.sector,
+                velocity: position.velocity,
+                distance: position.distance,
+                coordinates: position.coordinates,
+                status: position.status,
+                lastContact: position.lastContact.toISOString(),
+              } : null}
+              missionProgress={mission.progress}
+              onEdit={() => handleOpenDialog(position || undefined)}
+              onDelete={() => setDeleteMissionId(mission.id)}
+              onCreate={() => {
+                setFormData({ ...formData, missionId: mission.id });
+                setIsDialogOpen(true);
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Desktop Grid - 3 Columns */}
+        <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {fleetData.map(({ mission, position }) => (
             <Card key={mission.id} className="border-border bg-card/50 rounded-sm hover:border-primary/50 transition-colors" data-testid={`fleet-card-${mission.id}`}>
               <CardHeader className="p-4 sm:p-6">
@@ -439,6 +469,11 @@ const FleetTracking = memo(function FleetTracking() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileFAB 
+        label="New Position" 
+        onClick={() => handleOpenDialog()} 
+      />
     </div>
   );
 });
