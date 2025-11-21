@@ -21,8 +21,15 @@ const MetricCard = memo(({ icon: Icon, title, value, subtitle, trend, status = "
     neutral: "text-muted-foreground"
   };
 
+  const glowEffects = {
+    success: "",
+    warning: "shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+    danger: "shadow-[0_0_10px_rgba(239,68,68,0.3)]",
+    neutral: ""
+  };
+
   return (
-    <Card className="border-border bg-card/50 rounded-sm min-w-[160px] flex-shrink-0">
+    <Card className={cn("border-border bg-card/50 rounded-sm min-w-[160px] flex-shrink-0 transition-shadow", glowEffects[status])}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-display">
