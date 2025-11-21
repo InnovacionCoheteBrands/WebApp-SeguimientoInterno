@@ -336,8 +336,8 @@ export default function MissionControl() {
               </div>
             </Link>
             <Link href="/settings">
-              <Button variant="ghost" size="icon" className="rounded-sm shrink-0" data-testid="button-settings">
-                <Settings className="size-4" />
+              <Button variant="ghost" size="icon" className="rounded-sm shrink-0 h-11 w-11" data-testid="button-settings">
+                <Settings className="size-5" />
               </Button>
             </Link>
           </div>
@@ -380,8 +380,8 @@ export default function MissionControl() {
                 </div>
               </Link>
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="rounded-sm shrink-0" data-testid="button-settings-mobile">
-                  <Settings className="size-4" />
+                <Button variant="ghost" size="icon" className="rounded-sm shrink-0 h-11 w-11" data-testid="button-settings-mobile">
+                  <Settings className="size-5" />
                 </Button>
               </Link>
             </div>
@@ -393,17 +393,27 @@ export default function MissionControl() {
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
         {/* Top Bar */}
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)}>
+        <header className="h-14 sm:h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" className="md:hidden h-11 w-11" onClick={() => setSidebarOpen(true)} data-testid="button-menu-mobile">
               <Menu className="size-5" />
             </Button>
-            <div className="hidden md:flex items-center gap-2 text-muted-foreground bg-card border border-input rounded-sm px-3 py-1.5 w-64">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden h-11 w-11" 
+              onClick={() => setCommandOpen(true)}
+              data-testid="button-search-mobile"
+            >
+              <Search className="size-5" />
+            </Button>
+            <div className="hidden md:flex items-center gap-2 text-muted-foreground bg-card border border-input rounded-sm px-3 py-1.5 w-64 cursor-pointer" onClick={() => setCommandOpen(true)}>
               <Search className="size-4" />
               <input 
                 type="text" 
                 placeholder="Search command..." 
-                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/50"
+                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/50 pointer-events-none"
+                readOnly
               />
               <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
                 <span className="text-xs">⌘</span>K
@@ -411,7 +421,7 @@ export default function MissionControl() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-primary">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -419,13 +429,13 @@ export default function MissionControl() {
               </span>
               SYSTEM OPTIMAL
             </div>
-            <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground">
-              <Bell className="size-4" />
+            <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground h-11 w-11" data-testid="button-notifications">
+              <Bell className="size-5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground" data-testid="button-export">
-                  <Download className="size-4" />
+                <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground h-11 w-11" data-testid="button-export">
+                  <Download className="size-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -461,16 +471,16 @@ export default function MissionControl() {
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="rounded-sm font-display font-bold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,184,0,0.3)]"
+                  className="rounded-sm font-display font-bold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,184,0,0.3)] h-11 min-w-11 px-3 sm:px-4"
                   data-testid="button-create-mission"
                 >
-                  <Plus className="size-4 mr-2" />
-                  NEW MISSION
+                  <Plus className="size-5 sm:size-4 sm:mr-2" />
+                  <span className="hidden sm:inline">NEW MISSION</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border">
+              <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-display text-xl">Create New Mission</DialogTitle>
+                  <DialogTitle className="font-display text-lg sm:text-xl">Create New Mission</DialogTitle>
                   <DialogDescription className="font-mono text-xs uppercase tracking-wider">
                     Initialize mission parameters
                   </DialogDescription>
@@ -483,7 +493,7 @@ export default function MissionControl() {
                       placeholder="MSN-XXX"
                       value={newMission.missionCode}
                       onChange={(e) => setNewMission({ ...newMission, missionCode: e.target.value })}
-                      className="rounded-sm border-border bg-background"
+                      className="rounded-sm border-border bg-background h-11"
                       data-testid="input-mission-code"
                     />
                   </div>
@@ -494,14 +504,14 @@ export default function MissionControl() {
                       placeholder="Enter mission name"
                       value={newMission.name}
                       onChange={(e) => setNewMission({ ...newMission, name: e.target.value })}
-                      className="rounded-sm border-border bg-background"
+                      className="rounded-sm border-border bg-background h-11"
                       data-testid="input-mission-name"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="priority" className="text-xs font-mono uppercase">Priority Level</Label>
                     <Select value={newMission.priority} onValueChange={(val) => setNewMission({ ...newMission, priority: val })}>
-                      <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-priority">
+                      <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-priority">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -514,7 +524,7 @@ export default function MissionControl() {
                   <div className="space-y-2">
                     <Label htmlFor="status" className="text-xs font-mono uppercase">Status</Label>
                     <Select value={newMission.status} onValueChange={(val) => setNewMission({ ...newMission, status: val })}>
-                      <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-status">
+                      <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-status">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -525,12 +535,12 @@ export default function MissionControl() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm" data-testid="button-cancel">
+                  <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm h-11" data-testid="button-cancel">
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleCreateMission}
-                    className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
                     disabled={createMissionMutation.isPending}
                     data-testid="button-submit-mission"
                   >
@@ -543,10 +553,10 @@ export default function MissionControl() {
         </header>
 
         {/* Dashboard Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
           
           {/* Status Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatusCard 
               title="Fleet Status" 
               value={systemMetrics?.fleetStatus?.value || `${operationalCount}/${missions.length}`} 
@@ -582,18 +592,18 @@ export default function MissionControl() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Main Chart */}
             <Card className="lg:col-span-2 border-border bg-card/50 rounded-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-display flex items-center justify-between">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg font-display flex items-center justify-between">
                   <span>Trajectory Analysis</span>
-                  <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5">LIVE</Badge>
+                  <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs">LIVE</Badge>
                 </CardTitle>
                 <CardDescription className="font-mono text-xs uppercase tracking-wider">Real-time telemetry data</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="h-[250px] sm:h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={telemetryData}>
                       <defs>
@@ -643,15 +653,15 @@ export default function MissionControl() {
 
             {/* Active Missions List */}
             <Card className="border-border bg-card/50 rounded-sm flex flex-col">
-              <CardHeader>
-                <div className="flex items-center justify-between">
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
                   <div>
-                    <CardTitle className="text-lg font-display">Active Missions</CardTitle>
+                    <CardTitle className="text-base sm:text-lg font-display">Active Missions</CardTitle>
                     <CardDescription className="font-mono text-xs uppercase tracking-wider">Priority Queue</CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[100px] h-8 text-xs rounded-sm border-border" data-testid="select-status-filter">
+                      <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-status-filter">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -661,7 +671,7 @@ export default function MissionControl() {
                       </SelectContent>
                     </Select>
                     <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="w-[100px] h-8 text-xs rounded-sm border-border" data-testid="select-priority-filter">
+                      <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-priority-filter">
                         <SelectValue placeholder="Priority" />
                       </SelectTrigger>
                       <SelectContent>
@@ -674,7 +684,7 @@ export default function MissionControl() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-auto">
+              <CardContent className="flex-1 overflow-auto p-4 sm:p-6 pt-0">
                 {isLoading ? (
                   <div className="text-center text-muted-foreground py-8">Loading missions...</div>
                 ) : activeMissions.length === 0 ? (
@@ -683,11 +693,11 @@ export default function MissionControl() {
                     <p className="text-xs">Create a new mission to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {activeMissions.slice(0, 4).map((mission) => (
-                      <div key={mission.id} className="group flex items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all" data-testid={`mission-card-${mission.id}`}>
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
+                      <div key={mission.id} className="group flex flex-col sm:flex-row items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all gap-3" data-testid={`mission-card-${mission.id}`}>
+                        <div className="space-y-1 flex-1 w-full sm:w-auto">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-mono text-xs text-primary" data-testid={`mission-code-${mission.id}`}>{mission.missionCode}</span>
                             <span className="font-medium text-sm" data-testid={`mission-name-${mission.id}`}>{mission.name}</span>
                           </div>
@@ -700,8 +710,8 @@ export default function MissionControl() {
                             <span data-testid={`mission-priority-${mission.id}`}>{mission.priority} Priority</span>
                           </div>
                         </div>
-                        <div className="space-y-2 flex items-center gap-2">
-                          <div className="w-24">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <div className="flex-1 sm:w-24">
                             <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
                               <span>PROG</span>
                               <span data-testid={`mission-progress-${mission.id}`}>{mission.progress}%</span>
@@ -710,8 +720,8 @@ export default function MissionControl() {
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-menu-${mission.id}`}>
-                                <MoreVertical className="size-4" />
+                              <Button variant="ghost" size="icon" className="h-11 w-11" data-testid={`button-menu-${mission.id}`}>
+                                <MoreVertical className="size-5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-card border-border">
@@ -746,7 +756,7 @@ export default function MissionControl() {
                   </div>
                 )}
                 {activeMissions.length > 4 && (
-                  <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase">
+                  <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase h-11">
                     View All Missions ({activeMissions.length})
                   </Button>
                 )}
@@ -754,7 +764,7 @@ export default function MissionControl() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
             <InfoWidget title="Atmospheric Conditions" value="Stable" subtitle="Visibility 100%" />
             <InfoWidget title="Network Latency" value="24ms" subtitle="Starlink Node: Alpha" />
             <InfoWidget title="Power Reserves" value="98.4%" subtitle="Solar Array: Optimal" />
@@ -778,7 +788,7 @@ export default function MissionControl() {
               <Input
                 value={editMission.missionCode || ""}
                 onChange={(e) => setEditMission({ ...editMission, missionCode: e.target.value })}
-                className="rounded-sm border-border bg-background"
+                className="rounded-sm border-border bg-background h-11"
                 data-testid="input-edit-code"
               />
             </div>
@@ -787,14 +797,14 @@ export default function MissionControl() {
               <Input
                 value={editMission.name || ""}
                 onChange={(e) => setEditMission({ ...editMission, name: e.target.value })}
-                className="rounded-sm border-border bg-background"
+                className="rounded-sm border-border bg-background h-11"
                 data-testid="input-edit-name"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-mono uppercase">Priority</Label>
               <Select value={editMission.priority} onValueChange={(val) => setEditMission({ ...editMission, priority: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-edit-priority">
+                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-priority">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -807,7 +817,7 @@ export default function MissionControl() {
             <div className="space-y-2">
               <Label className="text-xs font-mono uppercase">Status</Label>
               <Select value={editMission.status} onValueChange={(val) => setEditMission({ ...editMission, status: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-edit-status">
+                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -819,12 +829,12 @@ export default function MissionControl() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-sm">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-sm h-11">
               Cancel
             </Button>
             <Button 
               onClick={handleEditMission}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
               disabled={updateMissionMutation.isPending}
               data-testid="button-save-edit"
             >
@@ -860,7 +870,7 @@ export default function MissionControl() {
                       const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                       setProgressValue(val);
                     }}
-                    className="w-20 rounded-sm border-border bg-background text-center font-display font-bold"
+                    className="w-20 rounded-sm border-border bg-background text-center font-display font-bold h-11"
                     data-testid="input-progress"
                   />
                   <span className="text-xl font-display font-bold text-primary">%</span>
@@ -884,12 +894,12 @@ export default function MissionControl() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setProgressDialogOpen(false)} className="rounded-sm">
+            <Button variant="outline" onClick={() => setProgressDialogOpen(false)} className="rounded-sm h-11">
               Cancel
             </Button>
             <Button 
               onClick={handleUpdateProgress}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
               disabled={updateMissionMutation.isPending}
               data-testid="button-save-progress"
             >
@@ -970,7 +980,7 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
     </>
   );
 
-  const className = `w-full justify-start gap-3 px-4 py-2 h-10 rounded-sm transition-all duration-200 ${
+  const className = `w-full justify-start gap-3 px-4 py-2 h-11 rounded-sm transition-all duration-200 ${
     active 
       ? "bg-sidebar-accent text-primary border-r-2 border-primary" 
       : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
@@ -996,16 +1006,16 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
 function StatusCard({ title, value, label, icon: Icon, trend, trendLabel, success }: any) {
   return (
     <Card className="border-border bg-card/50 rounded-sm hover:border-primary/50 transition-colors group">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{title}</span>
+      <CardContent className="p-3 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">{title}</span>
           <Icon className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-2xl font-display font-bold tracking-tight">{value}</h3>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <h3 className="text-xl sm:text-2xl font-display font-bold tracking-tight">{value}</h3>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
         </div>
-        <div className="mt-4 flex items-center text-xs font-mono">
+        <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
           <span className={`${success || trend.startsWith("+") ? "text-green-400" : "text-primary"}`}>{trend}</span>
           <span className="text-muted-foreground ml-2">{trendLabel}</span>
         </div>

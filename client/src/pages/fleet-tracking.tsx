@@ -139,43 +139,44 @@ const FleetTracking = memo(function FleetTracking() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <Link href="/">
-              <Button variant="outline" size="icon" className="rounded-sm" data-testid="button-back">
-                <ArrowLeft className="size-4" />
+              <Button variant="outline" size="icon" className="rounded-sm h-11 w-11" data-testid="button-back">
+                <ArrowLeft className="size-5" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight">Fleet Administration</h1>
-              <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">Fleet Administration</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
                 Manage Fleet Positions & Tracking
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs sm:text-sm">
               {fleetData.length} VESSELS
             </Badge>
             <Button 
               onClick={() => handleOpenDialog()} 
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-3 sm:px-4 flex-1 sm:flex-initial"
               data-testid="button-new-fleet"
             >
-              <Plus className="size-4 mr-2" />
-              New Position
+              <Plus className="size-5 sm:size-4 sm:mr-2" />
+              <span className="hidden sm:inline">New Position</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {fleetData.map(({ mission, position }) => (
             <Card key={mission.id} className="border-border bg-card/50 rounded-sm hover:border-primary/50 transition-colors" data-testid={`fleet-card-${mission.id}`}>
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-display flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg font-display flex items-center gap-2">
                     <Rocket className="size-4" />
                     {mission.missionCode}
                   </CardTitle>
@@ -195,7 +196,7 @@ const FleetTracking = memo(function FleetTracking() {
                 </div>
                 <CardDescription className="font-medium text-foreground/80">{mission.name}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
                 {position ? (
                   <>
                     <div className="space-y-2">
@@ -237,20 +238,20 @@ const FleetTracking = memo(function FleetTracking() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleOpenDialog(position)}
-                        className="flex-1 rounded-sm"
+                        className="flex-1 rounded-sm h-11"
                         data-testid={`button-edit-fleet-${mission.id}`}
                       >
-                        <Pencil className="size-3 mr-1" />
+                        <Pencil className="size-4 mr-1" />
                         Edit
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setDeleteMissionId(mission.id)}
-                        className="flex-1 rounded-sm text-destructive hover:text-destructive"
+                        className="flex-1 rounded-sm text-destructive hover:text-destructive h-11"
                         data-testid={`button-delete-fleet-${mission.id}`}
                       >
-                        <Trash2 className="size-3 mr-1" />
+                        <Trash2 className="size-4 mr-1" />
                         Delete
                       </Button>
                     </div>
@@ -265,10 +266,10 @@ const FleetTracking = memo(function FleetTracking() {
                         setFormData({ ...formData, missionId: mission.id });
                         setIsDialogOpen(true);
                       }}
-                      className="rounded-sm"
+                      className="rounded-sm h-11"
                       data-testid={`button-create-fleet-${mission.id}`}
                     >
-                      <Plus className="size-3 mr-1" />
+                      <Plus className="size-4 mr-1" />
                       Add Position
                     </Button>
                   </div>
@@ -315,7 +316,7 @@ const FleetTracking = memo(function FleetTracking() {
                 onValueChange={(value) => setFormData({ ...formData, missionId: parseInt(value) })}
                 disabled={!!editingPosition}
               >
-                <SelectTrigger id="mission" data-testid="select-mission">
+                <SelectTrigger id="mission" className="h-11" data-testid="select-mission">
                   <SelectValue placeholder="Select a mission" />
                 </SelectTrigger>
                 <SelectContent>
@@ -335,6 +336,7 @@ const FleetTracking = memo(function FleetTracking() {
                 value={formData.sector}
                 onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                 placeholder="e.g., Alpha-7"
+                className="h-11"
                 data-testid="input-sector"
               />
             </div>
@@ -346,6 +348,7 @@ const FleetTracking = memo(function FleetTracking() {
                 value={formData.coordinates}
                 onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
                 placeholder="e.g., 45.2°N, 122.3°W"
+                className="h-11"
                 data-testid="input-coordinates"
               />
             </div>
@@ -358,6 +361,7 @@ const FleetTracking = memo(function FleetTracking() {
                   type="number"
                   value={formData.velocity}
                   onChange={(e) => setFormData({ ...formData, velocity: parseFloat(e.target.value) || 0 })}
+                  className="h-11"
                   data-testid="input-velocity"
                 />
               </div>
@@ -369,6 +373,7 @@ const FleetTracking = memo(function FleetTracking() {
                   type="number"
                   value={formData.distance}
                   onChange={(e) => setFormData({ ...formData, distance: parseFloat(e.target.value) || 0 })}
+                  className="h-11"
                   data-testid="input-distance"
                 />
               </div>
@@ -380,7 +385,7 @@ const FleetTracking = memo(function FleetTracking() {
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value as "Active" | "Standby" | "Docked" })}
               >
-                <SelectTrigger id="status" data-testid="select-status">
+                <SelectTrigger id="status" className="h-11" data-testid="select-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -396,14 +401,14 @@ const FleetTracking = memo(function FleetTracking() {
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
-                className="rounded-sm"
+                className="rounded-sm h-11"
                 data-testid="button-cancel-fleet"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="rounded-sm"
+                className="rounded-sm h-11"
                 disabled={createMutation.isPending || updateMutation.isPending}
                 data-testid="button-submit-fleet"
               >
