@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMissions, fetchFleetPositions, createFleetPosition, updateFleetPosition, deleteFleetPosition } from "@/lib/api";
+import { fetchMissions, fetchFleetPositions, createFleetPosition, updateFleetPosition, deleteFleetPosition, type FleetPosition } from "@/lib/api";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertFleetPosition, FleetPosition } from "@shared/schema";
+import type { InsertFleetPosition } from "@shared/schema";
 
 const FleetTracking = memo(function FleetTracking() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -187,7 +187,7 @@ const FleetTracking = memo(function FleetTracking() {
                 distance: position.distance,
                 coordinates: position.coordinates,
                 status: position.status,
-                lastContact: position.lastContact.toISOString(),
+                lastContact: position.lastContact,
               } : null}
               missionProgress={mission.progress}
               onEdit={() => handleOpenDialog(position || undefined)}

@@ -4,6 +4,13 @@
 A full-stack mission control dashboard designed for tracking and managing space exploration missions. It features a dark mode, industrial-themed UI inspired by SpaceX, offering real-time telemetry, mission management, fleet tracking, personnel management, and system health monitoring. The application includes an AI assistant for natural language queries and mission control actions, aiming to provide a comprehensive and intuitive interface for mission operations.
 
 ## Recent Changes
+- **November 21, 2025 - Fixed Fleet Tracking Date Serialization Bug**:
+  - Fixed critical error where `position.lastContact.toISOString()` was called on string values instead of Date objects
+  - Root cause: JSON serialization automatically converts Date objects to ISO strings when data passes through API
+  - Solution: Created frontend-specific `FleetPosition` type in `client/src/lib/api.ts` that reflects serialized state (timestamps as strings)
+  - Type system now correctly represents that `lastContact` and `timestamp` are strings after `res.json()` deserialization
+  - Eliminated redundant runtime type conversions and normalizations
+  - All fleet tracking operations verified working correctly with proper type safety
 - **November 21, 2025 - Optimized Chart Space Usage**:
   - Reduced padding in Trajectory Analysis card: CardHeader (p-3/sm:p-4 pb-2), CardContent (p-3/sm:p-4 pt-0)
   - Increased chart height from h-[250px] sm:h-[300px] to h-[320px] sm:h-[380px] for better vertical space utilization

@@ -4,7 +4,7 @@ import type {
   UpdateMission, 
   SystemMetric, 
   TelemetryData,
-  FleetPosition,
+  FleetPosition as DBFleetPosition,
   InsertFleetPosition,
   Personnel,
   InsertPersonnel,
@@ -14,6 +14,12 @@ import type {
   DataHealth,
   InsertDataHealth
 } from "@shared/schema";
+
+// Frontend types for serialized data (timestamps as strings after JSON serialization)
+export type FleetPosition = Omit<DBFleetPosition, 'lastContact' | 'timestamp'> & {
+  lastContact: string;
+  timestamp: string;
+};
 
 export async function fetchMissions(): Promise<Mission[]> {
   const res = await fetch("/api/missions");
