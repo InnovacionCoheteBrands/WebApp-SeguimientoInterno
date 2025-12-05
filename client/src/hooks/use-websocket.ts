@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface WebSocketMessage {
-  type: "telemetry" | "mission_update" | "metrics_update";
+  type: "telemetry" | "campaign_update" | "metrics_update";
   data: any;
 }
 

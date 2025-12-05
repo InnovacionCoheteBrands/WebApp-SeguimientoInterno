@@ -1,13 +1,15 @@
-import type { Mission } from "@shared/schema";
+import type { Campaign } from "@shared/schema";
 
-export function exportToCSV(missions: Mission[], filename: string = "missions.csv") {
-  const headers = ["Mission Code", "Name", "Status", "Priority", "Progress"];
-  const rows = missions.map(m => [
-    m.missionCode,
-    m.name,
-    m.status,
-    m.priority,
-    m.progress.toString()
+export function exportToCSV(campaigns: Campaign[], filename: string = "campaigns.csv") {
+  const headers = ["Campaign Code", "Name", "Client", "Channel", "Status", "Priority", "Progress"];
+  const rows = campaigns.map(c => [
+    c.campaignCode,
+    c.name,
+    c.clientName,
+    c.channel,
+    c.status,
+    c.priority,
+    c.progress.toString()
   ]);
 
   const csvContent = [
@@ -18,8 +20,8 @@ export function exportToCSV(missions: Mission[], filename: string = "missions.cs
   downloadFile(csvContent, filename, "text/csv");
 }
 
-export function exportToJSON(missions: Mission[], filename: string = "missions.json") {
-  const jsonContent = JSON.stringify(missions, null, 2);
+export function exportToJSON(campaigns: Campaign[], filename: string = "campaigns.json") {
+  const jsonContent = JSON.stringify(campaigns, null, 2);
   downloadFile(jsonContent, filename, "application/json");
 }
 

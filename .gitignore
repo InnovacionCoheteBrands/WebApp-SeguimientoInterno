@@ -4,3 +4,28 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables
+# .env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+pm2-*.log
+
+# PM2
+.pm2
+
+# SSL Certificates (local development)
+*.pem
+*.key
+*.crt
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/settings.json
+.idea

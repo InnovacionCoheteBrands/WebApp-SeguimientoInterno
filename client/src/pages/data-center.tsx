@@ -1,5 +1,5 @@
 import { useMemo, memo, useState } from "react";
-import { ArrowLeft, Database, HardDrive, AlertCircle, CheckCircle2, Clock, Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, FolderKanban, HardDrive, CheckCircle2, Clock, Plus, Pencil, Trash2, Palette, FileText, Image, Brush, Video, File, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,61 +10,113 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchDataHealth, createDataHealth, updateDataHealth, deleteDataHealth } from "@/lib/api";
+import { fetchResources, createResource, updateResource, deleteResource, fetchCampaigns } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertDataHealth, DataHealth } from "@shared/schema";
+import type { InsertResource, Resource } from "@shared/schema";
+
+const RESOURCE_TYPES = ["Creative", "Copy", "Asset", "Design", "Video", "Document"] as const;
+const RESOURCE_FORMATS = ["PSD", "AI", "MP4", "PDF", "DOC", "DOCX", "PNG", "JPG", "AE", "PR", "Otros"] as const;
+const RESOURCE_STATUS = ["Disponible", "En Uso", "En Revisión", "Aprobado", "Archivado"] as const;
+
+const getResourceIcon = (type: string) => {
+  switch (type) {
+    case "Creative":
+      return <Palette className="size-5" />;
+    case "Copy":
+      return <FileText className="size-5" />;
+    case "Asset":
+      return <Image className="size-5" />;
+    case "Design":
+      return <Brush className="size-5" />;
+    case "Video":
+      return <Video className="size-5" />;
+    case "Document":
+      return <File className="size-5" />;
+    default:
+      return <File className="size-5" />;
+  }
+};
+
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case "Disponible":
+      return "border-green-500 text-green-500 bg-green-500/10";
+    case "En Uso":
+      return "border-yellow-500 text-yellow-500 bg-yellow-500/10";
+    case "En Revisión":
+      return "border-blue-500 text-blue-500 bg-blue-500/10";
+    case "Aprobado":
+      return "border-emerald-600 text-emerald-600 bg-emerald-600/10";
+    case "Archivado":
+      return "border-gray-500 text-gray-500 bg-gray-500/10";
+    default:
+      return "border-border text-foreground";
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "Aprobado":
+      return <CheckCircle2 className="size-5 text-emerald-600" />;
+    case "En Revisión":
+      return <Clock className="size-5 text-blue-500" />;
+    case "Disponible":
+      return <CheckCircle2 className="size-5 text-green-500" />;
+    default:
+      return <AlertCircle className="size-5 text-yellow-500" />;
+  }
+};
 
 const DataCenter = memo(function DataCenter() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingHealth, setEditingHealth] = useState<DataHealth | null>(null);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: healthData = [] } = useQuery({
-    queryKey: ["data-health"],
-    queryFn: fetchDataHealth,
+  const { data: resources = [] } = useQuery({
+    queryKey: ["resources"],
+    queryFn: fetchResources,
+  });
+
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: fetchCampaigns,
   });
 
   const stats = useMemo(() => {
-    const totalStorage = healthData.reduce((sum, h) => sum + (h.storageTotal || 0), 0);
-    const usedStorage = healthData.reduce((sum, h) => sum + (h.storageUsed || 0), 0);
-    const operational = healthData.filter(h => h.status === "Operational").length;
-    const avgReplicationLag = healthData.filter(h => h.replicationLag !== null).length > 0
-      ? Math.round(
-          healthData
-            .filter(h => h.replicationLag !== null)
-            .reduce((sum, h) => sum + (h.replicationLag || 0), 0) / 
-          healthData.filter(h => h.replicationLag !== null).length
-        )
-      : 0;
+    const totalSize = resources.reduce((sum, r) => sum + (parseFloat(r.fileSize || "0")), 0);
+    const disponibles = resources.filter(r => r.status === "Disponible").length;
+    const enUso = resources.filter(r => r.status === "En Uso").length;
+    const total = resources.length;
 
     return {
-      totalStorage,
-      usedStorage,
-      storagePercent: totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0,
-      operational,
-      total: healthData.length,
-      avgReplicationLag,
+      totalSize: totalSize.toFixed(2),
+      disponibles,
+      enUso,
+      total,
     };
-  }, [healthData]);
+  }, [resources]);
 
-  const [formData, setFormData] = useState<Partial<InsertDataHealth>>({
-    component: "",
-    status: "Operational",
-    storageUsed: null,
-    storageTotal: null,
-    replicationLag: null,
+  const [formData, setFormData] = useState<Partial<InsertResource>>({
+    name: "",
+    type: "Creative",
+    format: "PSD",
+    fileSize: null,
+    status: "Disponible",
+    campaignId: null,
+    lastModified: new Date().toISOString(),
   });
 
   const createMutation = useMutation({
-    mutationFn: createDataHealth,
+    mutationFn: createResource,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["data-health"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       setIsDialogOpen(false);
       resetForm();
-      toast({ title: "Success", description: "Data health entry created successfully" });
+      toast({ title: "Éxito", description: "Recurso creado exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -72,14 +124,14 @@ const DataCenter = memo(function DataCenter() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<InsertDataHealth> }) =>
-      updateDataHealth(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertResource> }) =>
+      updateResource(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["data-health"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       setIsDialogOpen(false);
-      setEditingHealth(null);
+      setEditingResource(null);
       resetForm();
-      toast({ title: "Success", description: "Data health entry updated successfully" });
+      toast({ title: "Éxito", description: "Recurso actualizado exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -87,11 +139,11 @@ const DataCenter = memo(function DataCenter() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteDataHealth,
+    mutationFn: deleteResource,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["data-health"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       setDeleteId(null);
-      toast({ title: "Success", description: "Data health entry deleted successfully" });
+      toast({ title: "Éxito", description: "Recurso eliminado exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -100,24 +152,28 @@ const DataCenter = memo(function DataCenter() {
 
   const resetForm = () => {
     setFormData({
-      component: "",
-      status: "Operational",
-      storageUsed: null,
-      storageTotal: null,
-      replicationLag: null,
+      name: "",
+      type: "Creative",
+      format: "PSD",
+      fileSize: null,
+      status: "Disponible",
+      campaignId: null,
+      lastModified: new Date().toISOString(),
     });
-    setEditingHealth(null);
+    setEditingResource(null);
   };
 
-  const handleOpenDialog = (health?: DataHealth) => {
-    if (health) {
-      setEditingHealth(health);
+  const handleOpenDialog = (resource?: Resource) => {
+    if (resource) {
+      setEditingResource(resource);
       setFormData({
-        component: health.component,
-        status: health.status,
-        storageUsed: health.storageUsed,
-        storageTotal: health.storageTotal,
-        replicationLag: health.replicationLag,
+        name: resource.name,
+        type: resource.type,
+        format: resource.format,
+        fileSize: resource.fileSize,
+        status: resource.status,
+        campaignId: resource.campaignId,
+        lastModified: resource.lastModified || new Date().toISOString(),
       });
     } else {
       resetForm();
@@ -128,16 +184,27 @@ const DataCenter = memo(function DataCenter() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.component) {
-      toast({ title: "Error", description: "Please enter a component name", variant: "destructive" });
+    if (!formData.name) {
+      toast({ title: "Error", description: "Por favor ingrese el nombre del recurso", variant: "destructive" });
       return;
     }
 
-    if (editingHealth) {
-      updateMutation.mutate({ id: editingHealth.id, data: formData });
+    const dataToSubmit = {
+      ...formData,
+      lastModified: new Date().toISOString(),
+    };
+
+    if (editingResource) {
+      updateMutation.mutate({ id: editingResource.id, data: dataToSubmit });
     } else {
-      createMutation.mutate(formData as InsertDataHealth);
+      createMutation.mutate(dataToSubmit as InsertResource);
     }
+  };
+
+  const getCampaignName = (campaignId: number | null) => {
+    if (!campaignId) return null;
+    const campaign = campaigns.find(c => c.id === campaignId);
+    return campaign ? campaign.campaignCode : null;
   };
 
   return (
@@ -151,19 +218,19 @@ const DataCenter = memo(function DataCenter() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight">Data Center Administration</h1>
+              <h1 className="text-3xl font-display font-bold tracking-tight">Gestión de Recursos</h1>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
-                Manage System Health & Storage
+                Administrar Entregables y Assets
               </p>
             </div>
           </div>
           <Button 
             onClick={() => handleOpenDialog()} 
             className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
-            data-testid="button-new-health"
+            data-testid="button-new-resource"
           >
             <Plus className="size-4 mr-2" />
-            New Component
+            Nuevo Recurso
           </Button>
         </div>
 
@@ -171,81 +238,79 @@ const DataCenter = memo(function DataCenter() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Storage Used</span>
-                <Database className="size-4 text-muted-foreground" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="storage-used">
-                  {stats.usedStorage} GB
-                </h3>
-                <p className="text-xs text-muted-foreground">of {stats.totalStorage} GB total</p>
-              </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
-                <span className={stats.storagePercent > 80 ? "text-yellow-400" : "text-green-400"}>
-                  {stats.storagePercent}%
-                </span>
-                <span className="text-muted-foreground ml-2">capacity</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">System Health</span>
-                <CheckCircle2 className="size-4 text-muted-foreground" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="systems-operational">
-                  {stats.operational}/{stats.total}
-                </h3>
-                <p className="text-xs text-muted-foreground">Systems Operational</p>
-              </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
-                <span className={stats.operational === stats.total ? "text-green-400" : "text-yellow-400"}>
-                  {stats.total > 0 ? Math.round((stats.operational / stats.total) * 100) : 0}%
-                </span>
-                <span className="text-muted-foreground ml-2">uptime</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Replication</span>
-                <Clock className="size-4 text-muted-foreground" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="replication-lag">
-                  {stats.avgReplicationLag}ms
-                </h3>
-                <p className="text-xs text-muted-foreground">Avg Lag</p>
-              </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
-                <span className={stats.avgReplicationLag < 50 ? "text-green-400" : "text-yellow-400"}>
-                  {stats.avgReplicationLag < 50 ? "Excellent" : "Good"}
-                </span>
-                <span className="text-muted-foreground ml-2">performance</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Components</span>
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Almacenamiento Total</span>
                 <HardDrive className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="total-components">
-                  {stats.total}
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="total-storage">
+                  {stats.totalSize} MB
                 </h3>
-                <p className="text-xs text-muted-foreground">Monitored Systems</p>
+                <p className="text-xs text-muted-foreground">Espacio utilizado</p>
               </div>
               <div className="mt-4 flex items-center text-xs font-mono">
-                <span className="text-primary">Active</span>
-                <span className="text-muted-foreground ml-2">monitoring</span>
+                <span className="text-primary">Total</span>
+                <span className="text-muted-foreground ml-2">en archivos</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 rounded-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Recursos Disponibles</span>
+                <CheckCircle2 className="size-4 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="resources-available">
+                  {stats.disponibles}/{stats.total}
+                </h3>
+                <p className="text-xs text-muted-foreground">Listos para usar</p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-mono">
+                <span className={stats.disponibles > 0 ? "text-green-400" : "text-yellow-400"}>
+                  {stats.total > 0 ? Math.round((stats.disponibles / stats.total) * 100) : 0}%
+                </span>
+                <span className="text-muted-foreground ml-2">disponibilidad</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 rounded-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">En Uso</span>
+                <Clock className="size-4 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="resources-in-use">
+                  {stats.enUso}
+                </h3>
+                <p className="text-xs text-muted-foreground">Recursos activos</p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-mono">
+                <span className={stats.enUso > 0 ? "text-yellow-400" : "text-green-400"}>
+                  {stats.enUso > 0 ? "Activo" : "Disponible"}
+                </span>
+                <span className="text-muted-foreground ml-2">estado</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 rounded-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Total de Recursos</span>
+                <FolderKanban className="size-4 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="total-resources">
+                  {stats.total}
+                </h3>
+                <p className="text-xs text-muted-foreground">Entregables registrados</p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-mono">
+                <span className="text-primary">Activos</span>
+                <span className="text-muted-foreground ml-2">en catálogo</span>
               </div>
             </CardContent>
           </Card>
@@ -253,83 +318,80 @@ const DataCenter = memo(function DataCenter() {
 
         <Card className="border-border bg-card/50 rounded-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-display">System Components</CardTitle>
+            <CardTitle className="text-lg font-display">Recursos y Entregables</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {healthData.map((health) => (
+              {resources.map((resource) => (
                 <div
-                  key={health.id}
+                  key={resource.id}
                   className="flex items-center justify-between p-4 border border-border rounded-sm hover:bg-muted/30 transition-colors"
-                  data-testid={`health-card-${health.id}`}
+                  data-testid={`resource-card-${resource.id}`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center size-10 rounded-full bg-muted">
-                      {health.status === "Operational" ? (
-                        <CheckCircle2 className="size-5 text-green-500" />
-                      ) : (
-                        <AlertCircle className="size-5 text-yellow-500" />
-                      )}
+                      {getResourceIcon(resource.type)}
                     </div>
                     <div className="space-y-1">
-                      <p className="font-medium text-sm" data-testid={`health-component-${health.id}`}>
-                        {health.component}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm" data-testid={`resource-name-${resource.id}`}>
+                          {resource.name}
+                        </p>
+                        <Badge variant="outline" className="rounded-sm text-xs">
+                          {resource.type}
+                        </Badge>
+                      </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {health.replicationLag !== null && (
+                        <span data-testid={`resource-format-${resource.id}`}>
+                          Formato: {resource.format}
+                        </span>
+                        <span>•</span>
+                        <span data-testid={`resource-size-${resource.id}`}>
+                          {parseFloat(resource.fileSize || "0").toFixed(2)} MB
+                        </span>
+                        {resource.campaignId && getCampaignName(resource.campaignId) && (
                           <>
-                            <span data-testid={`health-lag-${health.id}`}>Lag: {health.replicationLag}ms</span>
                             <span>•</span>
+                            <span data-testid={`resource-campaign-${resource.id}`}>
+                              Campaña: {getCampaignName(resource.campaignId)}
+                            </span>
                           </>
                         )}
-                        {health.lastBackup && (
-                          <span data-testid={`health-backup-${health.id}`}>
-                            Backup: {formatDistanceToNow(new Date(health.lastBackup), { addSuffix: true })}
-                          </span>
+                        {resource.lastModified && (
+                          <>
+                            <span>•</span>
+                            <span data-testid={`resource-modified-${resource.id}`}>
+                              {formatDistanceToNow(new Date(resource.lastModified), { addSuffix: true, locale: es })}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      {health.storageUsed !== null && health.storageTotal !== null && (
-                        <>
-                          <p className="font-mono text-sm font-bold" data-testid={`health-storage-${health.id}`}>
-                            {health.storageUsed} / {health.storageTotal} GB
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {Math.round((health.storageUsed / health.storageTotal) * 100)}% used
-                          </p>
-                        </>
-                      )}
-                    </div>
                     <Badge
                       variant="outline"
-                      className={`rounded-sm text-xs ${
-                        health.status === "Operational"
-                          ? "border-green-500 text-green-500"
-                          : "border-yellow-500 text-yellow-500"
-                      }`}
-                      data-testid={`health-status-${health.id}`}
+                      className={`rounded-sm text-xs ${getStatusBadgeClass(resource.status)}`}
+                      data-testid={`resource-status-${resource.id}`}
                     >
-                      {health.status}
+                      {resource.status}
                     </Badge>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenDialog(health)}
+                        onClick={() => handleOpenDialog(resource)}
                         className="rounded-sm"
-                        data-testid={`button-edit-health-${health.id}`}
+                        data-testid={`button-edit-resource-${resource.id}`}
                       >
                         <Pencil className="size-3" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setDeleteId(health.id)}
+                        onClick={() => setDeleteId(resource.id)}
                         className="rounded-sm text-destructive hover:text-destructive"
-                        data-testid={`button-delete-health-${health.id}`}
+                        data-testid={`button-delete-resource-${resource.id}`}
                       >
                         <Trash2 className="size-3" />
                       </Button>
@@ -338,9 +400,9 @@ const DataCenter = memo(function DataCenter() {
                 </div>
               ))}
             </div>
-            {healthData.length === 0 && (
+            {resources.length === 0 && (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">No health data available</p>
+                <p className="text-muted-foreground">No hay recursos disponibles</p>
               </div>
             )}
           </CardContent>
@@ -350,75 +412,115 @@ const DataCenter = memo(function DataCenter() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-sm">
           <DialogHeader>
-            <DialogTitle>{editingHealth ? "Edit Component" : "New System Component"}</DialogTitle>
+            <DialogTitle>{editingResource ? "Editar Recurso" : "Nuevo Recurso"}</DialogTitle>
             <DialogDescription>
-              {editingHealth ? "Update the system component health data" : "Add a new system component for monitoring"}
+              {editingResource ? "Actualiza la información del recurso" : "Agrega un nuevo recurso al catálogo"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="component">Component Name *</Label>
+              <Label htmlFor="name">Nombre del Recurso *</Label>
               <Input
-                id="component"
-                value={formData.component}
-                onChange={(e) => setFormData({ ...formData, component: e.target.value })}
-                placeholder="e.g., Primary Database"
-                data-testid="input-component"
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="ej. Banner principal campaña verano"
+                data-testid="input-name"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as "Operational" | "Degraded" })}
-              >
-                <SelectTrigger id="status" data-testid="select-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Operational">Operational</SelectItem>
-                  <SelectItem value="Degraded">Degraded</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="storageUsed">Storage Used (GB)</Label>
+                <Label htmlFor="type">Tipo *</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                >
+                  <SelectTrigger id="type" data-testid="select-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESOURCE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="format">Formato *</Label>
+                <Select
+                  value={formData.format}
+                  onValueChange={(value) => setFormData({ ...formData, format: value })}
+                >
+                  <SelectTrigger id="format" data-testid="select-format">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESOURCE_FORMATS.map((format) => (
+                      <SelectItem key={format} value={format}>
+                        {format}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fileSize">Tamaño (MB)</Label>
                 <Input
-                  id="storageUsed"
+                  id="fileSize"
                   type="number"
-                  value={formData.storageUsed ?? ""}
-                  onChange={(e) => setFormData({ ...formData, storageUsed: e.target.value ? parseFloat(e.target.value) : null })}
-                  placeholder="Optional"
-                  data-testid="input-storage-used"
+                  step="0.01"
+                  value={formData.fileSize ?? ""}
+                  onChange={(e) => setFormData({ ...formData, fileSize: e.target.value ? e.target.value : null })}
+                  placeholder="0.00"
+                  data-testid="input-file-size"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="storageTotal">Storage Total (GB)</Label>
-                <Input
-                  id="storageTotal"
-                  type="number"
-                  value={formData.storageTotal ?? ""}
-                  onChange={(e) => setFormData({ ...formData, storageTotal: e.target.value ? parseFloat(e.target.value) : null })}
-                  placeholder="Optional"
-                  data-testid="input-storage-total"
-                />
+                <Label htmlFor="status">Estado *</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger id="status" data-testid="select-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESOURCE_STATUS.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="replicationLag">Replication Lag (ms)</Label>
-              <Input
-                id="replicationLag"
-                type="number"
-                value={formData.replicationLag ?? ""}
-                onChange={(e) => setFormData({ ...formData, replicationLag: e.target.value ? parseInt(e.target.value) : null })}
-                placeholder="Optional"
-                data-testid="input-replication-lag"
-              />
+              <Label htmlFor="campaignId">Campaña Asociada (opcional)</Label>
+              <Select
+                value={formData.campaignId?.toString() || "none"}
+                onValueChange={(value) => setFormData({ ...formData, campaignId: value === "none" ? null : parseInt(value) })}
+              >
+                <SelectTrigger id="campaignId" data-testid="select-campaign">
+                  <SelectValue placeholder="Seleccionar campaña" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin campaña</SelectItem>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id.toString()}>
+                      {campaign.campaignCode} - {campaign.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <DialogFooter>
@@ -427,17 +529,17 @@ const DataCenter = memo(function DataCenter() {
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
                 className="rounded-sm"
-                data-testid="button-cancel-health"
+                data-testid="button-cancel-resource"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 type="submit"
                 className="rounded-sm"
                 disabled={createMutation.isPending}
-                data-testid="button-submit-health"
+                data-testid="button-submit-resource"
               >
-                {editingHealth ? "Update" : "Create"} Component
+                {editingResource ? "Actualizar" : "Crear"} Recurso
               </Button>
             </DialogFooter>
           </form>
@@ -447,19 +549,19 @@ const DataCenter = memo(function DataCenter() {
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="rounded-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Component</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar Recurso</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this system component? This action cannot be undone.
+              ¿Estás seguro de que deseas eliminar este recurso? Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete-health">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete-resource">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteId && deleteMutation.mutate(deleteId)}
               className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete-health"
+              data-testid="button-confirm-delete-resource"
             >
-              Delete
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

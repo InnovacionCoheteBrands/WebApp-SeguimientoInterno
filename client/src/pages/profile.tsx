@@ -20,8 +20,8 @@ interface Profile {
 
 const defaultProfile: Profile = {
   name: "Cmdr. Shepard",
-  email: "shepard@cohete.space",
-  role: "Mission Commander",
+  email: "shepard@cohetebrands.com",
+  role: "Director de Marketing",
   clearance: "Level 5",
   initials: "CM",
 };
@@ -29,7 +29,7 @@ const defaultProfile: Profile = {
 const ProfilePage = memo(function ProfilePage() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile>(() => {
-    const saved = localStorage.getItem("mission-control-profile");
+    const saved = localStorage.getItem("cohete-brands-profile");
     if (saved) {
       try {
         return { ...defaultProfile, ...JSON.parse(saved) };
@@ -42,7 +42,7 @@ const ProfilePage = memo(function ProfilePage() {
   const [hasChanges, setHasChanges] = useState(false);
 
   const handleSave = () => {
-    localStorage.setItem("mission-control-profile", JSON.stringify(profile));
+    localStorage.setItem("cohete-brands-profile", JSON.stringify(profile));
     setHasChanges(false);
     toast({
       title: "Profile Saved",
@@ -90,7 +90,7 @@ const ProfilePage = memo(function ProfilePage() {
       {/* Content */}
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          
+
           {/* Profile Information */}
           <Card className="border-border bg-card/50 rounded-sm">
             <CardHeader>
@@ -101,7 +101,7 @@ const ProfilePage = memo(function ProfilePage() {
                 <div>
                   <CardTitle className="text-lg font-display">Personal Information</CardTitle>
                   <CardDescription className="font-mono text-xs uppercase tracking-wider">
-                    Your mission control credentials
+                    Your platform credentials
                   </CardDescription>
                 </div>
               </div>

@@ -71,7 +71,7 @@
 
 /* MISSION CONTROL THEME - Cohete Brands OS */
 :root {
-  /* Dark Mode by default as per Mission Control spec */
+  /* Dark Mode by default as per Cohete Brands design spec */
   --background: 0 0% 2%; /* #050505 Deep Space */
   --foreground: 0 0% 100%; /* #FFFFFF Starlight White */
   

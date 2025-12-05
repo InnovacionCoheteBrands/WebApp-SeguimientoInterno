@@ -8,7 +8,7 @@ interface MobileFABProps {
   className?: string;
 }
 
-export function MobileFAB({ onClick, label = "New Mission", className }: MobileFABProps) {
+export function MobileFAB({ onClick, label = "Nueva Campaña", className }: MobileFABProps) {
   return (
     <Button
       onClick={onClick}
@@ -22,7 +22,7 @@ export function MobileFAB({ onClick, label = "New Mission", className }: MobileF
         "border-2 border-primary/50",
         className
       )}
-      data-testid="fab-new-mission"
+      data-testid="fab-new-campaign"
       aria-label={label}
     >
       <Plus className="size-7" strokeWidth={2.5} />

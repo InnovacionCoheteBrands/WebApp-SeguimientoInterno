@@ -1,51 +1,42 @@
 import type { IStorage } from "./storage";
-import type { InsertMission } from "@shared/schema";
-
-/**
- * Agent tools - Functions that the AI agent can call to query data and perform actions
- * All actions require user approval before execution
- */
+import type { InsertCampaign } from "@shared/schema";
 
 export interface AgentToolContext {
   storage: IStorage;
 }
 
-/**
- * Query Functions - Safe read-only operations
- */
-
-export async function getMissions(ctx: AgentToolContext) {
-  const missions = await ctx.storage.getMissions();
+export async function getCampaigns(ctx: AgentToolContext) {
+  const campaigns = await ctx.storage.getCampaigns();
   return {
     success: true,
-    data: missions,
-    message: `Found ${missions.length} missions in the system`,
+    data: campaigns,
+    message: `Found ${campaigns.length} campaigns in the system`,
   };
 }
 
 export async function getAnalytics(ctx: AgentToolContext) {
-  const missions = await ctx.storage.getMissions();
+  const campaigns = await ctx.storage.getCampaigns();
   const telemetry = await ctx.storage.getTelemetryData(100);
-  
+
   const analytics = {
-    totalMissions: missions.length,
-    activeMissions: missions.filter(m => m.status === "Active").length,
-    completedMissions: missions.filter(m => m.status === "Completed").length,
-    averageProgress: missions.length > 0 
-      ? Math.round(missions.reduce((sum, m) => sum + m.progress, 0) / missions.length)
+    totalCampaigns: campaigns.length,
+    activeCampaigns: campaigns.filter(c => c.status === "Active" || c.status === "In Progress").length,
+    completedCampaigns: campaigns.filter(c => c.status === "Completed").length,
+    averageProgress: campaigns.length > 0
+      ? Math.round(campaigns.reduce((sum, c) => sum + c.progress, 0) / campaigns.length)
       : 0,
-    successRate: missions.length > 0
-      ? Math.round((missions.filter(m => m.status === "Completed").length / missions.length) * 100)
+    successRate: campaigns.length > 0
+      ? Math.round((campaigns.filter(c => c.status === "Completed").length / campaigns.length) * 100)
       : 0,
     priorityBreakdown: {
-      critical: missions.filter(m => m.priority === "Critical").length,
-      high: missions.filter(m => m.priority === "High").length,
-      medium: missions.filter(m => m.priority === "Medium").length,
-      low: missions.filter(m => m.priority === "Low").length,
+      critical: campaigns.filter(c => c.priority === "Critical").length,
+      high: campaigns.filter(c => c.priority === "High").length,
+      medium: campaigns.filter(c => c.priority === "Medium").length,
+      low: campaigns.filter(c => c.priority === "Low").length,
     },
     recentActivity: telemetry.slice(0, 20).reverse(),
   };
-  
+
   return {
     success: true,
     data: analytics,
@@ -53,67 +44,67 @@ export async function getAnalytics(ctx: AgentToolContext) {
   };
 }
 
-export async function getPersonnel(ctx: AgentToolContext) {
-  const personnel = await ctx.storage.getPersonnel();
+export async function getTeam(ctx: AgentToolContext) {
+  const team = await ctx.storage.getTeam();
   return {
     success: true,
-    data: personnel,
-    message: `Found ${personnel.length} personnel in the system`,
+    data: team,
+    message: `Found ${team.length} team members in the system`,
   };
 }
 
-export async function getFleetStatus(ctx: AgentToolContext) {
-  const fleetPositions = await ctx.storage.getFleetPositions();
-  const missions = await ctx.storage.getMissions();
-  
-  const fleetData = missions.map((mission) => {
-    const position = fleetPositions.find((p) => p.missionId === mission.id);
+export async function getClientStatus(ctx: AgentToolContext) {
+  const clientAccounts = await ctx.storage.getClientAccounts();
+  const campaigns = await ctx.storage.getCampaigns();
+
+  const clientData = campaigns.map((campaign) => {
+    const account = clientAccounts.find((a) => a.campaignId === campaign.id);
     return {
-      mission,
-      position,
+      campaign,
+      account,
     };
   });
 
   return {
     success: true,
-    data: fleetData,
-    message: `Retrieved status for ${fleetData.length} fleet vessels`,
+    data: clientData,
+    message: `Retrieved status for ${clientData.length} client accounts`,
   };
 }
 
-export async function getDataHealth(ctx: AgentToolContext) {
-  const healthData = await ctx.storage.getDataHealth();
+export async function getResources(ctx: AgentToolContext) {
+  const resources = await ctx.storage.getResources();
   return {
     success: true,
-    data: healthData,
-    message: `Retrieved health status for ${healthData.length} system components`,
+    data: resources,
+    message: `Retrieved ${resources.length} resources`,
   };
 }
 
 export async function getDatabaseStats(ctx: AgentToolContext) {
-  const missions = await ctx.storage.getMissions();
-  const personnel = await ctx.storage.getPersonnel();
-  const fleetPositions = await ctx.storage.getFleetPositions();
-  const healthComponents = await ctx.storage.getDataHealth();
+  const campaigns = await ctx.storage.getCampaigns();
+  const team = await ctx.storage.getTeam();
+  const clientAccounts = await ctx.storage.getClientAccounts();
+  const resources = await ctx.storage.getResources();
 
   const stats = {
-    missions: {
-      total: missions.length,
-      active: missions.filter(m => m.status === "Active").length,
-      pending: missions.filter(m => m.status === "Pending").length,
-      completed: missions.filter(m => m.status === "Completed").length,
+    campaigns: {
+      total: campaigns.length,
+      active: campaigns.filter(c => c.status === "Active" || c.status === "In Progress").length,
+      planning: campaigns.filter(c => c.status === "Planning").length,
+      completed: campaigns.filter(c => c.status === "Completed").length,
     },
-    personnel: {
-      total: personnel.length,
-      onDuty: personnel.filter(p => p.status === "On Duty").length,
-      offDuty: personnel.filter(p => p.status === "Off Duty").length,
+    team: {
+      total: team.length,
+      available: team.filter(t => t.status === "Available").length,
+      busy: team.filter(t => t.status === "Busy").length,
     },
-    fleet: {
-      tracked: fleetPositions.length,
+    clients: {
+      tracked: clientAccounts.length,
     },
-    health: {
-      components: healthComponents.length,
-      operational: healthComponents.filter(h => h.status === "Operational").length,
+    resources: {
+      total: resources.length,
+      operational: resources.filter(r => r.status === "Operational").length,
     }
   };
 
@@ -124,81 +115,90 @@ export async function getDatabaseStats(ctx: AgentToolContext) {
   };
 }
 
-/**
- * Action Functions - Require user approval
- * These return action proposals that must be approved by the user
- */
+type CreateCampaignAction = {
+  actionType: "create_campaign";
+  actionData: InsertCampaign;
+};
 
-export interface ActionProposal {
+type UpdateCampaignAction = {
+  actionType: "update_campaign";
+  actionData: { campaignId: number; updates: Partial<InsertCampaign> };
+};
+
+type DeleteCampaignAction = {
+  actionType: "delete_campaign";
+  actionData: { campaignId: number };
+};
+
+type AgentAction = CreateCampaignAction | UpdateCampaignAction | DeleteCampaignAction;
+
+export type ActionProposal = AgentAction & {
   requiresApproval: true;
-  actionType: string;
-  actionData: any;
   description: string;
-}
+};
 
-export function proposeCreateMission(missionData: InsertMission): ActionProposal {
+export function proposeCreateCampaign(campaignData: InsertCampaign): ActionProposal {
   return {
     requiresApproval: true,
-    actionType: "create_mission",
-    actionData: missionData,
-    description: `Create new mission: ${missionData.name} (${missionData.missionCode}) with priority ${missionData.priority}`,
+    actionType: "create_campaign",
+    actionData: campaignData,
+    description: `Create new campaign: ${campaignData.name} for ${campaignData.clientName} on ${campaignData.channel} with priority ${campaignData.priority}`,
   };
 }
 
-export function proposeUpdateMission(missionId: number, updates: Partial<InsertMission>): ActionProposal {
+export function proposeUpdateCampaign(campaignId: number, updates: Partial<InsertCampaign>): ActionProposal {
   const updateFields = Object.keys(updates).join(", ");
   return {
     requiresApproval: true,
-    actionType: "update_mission",
-    actionData: { missionId, updates },
-    description: `Update mission #${missionId}: ${updateFields}`,
+    actionType: "update_campaign",
+    actionData: { campaignId, updates },
+    description: `Update campaign #${campaignId}: ${updateFields}`,
   };
 }
 
-export function proposeDeleteMission(missionId: number): ActionProposal {
+export function proposeDeleteCampaign(campaignId: number): ActionProposal {
   return {
     requiresApproval: true,
-    actionType: "delete_mission",
-    actionData: { missionId },
-    description: `Delete mission #${missionId}`,
+    actionType: "delete_campaign",
+    actionData: { campaignId },
+    description: `Delete campaign #${campaignId}`,
   };
 }
-
-/**
- * Execute approved actions
- */
 
 export async function executeApprovedAction(
   ctx: AgentToolContext,
   actionType: string,
-  actionData: any
+  actionData: unknown
 ) {
   switch (actionType) {
-    case "create_mission":
-      const newMission = await ctx.storage.createMission(actionData);
+    case "create_campaign":
+      const createData = actionData as InsertCampaign;
+      const newCampaign = await ctx.storage.createCampaign(createData);
       return {
         success: true,
-        data: newMission,
-        message: `Mission "${actionData.name}" created successfully`,
+        data: newCampaign,
+        message: `Campaign "${createData.name}" created successfully`,
       };
 
-    case "update_mission":
-      const updatedMission = await ctx.storage.updateMission(
-        actionData.missionId,
-        actionData.updates
+    case "update_campaign":
+      const updateData = actionData as { campaignId: number; updates: Partial<InsertCampaign> };
+      const updatedCampaign = await ctx.storage.updateCampaign(
+        updateData.campaignId,
+        updateData.updates
       );
       return {
         success: true,
-        data: updatedMission,
-        message: `Mission #${actionData.missionId} updated successfully`,
+        data: updatedCampaign,
+        message: `Campaign #${updateData.campaignId} updated successfully`,
       };
 
-    case "delete_mission":
-      await ctx.storage.deleteMission(actionData.missionId);
+    case "delete_campaign":
+      const deleteData = actionData as { campaignId: number };
+      await ctx.storage.deleteCampaign(deleteData.campaignId);
       return {
         success: true,
-        data: { id: actionData.missionId },
-        message: `Mission #${actionData.missionId} deleted successfully`,
+        data: { id: deleteData.campaignId },
+        message: `Campaign #${deleteData.campaignId} deleted successfully`,
       };
 
     default:
@@ -206,16 +206,12 @@ export async function executeApprovedAction(
   }
 }
 
-/**
- * Tool definitions for OpenAI function calling
- */
-
 export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "get_missions",
-      description: "Get all missions in the system with their status, progress, and priority",
+      name: "get_campaigns",
+      description: "Get all marketing campaigns with their status, progress, budget, and client info",
       parameters: {
         type: "object",
         properties: {},
@@ -226,7 +222,7 @@ export const agentTools = [
     type: "function" as const,
     function: {
       name: "get_analytics",
-      description: "Get analytics data including mission distribution, success rates, and trends",
+      description: "Get campaign analytics including performance metrics, ROI, and trends",
       parameters: {
         type: "object",
         properties: {},
@@ -236,8 +232,8 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "get_personnel",
-      description: "Get all personnel with their roles, clearance levels, and shift schedules",
+      name: "get_team",
+      description: "Get all team members with their roles, departments, and availability",
       parameters: {
         type: "object",
         properties: {},
@@ -247,8 +243,8 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "get_fleet_status",
-      description: "Get real-time fleet status including positions, velocities, and mission assignments",
+      name: "get_client_status",
+      description: "Get client account status including health scores, budgets, and milestones",
       parameters: {
         type: "object",
         properties: {},
@@ -258,8 +254,8 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "get_data_health",
-      description: "Get system health status for all components including storage and replication metrics",
+      name: "get_resources",
+      description: "Get marketing resources and deliverables status",
       parameters: {
         type: "object",
         properties: {},
@@ -270,7 +266,7 @@ export const agentTools = [
     type: "function" as const,
     function: {
       name: "get_database_stats",
-      description: "Get comprehensive database statistics including counts and statuses across all tables",
+      description: "Get comprehensive database statistics including counts and statuses across all data",
       parameters: {
         type: "object",
         properties: {},
@@ -280,79 +276,93 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "propose_create_mission",
-      description: "Propose creating a new mission (requires user approval before execution)",
+      name: "propose_create_campaign",
+      description: "Propose creating a new marketing campaign (requires user approval before execution)",
       parameters: {
         type: "object",
         properties: {
-          missionCode: {
+          campaignCode: {
             type: "string",
-            description: "Unique mission code (e.g., MSN-001)",
+            description: "Unique campaign code (e.g., CAMP-001)",
           },
           name: {
             type: "string",
-            description: "Mission name",
+            description: "Campaign name",
+          },
+          clientName: {
+            type: "string",
+            description: "Client company name",
+          },
+          channel: {
+            type: "string",
+            description: "Marketing channel (e.g., Meta, Google Ads, LinkedIn)",
           },
           priority: {
             type: "string",
             enum: ["Low", "Medium", "High", "Critical"],
-            description: "Mission priority level",
+            description: "Campaign priority level",
           },
           status: {
             type: "string",
-            enum: ["Pending", "Active", "Completed"],
-            description: "Initial mission status",
+            enum: ["Planning", "Active", "In Progress", "Paused", "Completed"],
+            description: "Initial campaign status",
+          },
+          budget: {
+            type: "number",
+            description: "Total campaign budget",
           },
           progress: {
             type: "number",
             description: "Initial progress percentage (0-100)",
           },
         },
-        required: ["missionCode", "name", "priority"],
+        required: ["campaignCode", "name", "clientName", "channel", "priority", "budget"],
       },
     },
   },
   {
     type: "function" as const,
     function: {
-      name: "propose_update_mission",
-      description: "Propose updating an existing mission (requires user approval before execution)",
+      name: "propose_update_campaign",
+      description: "Propose updating an existing campaign (requires user approval before execution)",
       parameters: {
         type: "object",
         properties: {
-          missionId: {
+          campaignId: {
             type: "number",
-            description: "ID of the mission to update",
+            description: "ID of the campaign to update",
           },
           updates: {
             type: "object",
             properties: {
               name: { type: "string" },
-              status: { type: "string", enum: ["Pending", "Active", "Completed"] },
+              status: { type: "string", enum: ["Planning", "Active", "In Progress", "Paused", "Completed"] },
               progress: { type: "number" },
               priority: { type: "string", enum: ["Low", "Medium", "High", "Critical"] },
+              budget: { type: "number" },
+              spend: { type: "number" },
             },
             description: "Fields to update",
           },
         },
-        required: ["missionId", "updates"],
+        required: ["campaignId", "updates"],
       },
     },
   },
   {
     type: "function" as const,
     function: {
-      name: "propose_delete_mission",
-      description: "Propose deleting a mission (requires user approval before execution)",
+      name: "propose_delete_campaign",
+      description: "Propose deleting a campaign (requires user approval before execution)",
       parameters: {
         type: "object",
         properties: {
-          missionId: {
+          campaignId: {
             type: "number",
-            description: "ID of the mission to delete",
+            description: "ID of the campaign to delete",
           },
         },
-        required: ["missionId"],
+        required: ["campaignId"],
       },
     },
   },

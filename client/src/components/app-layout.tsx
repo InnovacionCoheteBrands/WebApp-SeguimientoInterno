@@ -2,15 +2,17 @@ import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
-  Globe,
-  Database,
+  Building2,
+  FolderKanban,
   Users,
-  Activity,
+  TrendingUp,
   Settings,
-  Cpu,
-  ShieldAlert,
+  Target,
+  Lightbulb,
   Search,
-  Bell
+  Bell,
+  Megaphone,
+  DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -18,7 +20,7 @@ import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, Comma
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
 import { useQuery } from "@tanstack/react-query";
-import { fetchMissions } from "@/lib/api";
+import { fetchCampaigns } from "@/lib/api";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -32,11 +34,10 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
     </>
   );
 
-  const className = `w-full justify-start gap-3 px-4 py-2 h-11 rounded-sm transition-all duration-200 ${
-    active 
-      ? "bg-sidebar-accent text-primary border-r-2 border-primary"
-      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
-  }`;
+  const className = `w-full justify-start gap-3 px-4 py-2 h-11 rounded-sm transition-all duration-200 ${active
+    ? "bg-sidebar-accent text-primary border-r-2 border-primary"
+    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+    }`;
 
   if (href) {
     return (
@@ -58,9 +59,9 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
 export function AppLayout({ children }: AppLayoutProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [location] = useLocation();
-  const { data: missions = [] } = useQuery({
-    queryKey: ["missions"],
-    queryFn: fetchMissions,
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: fetchCampaigns,
   });
 
   useEffect(() => {
@@ -77,28 +78,28 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex overflow-hidden font-sans">
-      
+
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm fixed left-0 top-0 h-screen z-30">
         <div className="p-6 flex items-center justify-center border-b border-border h-24">
-          <img 
-            src={logoUrl} 
-            alt="Cohete Brands" 
+          <img
+            src={logoUrl}
+            alt="Cohete Brands"
             className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
           />
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          <NavButton icon={LayoutDashboard} label="Mission Control" active={location === "/"} href="/" />
-          <NavButton icon={Globe} label="Fleet Tracking" active={location === "/fleet-tracking"} href="/fleet-tracking" />
-          <NavButton icon={Database} label="Data Center" active={location === "/data-center"} href="/data-center" />
-          <NavButton icon={Users} label="Personnel" active={location === "/personnel"} href="/personnel" />
-          <NavButton icon={Activity} label="Analytics" active={location === "/analytics"} href="/analytics" />
-          
-          <div className="pt-4 pb-2">
-            <p className="px-4 text-[10px] uppercase tracking-widest text-muted-foreground font-display mb-2">Systems</p>
-            <NavButton icon={Cpu} label="Hardware" />
-            <NavButton icon={ShieldAlert} label="Security" />
+          <NavButton icon={LayoutDashboard} label="Dashboard" active={location === "/"} href="/" />
+
+          <div className="pt-2 border-t border-border/50">
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">GESTIÓN</p>
+            <NavButton icon={Building2} label="Clientes" active={location === "/clientes"} href="/clientes" />
+            <NavButton icon={FolderKanban} label="Proyectos" active={location === "/proyectos"} href="/proyectos" />
+            <NavButton icon={Users} label="Equipo" active={location === "/equipo"} href="/equipo" />
+            <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" />
+            <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
+            <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" />
           </div>
         </nav>
 
@@ -110,8 +111,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <span className="font-display font-bold">CM</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
-                  <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
+                  <p className="text-sm font-medium truncate">Marketing Manager</p>
+                  <p className="text-xs text-muted-foreground truncate">Admin Access</p>
                 </div>
               </div>
             </Link>
@@ -125,25 +126,25 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* Mobile Sidebar - Hidden, replaced with bottom navigation */}
-      <Sheet open={false} onOpenChange={() => {}}>
+      <Sheet open={false} onOpenChange={() => { }}>
         <SheetContent side="left" className="hidden w-64 p-0 border-r border-border bg-sidebar flex flex-col">
           <div className="p-6 flex items-center justify-center border-b border-border h-24">
-             <img 
-              src={logoUrl} 
-              alt="Cohete Brands" 
+            <img
+              src={logoUrl}
+              alt="Cohete Brands"
               className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
             />
           </div>
           <nav className="flex-1 p-4 space-y-1">
-            <NavButton icon={LayoutDashboard} label="Mission Control" active={location === "/"} href="/" />
-            <NavButton icon={Globe} label="Fleet Tracking" active={location === "/fleet-tracking"} href="/fleet-tracking" />
-            <NavButton icon={Database} label="Data Center" active={location === "/data-center"} href="/data-center" />
-            <NavButton icon={Users} label="Personnel" active={location === "/personnel"} href="/personnel" />
-            <NavButton icon={Activity} label="Analytics" active={location === "/analytics"} href="/analytics" />
-            <div className="pt-4 pb-2">
-              <p className="px-4 text-[10px] uppercase tracking-widest text-muted-foreground font-display mb-2">Systems</p>
-              <NavButton icon={Cpu} label="Hardware" />
-              <NavButton icon={ShieldAlert} label="Security" />
+            <NavButton icon={LayoutDashboard} label="Dashboard" active={location === "/"} href="/" />
+            <div className="pt-2 border-t border-border/50">
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">GESTIÓN</p>
+              <NavButton icon={Building2} label="Clientes" active={location === "/clientes"} href="/clientes" />
+              <NavButton icon={FolderKanban} label="Proyectos" active={location === "/proyectos"} href="/proyectos" />
+              <NavButton icon={Users} label="Equipo" active={location === "/equipo"} href="/equipo" />
+              <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" />
+              <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
+              <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" />
             </div>
           </nav>
           <div className="p-4 border-t border-border">
@@ -154,8 +155,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <span className="font-display font-bold">CM</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">Cmdr. Shepard</p>
-                    <p className="text-xs text-muted-foreground truncate">Level 5 Clearance</p>
+                    <p className="text-sm font-medium truncate">Marketing Manager</p>
+                    <p className="text-xs text-muted-foreground truncate">Admin Access</p>
                   </div>
                 </div>
               </Link>
@@ -171,14 +172,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0 md:ml-64">
-        
+
         {/* Top Bar */}
         <header className="h-14 sm:h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="md:hidden h-11 w-11" 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-11 w-11"
               onClick={() => setCommandOpen(true)}
               data-testid="button-search-mobile"
             >
@@ -186,9 +187,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Button>
             <div className="hidden md:flex items-center gap-2 text-muted-foreground bg-card border border-input rounded-sm px-3 py-1.5 w-64 cursor-pointer" onClick={() => setCommandOpen(true)}>
               <Search className="size-4" />
-              <input 
-                type="text" 
-                placeholder="Search command..." 
+              <input
+                type="text"
+                placeholder="Buscar..."
                 className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/50 pointer-events-none"
                 readOnly
               />
@@ -197,14 +198,14 @@ export function AppLayout({ children }: AppLayoutProps) {
               </kbd>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-primary">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              SYSTEM OPTIMAL
+              TODAS LAS CAMPAÑAS ACTIVAS
             </div>
             <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground h-11 w-11" data-testid="button-notifications">
               <Bell className="size-5" />
@@ -218,19 +219,19 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Command Palette */}
       <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-        <CommandInput placeholder="Search missions..." />
+        <CommandInput placeholder="Buscar campañas..." />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Missions">
-            {missions.map((mission) => (
+          <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+          <CommandGroup heading="Campañas">
+            {campaigns.map((campaign) => (
               <CommandItem
-                key={mission.id}
+                key={campaign.id}
                 onSelect={() => {
                   setCommandOpen(false);
                 }}
               >
-                <span className="font-mono text-xs mr-2">{mission.missionCode}</span>
-                <span>{mission.name}</span>
+                <span className="font-mono text-xs mr-2">{campaign.campaignCode}</span>
+                <span>{campaign.name}</span>
               </CommandItem>
             ))}
           </CommandGroup>

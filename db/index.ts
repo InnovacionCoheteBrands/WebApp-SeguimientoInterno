@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -7,7 +7,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const db = drizzle({
-  connection: process.env.DATABASE_URL,
-  ws: ws,
+// Create postgres client
+const client = postgres(process.env.DATABASE_URL, {
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : 'prefer',
+  max: 10,
 });
+
+export const db = drizzle(client);

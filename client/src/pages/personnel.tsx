@@ -12,124 +12,123 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  fetchPersonnel, 
-  fetchPersonnelAssignments, 
-  fetchMissions, 
-  createPersonnel, 
-  updatePersonnel, 
-  deletePersonnel,
-  createPersonnelAssignment,
-  deletePersonnelAssignment
+  fetchTeam, 
+  fetchTeamAssignments, 
+  fetchCampaigns, 
+  createTeam, 
+  updateTeam, 
+  deleteTeam,
+  createTeamAssignment,
+  deleteTeamAssignment
 } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertPersonnel, UpdatePersonnel, Personnel as PersonnelType, InsertPersonnelAssignment } from "@shared/schema";
+import type { InsertTeam, UpdateTeam, Team, InsertTeamAssignment, Campaign } from "@shared/schema";
 
 const Personnel = memo(function Personnel() {
-  const [isPersonnelDialogOpen, setIsPersonnelDialogOpen] = useState(false);
+  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
-  const [editingPersonnel, setEditingPersonnel] = useState<PersonnelType | null>(null);
+  const [editingMember, setEditingMember] = useState<Team | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [assigningToPersonnel, setAssigningToPersonnel] = useState<number | null>(null);
+  const [assigningToMember, setAssigningToMember] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: allPersonnel = [] } = useQuery({
-    queryKey: ["personnel"],
-    queryFn: fetchPersonnel,
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ["team"],
+    queryFn: fetchTeam,
   });
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ["personnel-assignments"],
-    queryFn: fetchPersonnelAssignments,
+    queryKey: ["team-assignments"],
+    queryFn: fetchTeamAssignments,
   });
 
-  const { data: missions = [] } = useQuery({
-    queryKey: ["missions"],
-    queryFn: fetchMissions,
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: fetchCampaigns,
   });
 
   const stats = useMemo(() => {
-    const onDuty = allPersonnel.filter(p => p.status === "On Duty").length;
-    const securityCount = allPersonnel.filter(p => 
-      p.role.toLowerCase().includes("security") || 
-      p.role.toLowerCase().includes("tactical") ||
-      p.clearance === "Level 5"
+    const available = teamMembers.filter(m => m.status === "Disponible").length;
+    const seniorLevel = teamMembers.filter(m => 
+      m.department === "Senior" || 
+      m.department === "Lead" ||
+      m.department === "Director"
     ).length;
     
     return {
-      total: allPersonnel.length,
-      onDuty,
-      security: securityCount,
-      assigned: new Set(assignments.map(a => a.personnelId)).size,
+      total: teamMembers.length,
+      available,
+      seniorLevel,
+      assigned: new Set(assignments.map(a => a.teamId)).size,
     };
-  }, [allPersonnel, assignments]);
+  }, [teamMembers, assignments]);
 
-  const personnelWithAssignments = useMemo(() => {
-    return allPersonnel.map((person) => {
-      const personAssignments = assignments.filter(a => a.personnelId === person.id);
-      const assignedMissions = personAssignments
+  const teamWithAssignments = useMemo(() => {
+    return teamMembers.map((member) => {
+      const memberAssignments = assignments.filter(a => a.teamId === member.id);
+      const assignedCampaigns = memberAssignments
         .map(a => ({
           assignment: a,
-          mission: missions.find(m => m.id === a.missionId)
+          campaign: campaigns.find(c => c.id === a.campaignId)
         }))
-        .filter(item => item.mission);
+        .filter(item => item.campaign);
       
       return {
-        ...person,
-        assignments: personAssignments,
-        assignedMissions: assignedMissions.length,
-        missionNames: assignedMissions.map(item => item.mission?.missionCode).join(", "),
+        ...member,
+        assignments: memberAssignments,
+        assignedCampaigns: assignedCampaigns.length,
+        campaignNames: assignedCampaigns.map(item => item.campaign?.campaignCode).join(", "),
       };
     });
-  }, [allPersonnel, assignments, missions]);
+  }, [teamMembers, assignments, campaigns]);
 
-  const [formData, setFormData] = useState<Partial<InsertPersonnel>>({
+  const [formData, setFormData] = useState<Partial<InsertTeam>>({
     name: "",
     role: "",
-    clearance: "Level 1",
-    status: "On Duty",
-    shiftStart: "08:00",
-    shiftEnd: "16:00",
+    department: "Junior",
+    status: "Disponible",
+    workHoursStart: "09:00",
+    workHoursEnd: "18:00",
   });
 
   const [assignmentForm, setAssignmentForm] = useState({
-    missionId: 0,
-    role: "",
+    campaignId: 0,
   });
 
-  const createPersonnelMutation = useMutation({
-    mutationFn: createPersonnel,
+  const createTeamMutation = useMutation({
+    mutationFn: createTeam,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["personnel"] });
-      setIsPersonnelDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      setIsTeamDialogOpen(false);
       resetForm();
-      toast({ title: "Success", description: "Personnel created successfully" });
+      toast({ title: "Éxito", description: "Miembro creado exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
-  const updatePersonnelMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdatePersonnel }) => updatePersonnel(id, data),
+  const updateTeamMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateTeam }) => updateTeam(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["personnel"] });
-      setIsPersonnelDialogOpen(false);
-      setEditingPersonnel(null);
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      setIsTeamDialogOpen(false);
+      setEditingMember(null);
       resetForm();
-      toast({ title: "Success", description: "Personnel updated successfully" });
+      toast({ title: "Éxito", description: "Miembro actualizado exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
-  const deletePersonnelMutation = useMutation({
-    mutationFn: deletePersonnel,
+  const deleteTeamMutation = useMutation({
+    mutationFn: deleteTeam,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["personnel"] });
+      queryClient.invalidateQueries({ queryKey: ["team"] });
       setDeleteId(null);
-      toast({ title: "Success", description: "Personnel deleted successfully" });
+      toast({ title: "Éxito", description: "Miembro eliminado exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -137,13 +136,13 @@ const Personnel = memo(function Personnel() {
   });
 
   const createAssignmentMutation = useMutation({
-    mutationFn: createPersonnelAssignment,
+    mutationFn: createTeamAssignment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["personnel-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["team-assignments"] });
       setIsAssignmentDialogOpen(false);
-      setAssigningToPersonnel(null);
-      setAssignmentForm({ missionId: 0, role: "" });
-      toast({ title: "Success", description: "Assignment created successfully" });
+      setAssigningToMember(null);
+      setAssignmentForm({ campaignId: 0 });
+      toast({ title: "Éxito", description: "Asignación creada exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -151,10 +150,10 @@ const Personnel = memo(function Personnel() {
   });
 
   const deleteAssignmentMutation = useMutation({
-    mutationFn: deletePersonnelAssignment,
+    mutationFn: deleteTeamAssignment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["personnel-assignments"] });
-      toast({ title: "Success", description: "Assignment removed successfully" });
+      queryClient.invalidateQueries({ queryKey: ["team-assignments"] });
+      toast({ title: "Éxito", description: "Asignación eliminada exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -165,58 +164,57 @@ const Personnel = memo(function Personnel() {
     setFormData({
       name: "",
       role: "",
-      clearance: "Level 1",
-      status: "On Duty",
-      shiftStart: "08:00",
-      shiftEnd: "16:00",
+      department: "Junior",
+      status: "Disponible",
+      workHoursStart: "09:00",
+      workHoursEnd: "18:00",
     });
-    setEditingPersonnel(null);
+    setEditingMember(null);
   };
 
-  const handleOpenPersonnelDialog = (person?: PersonnelType) => {
-    if (person) {
-      setEditingPersonnel(person);
+  const handleOpenTeamDialog = (member?: Team) => {
+    if (member) {
+      setEditingMember(member);
       setFormData({
-        name: person.name,
-        role: person.role,
-        clearance: person.clearance,
-        status: person.status,
-        shiftStart: person.shiftStart,
-        shiftEnd: person.shiftEnd,
+        name: member.name,
+        role: member.role,
+        department: member.department,
+        status: member.status,
+        workHoursStart: member.workHoursStart,
+        workHoursEnd: member.workHoursEnd,
       });
     } else {
       resetForm();
     }
-    setIsPersonnelDialogOpen(true);
+    setIsTeamDialogOpen(true);
   };
 
-  const handleSubmitPersonnel = (e: React.FormEvent) => {
+  const handleSubmitTeam = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.role) {
-      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+    if (!formData.name || !formData.role || !formData.department) {
+      toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
       return;
     }
 
-    if (editingPersonnel) {
-      updatePersonnelMutation.mutate({ id: editingPersonnel.id, data: formData as UpdatePersonnel });
+    if (editingMember) {
+      updateTeamMutation.mutate({ id: editingMember.id, data: formData as UpdateTeam });
     } else {
-      createPersonnelMutation.mutate(formData as InsertPersonnel);
+      createTeamMutation.mutate(formData as InsertTeam);
     }
   };
 
   const handleSubmitAssignment = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!assigningToPersonnel || !assignmentForm.missionId || !assignmentForm.role) {
-      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+    if (!assigningToMember || !assignmentForm.campaignId) {
+      toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
       return;
     }
 
     createAssignmentMutation.mutate({
-      personnelId: assigningToPersonnel,
-      missionId: assignmentForm.missionId,
-      role: assignmentForm.role,
+      teamId: assigningToMember,
+      campaignId: assignmentForm.campaignId,
     });
   };
 
@@ -227,6 +225,19 @@ const Personnel = memo(function Personnel() {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Disponible":
+        return "border-green-500 text-green-500";
+      case "Ocupado":
+        return "border-yellow-500 text-yellow-500";
+      case "Vacaciones":
+        return "border-blue-500 text-blue-500";
+      default:
+        return "border-gray-500 text-gray-500";
+    }
   };
 
   return (
@@ -240,19 +251,19 @@ const Personnel = memo(function Personnel() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight">Personnel Administration</h1>
+              <h1 className="text-3xl font-display font-bold tracking-tight">Gestión de Equipo</h1>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
-                Manage Staff & Assignments
+                Administrar Equipo y Asignaciones
               </p>
             </div>
           </div>
           <Button 
-            onClick={() => handleOpenPersonnelDialog()} 
+            onClick={() => handleOpenTeamDialog()} 
             className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
             data-testid="button-new-personnel"
           >
             <Plus className="size-4 mr-2" />
-            New Personnel
+            Nuevo Miembro
           </Button>
         </div>
 
@@ -260,14 +271,14 @@ const Personnel = memo(function Personnel() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Total Staff</span>
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Miembros</span>
                 <Users className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
                 <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-total">
                   {stats.total}
                 </h3>
-                <p className="text-xs text-muted-foreground">Active Personnel</p>
+                <p className="text-xs text-muted-foreground">Total de Miembros</p>
               </div>
             </CardContent>
           </Card>
@@ -275,14 +286,14 @@ const Personnel = memo(function Personnel() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">On Duty</span>
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Disponibles</span>
                 <Clock className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
                 <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-on-duty">
-                  {stats.onDuty}
+                  {stats.available}
                 </h3>
-                <p className="text-xs text-muted-foreground">Current Shift</p>
+                <p className="text-xs text-muted-foreground">Miembros Disponibles</p>
               </div>
             </CardContent>
           </Card>
@@ -290,14 +301,14 @@ const Personnel = memo(function Personnel() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">High Clearance</span>
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Nivel Senior+</span>
                 <Shield className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
                 <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-security">
-                  {stats.security}
+                  {stats.seniorLevel}
                 </h3>
-                <p className="text-xs text-muted-foreground">Level 4-5 Clearance</p>
+                <p className="text-xs text-muted-foreground">Senior, Lead, Director</p>
               </div>
             </CardContent>
           </Card>
@@ -305,14 +316,14 @@ const Personnel = memo(function Personnel() {
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Assigned</span>
+                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Asignados</span>
                 <UserCheck className="size-4 text-muted-foreground" />
               </div>
               <div className="space-y-1">
                 <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-assigned">
                   {stats.assigned}
                 </h3>
-                <p className="text-xs text-muted-foreground">On Missions</p>
+                <p className="text-xs text-muted-foreground">En Campañas</p>
               </div>
             </CardContent>
           </Card>
@@ -320,58 +331,54 @@ const Personnel = memo(function Personnel() {
 
         <Card className="border-border bg-card/50 rounded-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Personnel Roster</CardTitle>
+            <CardTitle className="text-lg font-display">Equipo</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {personnelWithAssignments.map((person) => (
+              {teamWithAssignments.map((member) => (
                 <div
-                  key={person.id}
+                  key={member.id}
                   className="flex items-start justify-between p-4 border border-border rounded-sm hover:bg-muted/30 transition-colors"
-                  data-testid={`personnel-card-${person.id}`}
+                  data-testid={`personnel-card-${member.id}`}
                 >
                   <div className="flex items-start gap-4 flex-1">
                     <Avatar className="size-12 border-2 border-primary/20">
                       <AvatarFallback className="font-display font-bold bg-primary/10 text-primary">
-                        {getInitials(person.name)}
+                        {getInitials(member.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                          <p className="font-medium text-sm" data-testid={`personnel-name-${person.id}`}>{person.name}</p>
-                          <p className="text-xs text-muted-foreground" data-testid={`personnel-role-${person.id}`}>{person.role}</p>
+                          <p className="font-medium text-sm" data-testid={`personnel-name-${member.id}`}>{member.name}</p>
+                          <p className="text-xs text-muted-foreground" data-testid={`personnel-role-${member.id}`}>{member.role}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs font-mono text-muted-foreground mb-1" data-testid={`personnel-clearance-${person.id}`}>
-                            {person.clearance}
+                          <p className="text-xs font-mono text-muted-foreground mb-1" data-testid={`personnel-clearance-${member.id}`}>
+                            {member.department}
                           </p>
-                          <p className="text-xs font-mono text-muted-foreground" data-testid={`personnel-shift-${person.id}`}>
-                            {person.shiftStart} - {person.shiftEnd}
+                          <p className="text-xs font-mono text-muted-foreground" data-testid={`personnel-shift-${member.id}`}>
+                            {member.workHoursStart} - {member.workHoursEnd}
                           </p>
                         </div>
                         <Badge
                           variant="outline"
-                          className={`rounded-sm text-xs ${
-                            person.status === "On Duty"
-                              ? "border-green-500 text-green-500"
-                              : "border-yellow-500 text-yellow-500"
-                          }`}
-                          data-testid={`personnel-status-${person.id}`}
+                          className={`rounded-sm text-xs ${getStatusColor(member.status)}`}
+                          data-testid={`personnel-status-${member.id}`}
                         >
-                          {person.status}
+                          {member.status}
                         </Badge>
                       </div>
                       
-                      {person.assignments.length > 0 && (
+                      {member.assignments.length > 0 && (
                         <div className="space-y-1">
-                          <p className="text-xs font-mono text-muted-foreground">Mission Assignments:</p>
-                          {person.assignments.map((assignment) => {
-                            const mission = missions.find(m => m.id === assignment.missionId);
-                            return mission ? (
+                          <p className="text-xs font-mono text-muted-foreground">Campañas Asignadas:</p>
+                          {member.assignments.map((assignment) => {
+                            const campaign = campaigns.find(c => c.id === assignment.campaignId);
+                            return campaign ? (
                               <div key={assignment.id} className="flex items-center justify-between bg-muted/50 rounded px-2 py-1">
                                 <p className="text-xs text-primary font-mono">
-                                  {mission.missionCode} - {assignment.role}
+                                  {campaign.campaignCode}
                                 </p>
                                 <Button
                                   variant="ghost"
@@ -393,34 +400,34 @@ const Personnel = memo(function Personnel() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setAssigningToPersonnel(person.id);
+                            setAssigningToMember(member.id);
                             setIsAssignmentDialogOpen(true);
                           }}
                           className="rounded-sm"
-                          data-testid={`button-assign-mission-${person.id}`}
+                          data-testid={`button-assign-mission-${member.id}`}
                         >
                           <UserPlus className="size-3 mr-1" />
-                          Assign to Mission
+                          Asignar a Campaña
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleOpenPersonnelDialog(person)}
+                          onClick={() => handleOpenTeamDialog(member)}
                           className="rounded-sm"
-                          data-testid={`button-edit-personnel-${person.id}`}
+                          data-testid={`button-edit-personnel-${member.id}`}
                         >
                           <Pencil className="size-3 mr-1" />
-                          Edit
+                          Editar
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setDeleteId(person.id)}
+                          onClick={() => setDeleteId(member.id)}
                           className="rounded-sm text-destructive hover:text-destructive"
-                          data-testid={`button-delete-personnel-${person.id}`}
+                          data-testid={`button-delete-personnel-${member.id}`}
                         >
                           <Trash2 className="size-3 mr-1" />
-                          Delete
+                          Eliminar
                         </Button>
                       </div>
                     </div>
@@ -428,78 +435,92 @@ const Personnel = memo(function Personnel() {
                 </div>
               ))}
             </div>
-            {allPersonnel.length === 0 && (
+            {teamMembers.length === 0 && (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">No personnel records found</p>
+                <p className="text-muted-foreground">No hay miembros del equipo</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <Dialog open={isPersonnelDialogOpen} onOpenChange={setIsPersonnelDialogOpen}>
+      <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-sm">
           <DialogHeader>
-            <DialogTitle>{editingPersonnel ? "Edit Personnel" : "New Personnel"}</DialogTitle>
+            <DialogTitle>{editingMember ? "Editar Miembro" : "Nuevo Miembro"}</DialogTitle>
             <DialogDescription>
-              {editingPersonnel ? "Update personnel details" : "Add a new personnel member"}
+              {editingMember ? "Actualizar detalles del miembro" : "Agregar un nuevo miembro al equipo"}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitPersonnel} className="space-y-4">
+          <form onSubmit={handleSubmitTeam} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">Nombre *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., John Smith"
+                placeholder="ej., Ana García"
                 data-testid="input-name"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role *</Label>
-              <Input
-                id="role"
+              <Label htmlFor="role">Rol *</Label>
+              <Select
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                placeholder="e.g., Flight Director"
-                data-testid="input-role"
-              />
+                onValueChange={(value) => setFormData({ ...formData, role: value })}
+              >
+                <SelectTrigger id="role" data-testid="input-role">
+                  <SelectValue placeholder="Selecciona un rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Creative Director">Creative Director</SelectItem>
+                  <SelectItem value="Copywriter">Copywriter</SelectItem>
+                  <SelectItem value="Designer">Designer</SelectItem>
+                  <SelectItem value="Social Media Manager">Social Media Manager</SelectItem>
+                  <SelectItem value="SEO Specialist">SEO Specialist</SelectItem>
+                  <SelectItem value="Account Manager">Account Manager</SelectItem>
+                  <SelectItem value="Strategist">Strategist</SelectItem>
+                  <SelectItem value="Data Analyst">Data Analyst</SelectItem>
+                  <SelectItem value="Developer">Developer</SelectItem>
+                  <SelectItem value="Project Manager">Project Manager</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="clearance">Clearance Level *</Label>
+                <Label htmlFor="department">Nivel *</Label>
                 <Select
-                  value={formData.clearance}
-                  onValueChange={(value) => setFormData({ ...formData, clearance: value })}
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
                 >
-                  <SelectTrigger id="clearance" data-testid="select-clearance">
+                  <SelectTrigger id="department" data-testid="select-clearance">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Level 1">Level 1</SelectItem>
-                    <SelectItem value="Level 2">Level 2</SelectItem>
-                    <SelectItem value="Level 3">Level 3</SelectItem>
-                    <SelectItem value="Level 4">Level 4</SelectItem>
-                    <SelectItem value="Level 5">Level 5</SelectItem>
+                    <SelectItem value="Junior">Junior</SelectItem>
+                    <SelectItem value="Mid-Level">Mid-Level</SelectItem>
+                    <SelectItem value="Senior">Senior</SelectItem>
+                    <SelectItem value="Lead">Lead</SelectItem>
+                    <SelectItem value="Director">Director</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
+                <Label htmlFor="status">Estado *</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as "On Duty" | "Off Duty" })}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger id="status" data-testid="select-status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="On Duty">On Duty</SelectItem>
-                    <SelectItem value="Off Duty">Off Duty</SelectItem>
+                    <SelectItem value="Disponible">Disponible</SelectItem>
+                    <SelectItem value="Ocupado">Ocupado</SelectItem>
+                    <SelectItem value="Vacaciones">Vacaciones</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -507,23 +528,23 @@ const Personnel = memo(function Personnel() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="shiftStart">Shift Start *</Label>
+                <Label htmlFor="workHoursStart">Hora de Inicio *</Label>
                 <Input
-                  id="shiftStart"
+                  id="workHoursStart"
                   type="time"
-                  value={formData.shiftStart}
-                  onChange={(e) => setFormData({ ...formData, shiftStart: e.target.value })}
+                  value={formData.workHoursStart}
+                  onChange={(e) => setFormData({ ...formData, workHoursStart: e.target.value })}
                   data-testid="input-shift-start"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="shiftEnd">Shift End *</Label>
+                <Label htmlFor="workHoursEnd">Hora de Fin *</Label>
                 <Input
-                  id="shiftEnd"
+                  id="workHoursEnd"
                   type="time"
-                  value={formData.shiftEnd}
-                  onChange={(e) => setFormData({ ...formData, shiftEnd: e.target.value })}
+                  value={formData.workHoursEnd}
+                  onChange={(e) => setFormData({ ...formData, workHoursEnd: e.target.value })}
                   data-testid="input-shift-end"
                 />
               </div>
@@ -533,19 +554,19 @@ const Personnel = memo(function Personnel() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsPersonnelDialogOpen(false)}
+                onClick={() => setIsTeamDialogOpen(false)}
                 className="rounded-sm"
                 data-testid="button-cancel-personnel"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 type="submit"
                 className="rounded-sm"
-                disabled={createPersonnelMutation.isPending || updatePersonnelMutation.isPending}
+                disabled={createTeamMutation.isPending || updateTeamMutation.isPending}
                 data-testid="button-submit-personnel"
               >
-                {editingPersonnel ? "Update" : "Create"} Personnel
+                {editingMember ? "Actualizar" : "Crear"}
               </Button>
             </DialogFooter>
           </form>
@@ -555,55 +576,40 @@ const Personnel = memo(function Personnel() {
       <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-sm">
           <DialogHeader>
-            <DialogTitle>Assign to Mission</DialogTitle>
+            <DialogTitle>Asignar a Campaña</DialogTitle>
             <DialogDescription>
-              Create a new mission assignment for this personnel
+              Crear una nueva asignación de campaña para este miembro
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitAssignment} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="mission">Mission *</Label>
+              <Label htmlFor="campaignId">Campaña *</Label>
               <Select
-                value={assignmentForm.missionId.toString()}
-                onValueChange={(value) => setAssignmentForm({ ...assignmentForm, missionId: parseInt(value) })}
+                value={assignmentForm.campaignId.toString()}
+                onValueChange={(value) => setAssignmentForm({ ...assignmentForm, campaignId: parseInt(value) })}
               >
-                <SelectTrigger id="mission" data-testid="select-assignment-mission">
-                  <SelectValue placeholder="Select a mission" />
+                <SelectTrigger id="campaignId" data-testid="select-campaign">
+                  <SelectValue placeholder="Selecciona una campaña" />
                 </SelectTrigger>
                 <SelectContent>
-                  {missions.map((mission) => (
-                    <SelectItem key={mission.id} value={mission.id.toString()}>
-                      {mission.missionCode} - {mission.name}
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id.toString()}>
+                      {campaign.campaignCode} - {campaign.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="assignment-role">Role in Mission *</Label>
-              <Input
-                id="assignment-role"
-                value={assignmentForm.role}
-                onChange={(e) => setAssignmentForm({ ...assignmentForm, role: e.target.value })}
-                placeholder="e.g., Mission Commander"
-                data-testid="input-assignment-role"
-              />
-            </div>
-
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setIsAssignmentDialogOpen(false);
-                  setAssigningToPersonnel(null);
-                  setAssignmentForm({ missionId: 0, role: "" });
-                }}
+                onClick={() => setIsAssignmentDialogOpen(false)}
                 className="rounded-sm"
                 data-testid="button-cancel-assignment"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 type="submit"
@@ -611,29 +617,31 @@ const Personnel = memo(function Personnel() {
                 disabled={createAssignmentMutation.isPending}
                 data-testid="button-submit-assignment"
               >
-                Assign
+                Asignar
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent className="rounded-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Personnel</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar miembro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this personnel? This action cannot be undone and will remove all associated mission assignments.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente al miembro del equipo y todas sus asignaciones.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete-personnel">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && deletePersonnelMutation.mutate(deleteId)}
+              onClick={() => deleteId && deleteTeamMutation.mutate(deleteId)}
               className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete-personnel"
+              data-testid="button-confirm-delete"
             >
-              Delete
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
