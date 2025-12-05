@@ -1,0 +1,10 @@
+﻿node.exe : Γ¥î Error creating transaction: Error: HTTP error! status: 400, body: {"error":[{"code":"invalid_type","expected":"string","received":"number","path":["amount"],"message":"Expected 
+string, received number"}]}
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\Departamento AI\AppDat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo              : NotSpecified: (Γ¥î E    rror creat...ived numbe    r"}]}:String) [], Remot    eException
+    + FullyQualifiedErrorId     : NativeCommandError
+ 
+    at testCreateTransaction (C:\Users\Departamento AI\OneDrive\Documents\C├│digos\WebApp - Control\DesignSystemMissionControl\verify-transaction.ts:24:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)

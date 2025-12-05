@@ -80,7 +80,7 @@ export function AgentChat() {
     try {
       const message = messages.find(m => m.id === messageId);
       const action = message?.proposedActions?.[actionIndex];
-      
+
       if (!action) {
         throw new Error("Action not found");
       }
@@ -92,11 +92,11 @@ export function AgentChat() {
         prev.map((m) =>
           m.id === messageId && m.proposedActions
             ? {
-                ...m,
-                proposedActions: m.proposedActions.map((a, idx) =>
-                  idx === actionIndex ? { ...a, handled: true } : a
-                ),
-              }
+              ...m,
+              proposedActions: m.proposedActions.map((a, idx) =>
+                idx === actionIndex ? { ...a, handled: true } : a
+              ),
+            }
             : m
         )
       );
@@ -111,7 +111,7 @@ export function AgentChat() {
       setMessages((prev) => [...prev, executionMessage]);
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["missions"] });
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
       toast({
@@ -136,11 +136,11 @@ export function AgentChat() {
       prev.map((m) =>
         m.id === messageId && m.proposedActions
           ? {
-              ...m,
-              proposedActions: m.proposedActions.map((a, idx) =>
-                idx === actionIndex ? { ...a, handled: true } : a
-              ),
-            }
+            ...m,
+            proposedActions: m.proposedActions.map((a, idx) =>
+              idx === actionIndex ? { ...a, handled: true } : a
+            ),
+          }
           : m
       )
     );
@@ -183,7 +183,7 @@ export function AgentChat() {
                   <Bot className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <DialogTitle className="text-lg font-semibold">Mission Control AI</DialogTitle>
+                  <DialogTitle className="text-lg font-semibold">Asistente Cohete Brands</DialogTitle>
                   <p className="text-xs text-muted-foreground">Your intelligent assistant</p>
                 </div>
               </div>
@@ -200,10 +200,10 @@ export function AgentChat() {
                 <div className="text-center py-12">
                   <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-sm text-muted-foreground">
-                    Ask me anything about your missions, personnel, fleet, or analytics!
+                    ¡Pregúntame sobre tus campañas, clientes, equipo o análisis!
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    I can also help you create or update missions.
+                    I can also help you create or update campaigns.
                   </p>
                 </div>
               )}
@@ -222,11 +222,10 @@ export function AgentChat() {
 
                   <div className={`flex flex-col gap-2 max-w-[80%]`}>
                     <div
-                      className={`rounded-lg px-4 py-2 ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
+                      className={`rounded-lg px-4 py-2 ${message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                        }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     </div>
@@ -235,7 +234,7 @@ export function AgentChat() {
                       <div className="space-y-2">
                         {message.proposedActions.map((action, idx) => {
                           const actionKey = `${message.id}-${idx}`;
-                          
+
                           return (
                             <Alert key={idx} className="border-primary/50 bg-primary/5">
                               <AlertDescription className="flex items-start justify-between gap-4">
@@ -308,7 +307,7 @@ export function AgentChat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask me anything about Mission Control..."
+                placeholder="Pregúntame sobre tus campañas, clientes, equipo..."
                 disabled={isLoading}
                 className="flex-1"
                 data-testid="input-agent-message"

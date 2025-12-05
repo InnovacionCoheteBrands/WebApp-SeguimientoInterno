@@ -1,0 +1,10 @@
+﻿
+> rest-express@1.0.0 check
+> tsc
+
+server/storage.ts(1161,19): error TS2339: Property 'rows' does not exist on type 'RowList<Record<string, unknown>[]>'.
+server/storage.ts(1207,19): error TS2339: Property 'rows' does not exist on type 'RowList<Record<string, unknown>[]>'.
+server/storage.ts(1286,16): error TS2339: Property 'rowCount' does not exist on type 'RowList<never[]>'.
+server/storage.ts(1286,35): error TS2339: Property 'rowCount' does not exist on type 'RowList<never[]>'.
+server/storage.ts(1309,19): error TS2339: Property 'rowCount' does not exist on type 'RowList<never[]>'.
+server/storage.ts(1309,37): error TS2339: Property 'rowCount' does not exist on type 'RowList<never[]>'.

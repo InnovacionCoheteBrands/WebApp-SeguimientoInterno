@@ -1,60 +1,60 @@
 import { storage } from "./storage";
 
 export async function calculateSystemMetrics() {
-  const missions = await storage.getMissions();
+  const campaigns = await storage.getCampaigns();
   
-  const totalMissions = missions.length;
-  const activeMissions = missions.filter(m => m.status === "Active").length;
-  const completedMissions = missions.filter(m => m.status === "Completed").length;
-  const pendingMissions = missions.filter(m => m.status === "Pending").length;
+  const totalCampaigns = campaigns.length;
+  const activeCampaigns = campaigns.filter(c => c.status === "Active" || c.status === "In Progress").length;
+  const completedCampaigns = campaigns.filter(c => c.status === "Completed").length;
+  const planningCampaigns = campaigns.filter(c => c.status === "Planning").length;
   
-  const avgProgress = missions.length > 0
-    ? Math.round(missions.reduce((sum, m) => sum + m.progress, 0) / missions.length)
+  const avgProgress = campaigns.length > 0
+    ? Math.round(campaigns.reduce((sum, c) => sum + c.progress, 0) / campaigns.length)
     : 0;
 
-  const highPriorityMissions = missions.filter(m => m.priority === "High" && m.status !== "Completed").length;
+  const highPriorityCampaigns = campaigns.filter(c => c.priority === "High" && c.status !== "Completed").length;
 
-  const fleetStatus = `${activeMissions}/${totalMissions}`;
-  const fleetTrend = `+${activeMissions}`;
+  const clientStatus = `${activeCampaigns}/${totalCampaigns}`;
+  const clientTrend = `+${activeCampaigns}`;
   
-  const activePersonnel = 1200 + Math.floor(Math.random() * 200);
-  const personnelTrend = Math.floor(Math.random() * 20) - 5;
+  const activeTeam = 12 + Math.floor(Math.random() * 8);
+  const teamTrend = Math.floor(Math.random() * 20) - 5;
   
-  const systemLoad = 30 + avgProgress * 0.5 + Math.floor(Math.random() * 15);
-  const loadTrend = Math.floor(Math.random() * 10) - 5;
+  const utilizationRate = 30 + avgProgress * 0.5 + Math.floor(Math.random() * 15);
+  const utilizationTrend = Math.floor(Math.random() * 10) - 5;
   
-  const threatLevel = highPriorityMissions > 3 ? "MEDIUM" : highPriorityMissions > 0 ? "LOW" : "MINIMAL";
-  const incidents = highPriorityMissions > 5 ? Math.floor(Math.random() * 3) : 0;
+  const urgencyLevel = highPriorityCampaigns > 3 ? "HIGH" : highPriorityCampaigns > 0 ? "MEDIUM" : "LOW";
+  const urgentTasks = highPriorityCampaigns > 5 ? Math.floor(Math.random() * 3) : 0;
 
   return {
-    fleetStatus: {
-      value: fleetStatus,
-      label: "Operational",
-      trend: fleetTrend,
-      trendLabel: "active missions",
-      icon: "Rocket"
+    clientStatus: {
+      value: clientStatus,
+      label: "Active Campaigns",
+      trend: clientTrend,
+      trendLabel: "campaigns running",
+      icon: "Target"
     },
-    activePersonnel: {
-      value: activePersonnel.toString(),
-      label: "On Duty",
-      trend: `${personnelTrend > 0 ? '+' : ''}${personnelTrend}%`,
-      trendLabel: "vs last shift",
+    activeTeam: {
+      value: activeTeam.toString(),
+      label: "Team Members",
+      trend: `${teamTrend > 0 ? '+' : ''}${teamTrend}%`,
+      trendLabel: "vs last month",
       icon: "Users"
     },
-    systemLoad: {
-      value: `${Math.min(systemLoad, 100)}%`,
-      label: "Capacity Used",
-      trend: `${loadTrend > 0 ? '+' : ''}${loadTrend}%`,
-      trendLabel: loadTrend < 0 ? "optimized" : "increased",
-      success: loadTrend < 0,
-      icon: "Cpu"
+    utilizationRate: {
+      value: `${Math.min(utilizationRate, 100)}%`,
+      label: "Team Utilization",
+      trend: `${utilizationTrend > 0 ? '+' : ''}${utilizationTrend}%`,
+      trendLabel: utilizationTrend < 0 ? "optimized" : "increased",
+      success: utilizationTrend < 0,
+      icon: "TrendingUp"
     },
-    threatLevel: {
-      value: threatLevel,
-      label: "Secure",
-      trend: incidents.toString(),
-      trendLabel: "incidents",
-      icon: "ShieldAlert"
+    urgencyLevel: {
+      value: urgencyLevel,
+      label: "Priority Status",
+      trend: urgentTasks.toString(),
+      trendLabel: "urgent items",
+      icon: "AlertCircle"
     }
   };
 }
@@ -63,35 +63,35 @@ export async function initializeSystemMetrics() {
   const metrics = await calculateSystemMetrics();
   
   await storage.createSystemMetric({
-    metricType: "fleet_status",
-    value: metrics.fleetStatus.value,
-    label: metrics.fleetStatus.label,
-    trend: metrics.fleetStatus.trend,
-    trendLabel: metrics.fleetStatus.trendLabel
+    metricType: "client_status",
+    value: metrics.clientStatus.value,
+    label: metrics.clientStatus.label,
+    trend: metrics.clientStatus.trend,
+    trendLabel: metrics.clientStatus.trendLabel
   });
 
   await storage.createSystemMetric({
-    metricType: "active_personnel",
-    value: metrics.activePersonnel.value,
-    label: metrics.activePersonnel.label,
-    trend: metrics.activePersonnel.trend,
-    trendLabel: metrics.activePersonnel.trendLabel
+    metricType: "active_team",
+    value: metrics.activeTeam.value,
+    label: metrics.activeTeam.label,
+    trend: metrics.activeTeam.trend,
+    trendLabel: metrics.activeTeam.trendLabel
   });
 
   await storage.createSystemMetric({
-    metricType: "system_load",
-    value: metrics.systemLoad.value,
-    label: metrics.systemLoad.label,
-    trend: metrics.systemLoad.trend,
-    trendLabel: metrics.systemLoad.trendLabel
+    metricType: "utilization_rate",
+    value: metrics.utilizationRate.value,
+    label: metrics.utilizationRate.label,
+    trend: metrics.utilizationRate.trend,
+    trendLabel: metrics.utilizationRate.trendLabel
   });
 
   await storage.createSystemMetric({
-    metricType: "threat_level",
-    value: metrics.threatLevel.value,
-    label: metrics.threatLevel.label,
-    trend: metrics.threatLevel.trend,
-    trendLabel: metrics.threatLevel.trendLabel
+    metricType: "urgency_level",
+    value: metrics.urgencyLevel.value,
+    label: metrics.urgencyLevel.label,
+    trend: metrics.urgencyLevel.trend,
+    trendLabel: metrics.urgencyLevel.trendLabel
   });
 
   return metrics;

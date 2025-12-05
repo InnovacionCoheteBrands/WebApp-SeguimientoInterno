@@ -15,18 +15,17 @@ interface Settings {
   theme: string;
   language: string;
   timezone: string;
-  
+
   // Notifications
-  missionAlerts: boolean;
-  telemetryAlerts: boolean;
+  campaignAlerts: boolean;
+  analyticsAlerts: boolean;
   systemAlerts: boolean;
   emailNotifications: boolean;
-  
+
   // Visualization
   refreshRate: string;
-  units: string;
   chartAnimations: boolean;
-  
+
   // API
   apiKey: string;
   webhookUrl: string;
@@ -36,12 +35,11 @@ const defaultSettings: Settings = {
   theme: "dark",
   language: "en",
   timezone: "UTC",
-  missionAlerts: true,
-  telemetryAlerts: true,
+  campaignAlerts: true,
+  analyticsAlerts: true,
   systemAlerts: true,
   emailNotifications: false,
   refreshRate: "5",
-  units: "metric",
   chartAnimations: true,
   apiKey: "sk_live_" + Math.random().toString(36).substring(2, 15),
   webhookUrl: "",
@@ -50,7 +48,7 @@ const defaultSettings: Settings = {
 const Settings = memo(function Settings() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = localStorage.getItem("mission-control-settings");
+    const saved = localStorage.getItem("cohete-brands-settings");
     if (saved) {
       try {
         return { ...defaultSettings, ...JSON.parse(saved) };
@@ -63,7 +61,7 @@ const Settings = memo(function Settings() {
   const [hasChanges, setHasChanges] = useState(false);
 
   const handleSave = () => {
-    localStorage.setItem("mission-control-settings", JSON.stringify(settings));
+    localStorage.setItem("cohete-brands-settings", JSON.stringify(settings));
     setHasChanges(false);
     toast({
       title: "Settings Saved",
@@ -213,13 +211,13 @@ const Settings = memo(function Settings() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Mission Alerts</Label>
-                  <p className="text-xs text-muted-foreground">Critical mission updates</p>
+                  <Label className="text-sm font-medium">Campaign Alerts</Label>
+                  <p className="text-xs text-muted-foreground">Critical campaign updates</p>
                 </div>
                 <Switch
-                  checked={settings.missionAlerts}
-                  onCheckedChange={(checked) => updateSetting("missionAlerts", checked)}
-                  data-testid="switch-mission-alerts"
+                  checked={settings.campaignAlerts}
+                  onCheckedChange={(checked) => updateSetting("campaignAlerts", checked)}
+                  data-testid="switch-campaign-alerts"
                 />
               </div>
 
@@ -227,13 +225,13 @@ const Settings = memo(function Settings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Telemetry Alerts</Label>
-                  <p className="text-xs text-muted-foreground">Real-time data anomalies</p>
+                  <Label className="text-sm font-medium">Analytics Alerts</Label>
+                  <p className="text-xs text-muted-foreground">Real-time analytics anomalies</p>
                 </div>
                 <Switch
-                  checked={settings.telemetryAlerts}
-                  onCheckedChange={(checked) => updateSetting("telemetryAlerts", checked)}
-                  data-testid="switch-telemetry-alerts"
+                  checked={settings.analyticsAlerts}
+                  onCheckedChange={(checked) => updateSetting("analyticsAlerts", checked)}
+                  data-testid="switch-analytics-alerts"
                 />
               </div>
 
@@ -302,23 +300,7 @@ const Settings = memo(function Settings() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="units" className="text-xs font-mono uppercase">Measurement Units</Label>
-                <Select
-                  value={settings.units}
-                  onValueChange={(value) => updateSetting("units", value)}
-                >
-                  <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-units">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="metric">Metric (km, kg, °C)</SelectItem>
-                    <SelectItem value="imperial">Imperial (mi, lb, °F)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <Separator />
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -387,7 +369,7 @@ const Settings = memo(function Settings() {
                     data-testid="input-webhook-url"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Receive real-time mission updates at this endpoint.
+                    Receive real-time campaign updates at this endpoint.
                   </p>
                 </div>
               </div>

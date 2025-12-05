@@ -1,0 +1,50 @@
+﻿
+> rest-express@1.0.0 db:migrate:legacy
+> tsx server/migrate-legacy-data.ts
+
+≡ƒöä Starting legacy financial data migration...
+
+≡ƒôè Step 1: Analyzing existing data...
+node.exe : 
+En línea: 1 Carácter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Users\Departamento 
+AI\AppDat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (:Stri  
+  ng) [], RemoteException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+Γ¥î Migration failed: 
+TypeError: Cannot read 
+properties of undefined 
+(reading '0')
+    at migrateLegacyData 
+(C:\Users\Departamento AI\On
+eDrive\Documents\C├│digos\We
+bApp - Control\DesignSystemM
+issionControl\server\migrate
+-legacy-data.ts:42:52)
+    at process.processTicksA
+ndRejections (node:internal/
+process/task_queues:105:5)
+   Error details: Cannot 
+read properties of 
+undefined (reading '0')
+   Stack trace: TypeError: 
+Cannot read properties of 
+undefined (reading '0')
+    at migrateLegacyData 
+(C:\Users\Departamento AI\On
+eDrive\Documents\C├│digos\We
+bApp - Control\DesignSystemM
+issionControl\server\migrate
+-legacy-data.ts:42:52)
+    at process.processTicksA
+ndRejections (node:internal/
+process/task_queues:105:5)

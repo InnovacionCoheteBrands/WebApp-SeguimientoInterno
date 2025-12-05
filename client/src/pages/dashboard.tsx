@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { 
-  Rocket, 
-  Activity, 
-  Users, 
-  Cpu,
-  ShieldAlert,
+import {
+  BarChart3,
+  Activity,
+  Users,
+  Gauge,
+  AlertCircle,
   Plus,
   CheckCircle2,
   MoreVertical,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { MobileFAB } from "@/components/mobile-fab";
 import { MetricsCarousel } from "@/components/metrics-carousel";
-import { CompactMissionCard } from "@/components/compact-mission-card";
+import { CompactCampaignCard } from "@/components/compact-campaign-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -55,21 +55,21 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMissions, createMission, updateMission, deleteMission } from "@/lib/api";
-import type { InsertMission, Mission } from "@shared/schema";
+import { fetchCampaigns, createCampaign, updateCampaign, deleteCampaign } from "@/lib/api";
+import type { InsertCampaign, Campaign } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useWebSocket } from "@/hooks/use-websocket";
 
-export default function MissionControl() {
+export default function Dashboard() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
-  const [editMission, setEditMission] = useState<Partial<InsertMission>>({});
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [editCampaign, setEditCampaign] = useState<Partial<InsertCampaign>>({});
   const [progressValue, setProgressValue] = useState(0);
-  const [telemetryData, setTelemetryData] = useState<Array<{name: string, value: number}>>([
+  const [telemetryData, setTelemetryData] = useState<Array<{ name: string, value: number }>>([
     { name: "00:00", value: 40 },
     { name: "04:00", value: 30 },
     { name: "08:00", value: 65 },
@@ -81,143 +81,155 @@ export default function MissionControl() {
   const [systemMetrics, setSystemMetrics] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  
-  const [newMission, setNewMission] = useState<InsertMission>({
-    missionCode: "",
+
+  const [newCampaign, setNewCampaign] = useState<InsertCampaign>({
+    campaignCode: "",
     name: "",
-    status: "Pending",
+    clientName: "",
+    channel: "",
+    status: "Planning",
     progress: 0,
     priority: "Medium",
+    budget: 0,
+    spend: 0,
   });
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isConnected, lastMessage } = useWebSocket("/ws");
 
-  const { data: missions = [], isLoading } = useQuery({
-    queryKey: ["missions"],
-    queryFn: fetchMissions,
+  const { data: campaigns = [], isLoading } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: fetchCampaigns,
   });
 
-  const createMissionMutation = useMutation({
-    mutationFn: createMission,
-    onSuccess: async (newMission) => {
-      queryClient.setQueryData(["missions"], (oldMissions: Mission[] = []) => {
-        return [...oldMissions, newMission];
+  const createCampaignMutation = useMutation({
+    mutationFn: createCampaign,
+    onSuccess: async (newCampaign) => {
+      queryClient.setQueryData(["campaigns"], (oldCampaigns: Campaign[] = []) => {
+        return [...oldCampaigns, newCampaign];
       });
       setCreateDialogOpen(false);
-      setNewMission({
-        missionCode: "",
+      setNewCampaign({
+        campaignCode: "",
         name: "",
-        status: "Pending",
+        clientName: "",
+        channel: "",
+        status: "Planning",
         progress: 0,
         priority: "Medium",
+        budget: 0,
+        spend: 0,
       });
       toast({
-        title: "Mission Created",
-        description: "New mission has been successfully registered.",
+        title: "Campaña Creada",
+        description: "La nueva campaña ha sido registrada exitosamente.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create mission. Please try again.",
+        description: "No se pudo crear la campaña. Inténtalo de nuevo.",
         variant: "destructive",
       });
     },
   });
 
-  const updateMissionMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => updateMission(id, data),
-    onSuccess: async (updatedMission) => {
-      queryClient.setQueryData(["missions"], (oldMissions: Mission[] = []) => {
-        return oldMissions.map((mission) =>
-          mission.id === updatedMission.id ? updatedMission : mission
+  const updateCampaignMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => updateCampaign(id, data),
+    onSuccess: async (updatedCampaign) => {
+      queryClient.setQueryData(["campaigns"], (oldCampaigns: Campaign[] = []) => {
+        return oldCampaigns.map((campaign) =>
+          campaign.id === updatedCampaign.id ? updatedCampaign : campaign
         );
       });
       setEditDialogOpen(false);
       setProgressDialogOpen(false);
       toast({
-        title: "Mission Updated",
-        description: "Mission has been successfully updated.",
+        title: "Campaña Actualizada",
+        description: "La campaña ha sido actualizada exitosamente.",
       });
     },
   });
 
-  const deleteMissionMutation = useMutation({
-    mutationFn: deleteMission,
+  const deleteCampaignMutation = useMutation({
+    mutationFn: deleteCampaign,
     onSuccess: async (data, variables) => {
-      queryClient.setQueryData(["missions"], (oldMissions: Mission[] = []) => {
-        return oldMissions.filter((mission) => mission.id !== variables);
+      queryClient.setQueryData(["campaigns"], (oldCampaigns: Campaign[] = []) => {
+        return oldCampaigns.filter((campaign) => campaign.id !== variables);
       });
       setDeleteDialogOpen(false);
       toast({
-        title: "Mission Deleted",
-        description: "Mission has been removed from the system.",
+        title: "Campaña Eliminada",
+        description: "La campaña ha sido eliminada del sistema.",
       });
     },
   });
 
-  const handleCreateMission = useCallback(() => {
-    if (!newMission.missionCode || !newMission.name) {
+  const handleCreateCampaign = useCallback(() => {
+    if (!newCampaign.campaignCode || !newCampaign.name) {
       toast({
-        title: "Validation Error",
-        description: "Mission code and name are required.",
+        title: "Error de Validación",
+        description: "El código de campaña y el nombre son requeridos.",
         variant: "destructive",
       });
       return;
     }
-    createMissionMutation.mutate(newMission);
-  }, [newMission, createMissionMutation, toast]);
+    createCampaignMutation.mutate(newCampaign);
+  }, [newCampaign, createCampaignMutation, toast]);
 
-  const handleEditMission = useCallback(() => {
-    if (!selectedMission) return;
-    updateMissionMutation.mutate({
-      id: selectedMission.id,
-      data: editMission,
+  const handleEditCampaign = useCallback(() => {
+    if (!selectedCampaign) return;
+    updateCampaignMutation.mutate({
+      id: selectedCampaign.id,
+      data: editCampaign,
     });
-  }, [selectedMission, editMission, updateMissionMutation]);
+  }, [selectedCampaign, editCampaign, updateCampaignMutation]);
 
   const handleUpdateProgress = useCallback(() => {
-    if (!selectedMission) return;
-    updateMissionMutation.mutate({
-      id: selectedMission.id,
+    if (!selectedCampaign) return;
+    updateCampaignMutation.mutate({
+      id: selectedCampaign.id,
       data: { progress: progressValue },
     });
-  }, [selectedMission, progressValue, updateMissionMutation]);
+  }, [selectedCampaign, progressValue, updateCampaignMutation]);
 
-  const handleDeleteMission = useCallback(() => {
-    if (!selectedMission) return;
-    deleteMissionMutation.mutate(selectedMission.id);
-  }, [selectedMission, deleteMissionMutation]);
+  const handleDeleteCampaign = useCallback(() => {
+    if (!selectedCampaign) return;
+    deleteCampaignMutation.mutate(selectedCampaign.id);
+  }, [selectedCampaign, deleteCampaignMutation]);
 
-  const openEditDialog = useCallback((mission: Mission) => {
-    setSelectedMission(mission);
-    setEditMission({
-      missionCode: mission.missionCode,
-      name: mission.name,
-      priority: mission.priority,
-      status: mission.status,
+  const openEditDialog = useCallback((campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setEditCampaign({
+      campaignCode: campaign.campaignCode,
+      name: campaign.name,
+      clientName: campaign.clientName,
+      channel: campaign.channel,
+      priority: campaign.priority,
+      status: campaign.status,
+      budget: campaign.budget,
+      spend: campaign.spend,
     });
     setEditDialogOpen(true);
   }, []);
 
-  const openProgressDialog = useCallback((mission: Mission) => {
-    setSelectedMission(mission);
-    setProgressValue(mission.progress);
+  const openProgressDialog = useCallback((campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setProgressValue(campaign.progress);
     setProgressDialogOpen(true);
   }, []);
 
-  const openDeleteDialog = useCallback((mission: Mission) => {
-    setSelectedMission(mission);
+  const openDeleteDialog = useCallback((campaign: Campaign) => {
+    setSelectedCampaign(campaign);
     setDeleteDialogOpen(true);
   }, []);
 
-  const handleCompleteMission = useCallback((id: number) => {
-    updateMissionMutation.mutate({
+  const handleCompleteCampaign = useCallback((id: number) => {
+    updateCampaignMutation.mutate({
       id,
       data: { status: "Completed", progress: 100 },
     });
-  }, [updateMissionMutation]);
+  }, [updateCampaignMutation]);
 
   useEffect(() => {
     if (lastMessage) {
@@ -229,8 +241,8 @@ export default function MissionControl() {
           }];
           return newData.slice(-24);
         });
-      } else if (lastMessage.type === "mission_update") {
-        queryClient.invalidateQueries({ queryKey: ["missions"] });
+      } else if (lastMessage.type === "campaign_update") {
+        queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       } else if (lastMessage.type === "metrics_update") {
         setSystemMetrics(lastMessage.data);
       }
@@ -238,438 +250,536 @@ export default function MissionControl() {
   }, [lastMessage, queryClient]);
 
 
-  const activeMissions = useMemo(() => {
-    let filtered = missions.filter(m => m.status === "Active" || m.status === "Pending");
-    
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(m => m.status === statusFilter);
-    }
-    
-    if (priorityFilter !== "all") {
-      filtered = filtered.filter(m => m.priority === priorityFilter);
-    }
-    
-    return filtered;
-  }, [missions, statusFilter, priorityFilter]);
+  const activeCampaigns = useMemo(() => {
+    let filtered = campaigns.filter(c => c.status === "Active" || c.status === "In Progress" || c.status === "Planning");
 
-  const operationalCount = useMemo(() => 
-    missions.filter(m => m.status === "Active").length,
-    [missions]
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(c => c.status === statusFilter);
+    }
+
+    if (priorityFilter !== "all") {
+      filtered = filtered.filter(c => c.priority === priorityFilter);
+    }
+
+    return filtered;
+  }, [campaigns, statusFilter, priorityFilter]);
+
+  const operationalCount = useMemo(() =>
+    campaigns.filter(c => c.status === "Active").length,
+    [campaigns]
   );
 
   return (
     <>
-      {/* Dashboard Content */}
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-          
-          {/* Mobile Metrics Carousel */}
-          <MetricsCarousel
-            fleetStatus={{ operational: operationalCount, total: missions.length }}
-            personnel={{ active: systemMetrics?.activePersonnel?.value ? parseInt(systemMetrics.activePersonnel.value.replace(/,/g, '')) : 1284, trend: systemMetrics?.activePersonnel?.trend || "+12%" }}
-            systemLoad={{ percent: systemMetrics?.systemLoad?.value ? parseInt(systemMetrics.systemLoad.value) : 42, status: systemMetrics?.systemLoad?.trendLabel || "optimized" }}
-            threatLevel={{ level: systemMetrics?.threatLevel?.value || "LOW", incidents: systemMetrics?.threatLevel?.trend ? parseInt(systemMetrics.threatLevel.trend) : 0 }}
+
+        <MetricsCarousel
+          clientStatus={{ operational: operationalCount, total: campaigns.length }}
+          team={{ active: systemMetrics?.activeTeam?.value ? parseInt(systemMetrics.activeTeam.value.replace(/,/g, '')) : 1284, trend: systemMetrics?.activeTeam?.trend || "+12%" }}
+          systemLoad={{ percent: systemMetrics?.utilizationRate?.value ? parseInt(systemMetrics.utilizationRate.value) : 42, status: systemMetrics?.utilizationRate?.trendLabel || "optimized" }}
+          threatLevel={{ level: systemMetrics?.urgencyLevel?.value || "LOW", incidents: systemMetrics?.urgencyLevel?.trend ? parseInt(systemMetrics.urgencyLevel.trend) : 0 }}
+        />
+
+        <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatusCard
+            title="Estado de Clientes"
+            value={systemMetrics?.clientStatus?.value || `${operationalCount}/${campaigns.length}`}
+            label={systemMetrics?.clientStatus?.label || "Activos"}
+            icon={BarChart3}
+            trend={systemMetrics?.clientStatus?.trend || `+${operationalCount}`}
+            trendLabel={systemMetrics?.clientStatus?.trendLabel || "campañas activas"}
           />
+          <StatusCard
+            title="Equipo Activo"
+            value={systemMetrics?.activeTeam?.value || "1,284"}
+            label={systemMetrics?.activeTeam?.label || "En Servicio"}
+            icon={Users}
+            trend={systemMetrics?.activeTeam?.trend || "+12%"}
+            trendLabel={systemMetrics?.activeTeam?.trendLabel || "vs último turno"}
+          />
+          <StatusCard
+            title="Utilización"
+            value={systemMetrics?.utilizationRate?.value || "42%"}
+            label={systemMetrics?.utilizationRate?.label || "Capacidad Usada"}
+            icon={Gauge}
+            trend={systemMetrics?.utilizationRate?.trend || "-5%"}
+            trendLabel={systemMetrics?.utilizationRate?.trendLabel || "optimizado"}
+            success={systemMetrics?.utilizationRate?.success !== undefined ? systemMetrics.utilizationRate.success : true}
+          />
+          <StatusCard
+            title="Nivel de Urgencia"
+            value={systemMetrics?.urgencyLevel?.value || "BAJO"}
+            label={systemMetrics?.urgencyLevel?.label || "Controlado"}
+            icon={AlertCircle}
+            trend={systemMetrics?.urgencyLevel?.trend || "0"}
+            trendLabel={systemMetrics?.urgencyLevel?.trendLabel || "incidentes"}
+          />
+        </div>
 
-          {/* Status Overview - Desktop */}
-          <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatusCard 
-              title="Fleet Status" 
-              value={systemMetrics?.fleetStatus?.value || `${operationalCount}/${missions.length}`} 
-              label={systemMetrics?.fleetStatus?.label || "Operational"} 
-              icon={Rocket} 
-              trend={systemMetrics?.fleetStatus?.trend || `+${operationalCount}`} 
-              trendLabel={systemMetrics?.fleetStatus?.trendLabel || "active missions"} 
-            />
-            <StatusCard 
-              title="Active Personnel" 
-              value={systemMetrics?.activePersonnel?.value || "1,284"} 
-              label={systemMetrics?.activePersonnel?.label || "On Duty"} 
-              icon={Users} 
-              trend={systemMetrics?.activePersonnel?.trend || "+12%"} 
-              trendLabel={systemMetrics?.activePersonnel?.trendLabel || "vs last shift"} 
-            />
-            <StatusCard 
-              title="System Load" 
-              value={systemMetrics?.systemLoad?.value || "42%"} 
-              label={systemMetrics?.systemLoad?.label || "Capacity Used"} 
-              icon={Cpu} 
-              trend={systemMetrics?.systemLoad?.trend || "-5%"} 
-              trendLabel={systemMetrics?.systemLoad?.trendLabel || "optimized"} 
-              success={systemMetrics?.systemLoad?.success !== undefined ? systemMetrics.systemLoad.success : true} 
-            />
-            <StatusCard 
-              title="Threat Level" 
-              value={systemMetrics?.threatLevel?.value || "LOW"} 
-              label={systemMetrics?.threatLevel?.label || "Secure"} 
-              icon={ShieldAlert} 
-              trend={systemMetrics?.threatLevel?.trend || "0"} 
-              trendLabel={systemMetrics?.threatLevel?.trendLabel || "incidents"} 
-            />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <Card className="lg:col-span-2 border-border bg-card/50 rounded-sm">
+            <CardHeader className="p-3 sm:p-4 pb-2">
+              <CardTitle className="text-base sm:text-lg font-display flex items-center justify-between">
+                <span>Análisis de Rendimiento</span>
+                <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs">EN VIVO</Badge>
+              </CardTitle>
+              <CardDescription className="font-mono text-xs uppercase tracking-wider">Datos en tiempo real</CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-4 pt-0">
+              <div className="h-[320px] sm:h-[380px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={telemetryData}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(43 100% 50%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(43 100% 50%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      fontFamily="var(--font-mono)"
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      fontFamily="var(--font-mono)"
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        borderColor: 'hsl(var(--border))',
+                        borderRadius: '2px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorValue)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Main Chart */}
-            <Card className="lg:col-span-2 border-border bg-card/50 rounded-sm">
-              <CardHeader className="p-3 sm:p-4 pb-2">
-                <CardTitle className="text-base sm:text-lg font-display flex items-center justify-between">
-                  <span>Trajectory Analysis</span>
-                  <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs">LIVE</Badge>
-                </CardTitle>
-                <CardDescription className="font-mono text-xs uppercase tracking-wider">Real-time telemetry data</CardDescription>
-              </CardHeader>
-              <CardContent className="p-3 sm:p-4 pt-0">
-                <div className="h-[320px] sm:h-[380px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={telemetryData}>
-                      <defs>
-                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(43 100% 50%)" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(43 100% 50%)" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} vertical={false} />
-                      <XAxis 
-                        dataKey="name" 
-                        stroke="hsl(var(--muted-foreground))" 
-                        fontSize={12} 
-                        tickLine={false} 
-                        axisLine={false}
-                        fontFamily="var(--font-mono)"
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))" 
-                        fontSize={12} 
-                        tickLine={false} 
-                        axisLine={false}
-                        fontFamily="var(--font-mono)"
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          borderColor: 'hsl(var(--border))',
-                          borderRadius: '2px',
-                          fontFamily: 'var(--font-mono)'
-                        }} 
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                        fillOpacity={1} 
-                        fill="url(#colorValue)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+          <Card className="border-border bg-card/50 rounded-sm flex flex-col">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
+                <div>
+                  <CardTitle className="text-base sm:text-lg font-display">Campañas Activas</CardTitle>
+                  <CardDescription className="font-mono text-xs uppercase tracking-wider">Cola de Prioridad</CardDescription>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Active Missions List */}
-            <Card className="border-border bg-card/50 rounded-sm flex flex-col">
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
-                  <div>
-                    <CardTitle className="text-base sm:text-lg font-display">Active Missions</CardTitle>
-                    <CardDescription className="font-mono text-xs uppercase tracking-wider">Priority Queue</CardDescription>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-status-filter">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-priority-filter">
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-status-filter">
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Planning">Planeación</SelectItem>
+                      <SelectItem value="Active">Activa</SelectItem>
+                      <SelectItem value="In Progress">En Progreso</SelectItem>
+                      <SelectItem value="Paused">Pausada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-priority-filter">
+                      <SelectValue placeholder="Prioridad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="High">Alta</SelectItem>
+                      <SelectItem value="Medium">Media</SelectItem>
+                      <SelectItem value="Low">Baja</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-auto p-4 sm:p-6 pt-0">
-                {isLoading ? (
-                  <div className="text-center text-muted-foreground py-8">Loading missions...</div>
-                ) : activeMissions.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <p className="mb-2">No active missions</p>
-                    <p className="text-xs">Create a new mission to get started</p>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto p-4 sm:p-6 pt-0">
+              {isLoading ? (
+                <div className="text-center text-muted-foreground py-8">Cargando campañas...</div>
+              ) : activeCampaigns.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  <p className="mb-2">No hay campañas activas</p>
+                  <p className="text-xs">Crea una nueva campaña para comenzar</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3 md:hidden">
+                    {activeCampaigns.slice(0, 6).map((campaign) => (
+                      <CompactCampaignCard
+                        key={campaign.id}
+                        id={campaign.id}
+                        campaignCode={campaign.campaignCode}
+                        name={campaign.name}
+                        status={campaign.status}
+                        priority={campaign.priority}
+                        progress={campaign.progress}
+                        createdAt={campaign.createdAt ? new Date(campaign.createdAt).toISOString() : ""}
+                        updatedAt={campaign.updatedAt ? new Date(campaign.updatedAt).toISOString() : ""}
+                        onMenuClick={() => {
+                          setSelectedCampaign(campaign);
+                        }}
+                      />
+                    ))}
                   </div>
-                ) : (
-                  <>
-                    {/* Mobile Grid - 2 Columns */}
-                    <div className="grid grid-cols-2 gap-3 md:hidden">
-                      {activeMissions.slice(0, 6).map((mission) => (
-                        <CompactMissionCard
-                          key={mission.id}
-                          id={mission.id}
-                          missionCode={mission.missionCode}
-                          name={mission.name}
-                          status={mission.status}
-                          priority={mission.priority}
-                          progress={mission.progress}
-                          createdAt={mission.createdAt ? new Date(mission.createdAt).toISOString() : ""}
-                          updatedAt={mission.updatedAt ? new Date(mission.updatedAt).toISOString() : ""}
-                          onMenuClick={() => {
-                            setSelectedMission(mission);
-                            // Open a dropdown menu or action sheet
-                          }}
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* Desktop List */}
-                    <div className="hidden md:block space-y-3 sm:space-y-4">
-                      {activeMissions.slice(0, 4).map((mission) => (
-                        <div key={mission.id} className="group flex flex-col sm:flex-row items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all gap-3" data-testid={`mission-card-${mission.id}`}>
+
+                  <div className="hidden md:block space-y-3 sm:space-y-4">
+                    {activeCampaigns.slice(0, 4).map((campaign) => (
+                      <div key={campaign.id} className="group flex flex-col sm:flex-row items-start justify-between p-3 rounded-sm border border-transparent hover:border-border hover:bg-muted/30 transition-all gap-3" data-testid={`campaign-card-${campaign.id}`}>
                         <div className="space-y-1 flex-1 w-full sm:w-auto">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-xs text-primary" data-testid={`mission-code-${mission.id}`}>{mission.missionCode}</span>
-                            <span className="font-medium text-sm" data-testid={`mission-name-${mission.id}`}>{mission.name}</span>
+                            <span className="font-mono text-xs text-primary" data-testid={`campaign-code-${campaign.id}`}>{campaign.campaignCode}</span>
+                            <span className="font-medium text-sm" data-testid={`campaign-name-${campaign.id}`}>{campaign.name}</span>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span className={
-                              mission.status === "Active" ? "text-green-400" : 
-                              mission.status === "Pending" ? "text-yellow-400" : "text-blue-400"
-                            } data-testid={`mission-status-${mission.id}`}>● {mission.status}</span>
+                              campaign.status === "Active" ? "text-green-400" :
+                                campaign.status === "In Progress" ? "text-blue-400" :
+                                  campaign.status === "Planning" ? "text-yellow-400" : "text-gray-400"
+                            } data-testid={`campaign-status-${campaign.id}`}>● {campaign.status}</span>
                             <span>•</span>
-                            <span data-testid={`mission-priority-${mission.id}`}>{mission.priority} Priority</span>
+                            <span data-testid={`campaign-priority-${campaign.id}`}>{campaign.priority} Priority</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <div className="flex-1 sm:w-24">
                             <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
                               <span>PROG</span>
-                              <span data-testid={`mission-progress-${mission.id}`}>{mission.progress}%</span>
+                              <span data-testid={`campaign-progress-${campaign.id}`}>{campaign.progress}%</span>
                             </div>
-                            <Progress value={mission.progress} className="h-1 bg-muted" indicatorClassName={mission.progress === 100 ? "bg-green-500" : "bg-primary"} />
+                            <Progress value={campaign.progress} className="h-1 bg-muted" indicatorClassName={campaign.progress === 100 ? "bg-green-500" : "bg-primary"} />
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-11 w-11" data-testid={`button-menu-${mission.id}`}>
+                              <Button variant="ghost" size="icon" className="h-11 w-11" data-testid={`button-menu-${campaign.id}`}>
                                 <MoreVertical className="size-5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-card border-border">
-                              <DropdownMenuItem onClick={() => openEditDialog(mission)} data-testid={`menu-edit-${mission.id}`}>
+                              <DropdownMenuItem onClick={() => openEditDialog(campaign)} data-testid={`menu-edit-${campaign.id}`}>
                                 <Edit className="size-3 mr-2" />
-                                Edit Mission
+                                Editar Campaña
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openProgressDialog(mission)} data-testid={`menu-progress-${mission.id}`}>
+                              <DropdownMenuItem onClick={() => openProgressDialog(campaign)} data-testid={`menu-progress-${campaign.id}`}>
                                 <TrendingUp className="size-3 mr-2" />
-                                Update Progress
+                                Actualizar Progreso
                               </DropdownMenuItem>
-                              {mission.status !== "Completed" && (
-                                <DropdownMenuItem onClick={() => handleCompleteMission(mission.id)} data-testid={`menu-complete-${mission.id}`}>
+                              {campaign.status !== "Completed" && (
+                                <DropdownMenuItem onClick={() => handleCompleteCampaign(campaign.id)} data-testid={`menu-complete-${campaign.id}`}>
                                   <CheckCircle2 className="size-3 mr-2" />
-                                  Mark Complete
+                                  Marcar Completada
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => openDeleteDialog(mission)}
+                              <DropdownMenuItem
+                                onClick={() => openDeleteDialog(campaign)}
                                 className="text-destructive focus:text-destructive"
-                                data-testid={`menu-delete-${mission.id}`}
+                                data-testid={`menu-delete-${campaign.id}`}
                               >
                                 <Trash2 className="size-3 mr-2" />
-                                Delete Mission
+                                Eliminar Campaña
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
                       </div>
                     ))}
-                    </div>
-                  </>
-                )}
-                {activeMissions.length > 4 && (
-                  <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase h-11">
-                    View All Missions ({activeMissions.length})
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
-            <InfoWidget title="Atmospheric Conditions" value="Stable" subtitle="Visibility 100%" />
-            <InfoWidget title="Network Latency" value="24ms" subtitle="Starlink Node: Alpha" />
-            <InfoWidget title="Power Reserves" value="98.4%" subtitle="Solar Array: Optimal" />
-          </div>
-
+                  </div>
+                </>
+              )}
+              {activeCampaigns.length > 4 && (
+                <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase h-11">
+                  Ver Todas las Campañas ({activeCampaigns.length})
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-      {/* Create Mission Dialog */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+          <InfoWidget title="Condiciones del Mercado" value="Estable" subtitle="Visibilidad 100%" />
+          <InfoWidget title="Latencia de Red" value="24ms" subtitle="Nodo: Alpha" />
+          <InfoWidget title="Reservas de Presupuesto" value="98.4%" subtitle="Estado: Óptimo" />
+        </div>
+
+      </div>
+
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-lg sm:text-xl">Create New Mission</DialogTitle>
+            <DialogTitle className="font-display text-lg sm:text-xl">Crear Nueva Campaña</DialogTitle>
             <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-              Initialize mission parameters
+              Inicializar parámetros de campaña
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="mission-code" className="text-xs font-mono uppercase">Mission Code</Label>
+              <Label htmlFor="campaign-code" className="text-xs font-mono uppercase">Código de Campaña</Label>
               <Input
-                id="mission-code"
-                placeholder="MSN-XXX"
-                value={newMission.missionCode}
-                onChange={(e) => setNewMission({ ...newMission, missionCode: e.target.value })}
+                id="campaign-code"
+                placeholder="CMP-XXX"
+                value={newCampaign.campaignCode}
+                onChange={(e) => setNewCampaign({ ...newCampaign, campaignCode: e.target.value })}
                 className="rounded-sm border-border bg-background h-11"
-                data-testid="input-mission-code"
+                data-testid="input-campaign-code"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="mission-name" className="text-xs font-mono uppercase">Mission Name</Label>
+              <Label htmlFor="campaign-name" className="text-xs font-mono uppercase">Nombre de Campaña</Label>
               <Input
-                id="mission-name"
-                placeholder="Enter mission name"
-                value={newMission.name}
-                onChange={(e) => setNewMission({ ...newMission, name: e.target.value })}
+                id="campaign-name"
+                placeholder="Ingresa el nombre de la campaña"
+                value={newCampaign.name}
+                onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
                 className="rounded-sm border-border bg-background h-11"
-                data-testid="input-mission-name"
+                data-testid="input-campaign-name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="priority" className="text-xs font-mono uppercase">Priority Level</Label>
-              <Select value={newMission.priority} onValueChange={(val) => setNewMission({ ...newMission, priority: val })}>
+              <Label htmlFor="client-name" className="text-xs font-mono uppercase">Cliente</Label>
+              <Input
+                id="client-name"
+                placeholder="Nombre del cliente"
+                value={newCampaign.clientName}
+                onChange={(e) => setNewCampaign({ ...newCampaign, clientName: e.target.value })}
+                className="rounded-sm border-border bg-background h-11"
+                data-testid="input-client-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="channel" className="text-xs font-mono uppercase">Canal</Label>
+              <Select value={newCampaign.channel} onValueChange={(val) => setNewCampaign({ ...newCampaign, channel: val })}>
+                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-channel">
+                  <SelectValue placeholder="Selecciona un canal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Meta">Meta</SelectItem>
+                  <SelectItem value="Google Ads">Google Ads</SelectItem>
+                  <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                  <SelectItem value="Email">Email</SelectItem>
+                  <SelectItem value="TikTok">TikTok</SelectItem>
+                  <SelectItem value="Twitter">Twitter</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="budget" className="text-xs font-mono uppercase">Presupuesto</Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  placeholder="0"
+                  value={newCampaign.budget}
+                  onChange={(e) => setNewCampaign({ ...newCampaign, budget: parseInt(e.target.value) || 0 })}
+                  className="rounded-sm border-border bg-background h-11"
+                  data-testid="input-budget"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="spend" className="text-xs font-mono uppercase">Gasto Actual</Label>
+                <Input
+                  id="spend"
+                  type="number"
+                  placeholder="0"
+                  value={newCampaign.spend}
+                  onChange={(e) => setNewCampaign({ ...newCampaign, spend: parseInt(e.target.value) || 0 })}
+                  className="rounded-sm border-border bg-background h-11"
+                  data-testid="input-spend"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priority" className="text-xs font-mono uppercase">Nivel de Prioridad</Label>
+              <Select value={newCampaign.priority} onValueChange={(val) => setNewCampaign({ ...newCampaign, priority: val })}>
                 <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-priority">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Low">Baja</SelectItem>
+                  <SelectItem value="Medium">Media</SelectItem>
+                  <SelectItem value="High">Alta</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status" className="text-xs font-mono uppercase">Status</Label>
-              <Select value={newMission.status} onValueChange={(val) => setNewMission({ ...newMission, status: val })}>
+              <Label htmlFor="status" className="text-xs font-mono uppercase">Estado</Label>
+              <Select value={newCampaign.status} onValueChange={(val) => setNewCampaign({ ...newCampaign, status: val })}>
                 <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Planning">Planeación</SelectItem>
+                  <SelectItem value="Active">Activa</SelectItem>
+                  <SelectItem value="In Progress">En Progreso</SelectItem>
+                  <SelectItem value="Paused">Pausada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm h-11" data-testid="button-cancel">
-              Cancel
+              Cancelar
             </Button>
-            <Button 
-              onClick={handleCreateMission}
+            <Button
+              onClick={handleCreateCampaign}
               className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-              disabled={createMissionMutation.isPending}
-              data-testid="button-submit-mission"
+              disabled={createCampaignMutation.isPending}
+              data-testid="button-submit-campaign"
             >
-              {createMissionMutation.isPending ? "Creating..." : "Create Mission"}
+              {createCampaignMutation.isPending ? "Creando..." : "Crear Campaña"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Mission Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Edit Mission</DialogTitle>
+            <DialogTitle className="font-display text-xl">Editar Campaña</DialogTitle>
             <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-              Update mission parameters
+              Actualizar parámetros de campaña
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Mission Code</Label>
+              <Label className="text-xs font-mono uppercase">Código de Campaña</Label>
               <Input
-                value={editMission.missionCode || ""}
-                onChange={(e) => setEditMission({ ...editMission, missionCode: e.target.value })}
+                value={editCampaign.campaignCode || ""}
+                onChange={(e) => setEditCampaign({ ...editCampaign, campaignCode: e.target.value })}
                 className="rounded-sm border-border bg-background h-11"
                 data-testid="input-edit-code"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Mission Name</Label>
+              <Label className="text-xs font-mono uppercase">Nombre de Campaña</Label>
               <Input
-                value={editMission.name || ""}
-                onChange={(e) => setEditMission({ ...editMission, name: e.target.value })}
+                value={editCampaign.name || ""}
+                onChange={(e) => setEditCampaign({ ...editCampaign, name: e.target.value })}
                 className="rounded-sm border-border bg-background h-11"
                 data-testid="input-edit-name"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Priority</Label>
-              <Select value={editMission.priority} onValueChange={(val) => setEditMission({ ...editMission, priority: val })}>
+              <Label className="text-xs font-mono uppercase">Cliente</Label>
+              <Input
+                value={editCampaign.clientName || ""}
+                onChange={(e) => setEditCampaign({ ...editCampaign, clientName: e.target.value })}
+                className="rounded-sm border-border bg-background h-11"
+                data-testid="input-edit-client"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase">Canal</Label>
+              <Select value={editCampaign.channel} onValueChange={(val) => setEditCampaign({ ...editCampaign, channel: val })}>
+                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-channel">
+                  <SelectValue placeholder="Selecciona un canal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Meta">Meta</SelectItem>
+                  <SelectItem value="Google Ads">Google Ads</SelectItem>
+                  <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                  <SelectItem value="Email">Email</SelectItem>
+                  <SelectItem value="TikTok">TikTok</SelectItem>
+                  <SelectItem value="Twitter">Twitter</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-mono uppercase">Presupuesto</Label>
+                <Input
+                  type="number"
+                  value={editCampaign.budget || 0}
+                  onChange={(e) => setEditCampaign({ ...editCampaign, budget: parseInt(e.target.value) || 0 })}
+                  className="rounded-sm border-border bg-background h-11"
+                  data-testid="input-edit-budget"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-mono uppercase">Gasto Actual</Label>
+                <Input
+                  type="number"
+                  value={editCampaign.spend || 0}
+                  onChange={(e) => setEditCampaign({ ...editCampaign, spend: parseInt(e.target.value) || 0 })}
+                  className="rounded-sm border-border bg-background h-11"
+                  data-testid="input-edit-spend"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase">Prioridad</Label>
+              <Select value={editCampaign.priority} onValueChange={(val) => setEditCampaign({ ...editCampaign, priority: val })}>
                 <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-priority">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Low">Baja</SelectItem>
+                  <SelectItem value="Medium">Media</SelectItem>
+                  <SelectItem value="High">Alta</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Status</Label>
-              <Select value={editMission.status} onValueChange={(val) => setEditMission({ ...editMission, status: val })}>
+              <Label className="text-xs font-mono uppercase">Estado</Label>
+              <Select value={editCampaign.status} onValueChange={(val) => setEditCampaign({ ...editCampaign, status: val })}>
                 <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Planning">Planeación</SelectItem>
+                  <SelectItem value="Active">Activa</SelectItem>
+                  <SelectItem value="In Progress">En Progreso</SelectItem>
+                  <SelectItem value="Paused">Pausada</SelectItem>
+                  <SelectItem value="Completed">Completada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-sm h-11">
-              Cancel
+              Cancelar
             </Button>
-            <Button 
-              onClick={handleEditMission}
+            <Button
+              onClick={handleEditCampaign}
               className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-              disabled={updateMissionMutation.isPending}
+              disabled={updateCampaignMutation.isPending}
               data-testid="button-save-edit"
             >
-              {updateMissionMutation.isPending ? "Saving..." : "Save Changes"}
+              {updateCampaignMutation.isPending ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Update Progress Dialog */}
       <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
         <DialogContent className="bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Update Mission Progress</DialogTitle>
+            <DialogTitle className="font-display text-xl">Actualizar Progreso de Campaña</DialogTitle>
             <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-              Adjust completion percentage
+              Ajustar porcentaje de completación
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-6">
             <div className="space-y-4">
               <div className="flex justify-between items-center gap-4">
                 <div className="flex-1">
-                  <Label className="text-xs font-mono uppercase">Progress</Label>
+                  <Label className="text-xs font-mono uppercase">Progreso</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <Input
@@ -707,44 +817,42 @@ export default function MissionControl() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setProgressDialogOpen(false)} className="rounded-sm h-11">
-              Cancel
+              Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handleUpdateProgress}
               className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-              disabled={updateMissionMutation.isPending}
+              disabled={updateCampaignMutation.isPending}
               data-testid="button-save-progress"
             >
-              {updateMissionMutation.isPending ? "Updating..." : "Update Progress"}
+              {updateCampaignMutation.isPending ? "Actualizando..." : "Actualizar Progreso"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-display text-xl">Confirm Mission Deletion</AlertDialogTitle>
+            <AlertDialogTitle className="font-display text-xl">Confirmar Eliminación de Campaña</AlertDialogTitle>
             <AlertDialogDescription className="font-mono text-xs">
-              Are you sure you want to delete mission <span className="text-primary font-bold">{selectedMission?.missionCode}</span>?
-              This action cannot be undone.
+              ¿Estás seguro de que deseas eliminar la campaña <span className="text-primary font-bold">{selectedCampaign?.campaignCode}</span>?
+              Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteMission}
+            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCampaign}
               className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="button-confirm-delete"
             >
-              {deleteMissionMutation.isPending ? "Deleting..." : "Delete Mission"}
+              {deleteCampaignMutation.isPending ? "Eliminando..." : "Eliminar Campaña"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Floating Action Button */}
       <MobileFAB onClick={() => setCreateDialogOpen(true)} />
     </>
   );
@@ -781,7 +889,7 @@ function InfoWidget({ title, value, subtitle }: any) {
       </div>
       <div className="text-right">
         <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden mb-1">
-           <div className="h-full bg-primary w-[70%] animate-pulse"></div>
+          <div className="h-full bg-primary w-[70%] animate-pulse"></div>
         </div>
         <p className="text-[10px] text-muted-foreground">{subtitle}</p>
       </div>

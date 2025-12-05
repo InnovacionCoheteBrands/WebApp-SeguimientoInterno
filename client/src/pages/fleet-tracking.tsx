@@ -1,6 +1,6 @@
 import { useMemo, memo, useState } from "react";
-import { Rocket, ArrowLeft, Globe, MapPin, Navigation, Clock, Plus, Pencil, Trash2 } from "lucide-react";
-import { CompactFleetCard } from "@/components/compact-fleet-card";
+import { Briefcase, ArrowLeft, Activity, Building2, DollarSign, TrendingUp, Clock, Plus, Pencil, Trash2, Target } from "lucide-react";
+import { CompactClientCard } from "@/components/compact-client-card";
 import { MobileFAB } from "@/components/mobile-fab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,55 +11,57 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMissions, fetchFleetPositions, createFleetPosition, updateFleetPosition, deleteFleetPosition, type FleetPosition } from "@/lib/api";
+import { fetchCampaigns, fetchClientAccounts, createClientAccount, updateClientAccount, deleteClientAccount, type ClientAccount } from "@/lib/api";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertFleetPosition } from "@shared/schema";
+import type { InsertClientAccount } from "@shared/schema";
 
 const FleetTracking = memo(function FleetTracking() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPosition, setEditingPosition] = useState<FleetPosition | null>(null);
-  const [deleteMissionId, setDeleteMissionId] = useState<number | null>(null);
+  const [editingAccount, setEditingAccount] = useState<ClientAccount | null>(null);
+  const [deleteCampaignId, setDeleteCampaignId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: missions = [] } = useQuery({
-    queryKey: ["missions"],
-    queryFn: fetchMissions,
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: fetchCampaigns,
   });
 
-  const { data: fleetPositions = [] } = useQuery({
-    queryKey: ["fleet-positions"],
-    queryFn: fetchFleetPositions,
+  const { data: clientAccounts = [] } = useQuery({
+    queryKey: ["client-accounts"],
+    queryFn: fetchClientAccounts,
   });
 
-  const fleetData = useMemo(() => {
-    return missions.map((mission) => {
-      const position = fleetPositions.find((p) => p.missionId === mission.id);
+  const clientData = useMemo(() => {
+    return campaigns.map((campaign) => {
+      const account = clientAccounts.find((a) => a.campaignId === campaign.id);
       return {
-        mission,
-        position,
+        campaign,
+        account,
       };
     });
-  }, [missions, fleetPositions]);
+  }, [campaigns, clientAccounts]);
 
-  const [formData, setFormData] = useState<Partial<InsertFleetPosition>>({
-    missionId: 0,
-    sector: "",
-    coordinates: "",
-    velocity: 0,
-    distance: 0,
+  const [formData, setFormData] = useState<Partial<InsertClientAccount>>({
+    campaignId: 0,
+    companyName: "",
+    industry: "",
+    monthlyBudget: 0,
+    currentSpend: 0,
+    healthScore: 100,
+    nextMilestone: "",
     status: "Active",
   });
 
   const createMutation = useMutation({
-    mutationFn: createFleetPosition,
+    mutationFn: createClientAccount,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
+      queryClient.invalidateQueries({ queryKey: ["client-accounts"] });
       setIsDialogOpen(false);
       resetForm();
-      toast({ title: "Success", description: "Fleet position created successfully" });
+      toast({ title: "Éxito", description: "Cuenta de cliente creada exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -67,14 +69,14 @@ const FleetTracking = memo(function FleetTracking() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ missionId, data }: { missionId: number; data: Partial<InsertFleetPosition> }) =>
-      updateFleetPosition(missionId, data),
+    mutationFn: ({ campaignId, data }: { campaignId: number; data: Partial<InsertClientAccount> }) =>
+      updateClientAccount(campaignId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
+      queryClient.invalidateQueries({ queryKey: ["client-accounts"] });
       setIsDialogOpen(false);
-      setEditingPosition(null);
+      setEditingAccount(null);
       resetForm();
-      toast({ title: "Success", description: "Fleet position updated successfully" });
+      toast({ title: "Éxito", description: "Cuenta de cliente actualizada exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -82,11 +84,11 @@ const FleetTracking = memo(function FleetTracking() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteFleetPosition,
+    mutationFn: deleteClientAccount,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fleet-positions"] });
-      setDeleteMissionId(null);
-      toast({ title: "Success", description: "Fleet position deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ["client-accounts"] });
+      setDeleteCampaignId(null);
+      toast({ title: "Éxito", description: "Cuenta de cliente eliminada exitosamente" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -95,26 +97,30 @@ const FleetTracking = memo(function FleetTracking() {
 
   const resetForm = () => {
     setFormData({
-      missionId: 0,
-      sector: "",
-      coordinates: "",
-      velocity: 0,
-      distance: 0,
+      campaignId: 0,
+      companyName: "",
+      industry: "",
+      monthlyBudget: 0,
+      currentSpend: 0,
+      healthScore: 100,
+      nextMilestone: "",
       status: "Active",
     });
-    setEditingPosition(null);
+    setEditingAccount(null);
   };
 
-  const handleOpenDialog = (position?: FleetPosition) => {
-    if (position) {
-      setEditingPosition(position);
+  const handleOpenDialog = (account?: ClientAccount) => {
+    if (account) {
+      setEditingAccount(account);
       setFormData({
-        missionId: position.missionId,
-        sector: position.sector,
-        coordinates: position.coordinates,
-        velocity: position.velocity,
-        distance: position.distance,
-        status: position.status,
+        campaignId: account.campaignId,
+        companyName: account.companyName,
+        industry: account.industry,
+        monthlyBudget: account.monthlyBudget,
+        currentSpend: account.currentSpend,
+        healthScore: account.healthScore,
+        nextMilestone: account.nextMilestone || "",
+        status: account.status,
       });
     } else {
       resetForm();
@@ -124,19 +130,19 @@ const FleetTracking = memo(function FleetTracking() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.missionId || !formData.sector || !formData.coordinates) {
-      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+
+    if (!formData.campaignId || !formData.companyName || !formData.industry) {
+      toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
       return;
     }
 
-    if (editingPosition) {
-      updateMutation.mutate({ 
-        missionId: editingPosition.missionId, 
-        data: formData 
+    if (editingAccount) {
+      updateMutation.mutate({
+        campaignId: editingAccount.campaignId,
+        data: formData
       });
     } else {
-      createMutation.mutate(formData as InsertFleetPosition);
+      createMutation.mutate(formData as InsertClientAccount);
     }
   };
 
@@ -151,49 +157,49 @@ const FleetTracking = memo(function FleetTracking() {
               </Button>
             </Link>
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">Fleet Administration</h1>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">Gestión de Clientes</h1>
               <p className="text-xs sm:text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
-                Manage Fleet Positions & Tracking
+                Administrar Cuentas y Proyectos
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs sm:text-sm">
-              {fleetData.length} VESSELS
+              {clientData.length} CLIENTES
             </Badge>
-            <Button 
-              onClick={() => handleOpenDialog()} 
+            <Button
+              onClick={() => handleOpenDialog()}
               className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-3 sm:px-4 flex-1 sm:flex-initial"
               data-testid="button-new-fleet"
             >
               <Plus className="size-5 sm:size-4 sm:mr-2" />
-              <span className="hidden sm:inline">New Position</span>
-              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">Nueva Cuenta</span>
+              <span className="sm:hidden">Nueva</span>
             </Button>
           </div>
         </div>
 
         {/* Mobile Grid - 2 Columns */}
         <div className="grid grid-cols-2 gap-3 md:hidden">
-          {fleetData.map(({ mission, position }) => (
-            <CompactFleetCard
-              key={mission.id}
-              missionId={mission.id}
-              missionCode={mission.missionCode}
-              missionName={mission.name}
-              position={position ? {
-                sector: position.sector,
-                velocity: position.velocity,
-                distance: position.distance,
-                coordinates: position.coordinates,
-                status: position.status,
-                lastContact: position.lastContact,
+          {clientData.map(({ campaign, account }) => (
+            <CompactClientCard
+              key={campaign.id}
+              campaignId={campaign.id}
+              campaignCode={campaign.campaignCode}
+              clientName={account?.companyName || campaign.name}
+              accountData={account ? {
+                industry: account.industry,
+                monthlyBudget: account.monthlyBudget,
+                currentSpend: account.currentSpend,
+                healthScore: `${account.healthScore}%`,
+                status: account.status,
+                lastContact: account.lastContact,
               } : null}
-              missionProgress={mission.progress}
-              onEdit={() => handleOpenDialog(position || undefined)}
-              onDelete={() => setDeleteMissionId(mission.id)}
+              campaignProgress={campaign.progress}
+              onEdit={() => handleOpenDialog(account || undefined)}
+              onDelete={() => setDeleteCampaignId(campaign.id)}
               onCreate={() => {
-                setFormData({ ...formData, missionId: mission.id });
+                setFormData({ ...formData, campaignId: campaign.id });
                 setIsDialogOpen(true);
               }}
             />
@@ -202,117 +208,135 @@ const FleetTracking = memo(function FleetTracking() {
 
         {/* Desktop Grid - 3 Columns */}
         <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {fleetData.map(({ mission, position }) => (
-            <Card key={mission.id} className="border-border bg-card/50 rounded-sm hover:border-primary/50 transition-colors" data-testid={`fleet-card-${mission.id}`}>
+          {clientData.map(({ campaign, account }) => (
+            <Card key={campaign.id} className="border-border bg-card/50 rounded-sm hover:border-primary/50 transition-colors" data-testid={`fleet-card-${campaign.id}`}>
               <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base sm:text-lg font-display flex items-center gap-2">
-                    <Rocket className="size-4" />
-                    {mission.missionCode}
+                    <Briefcase className="size-4" />
+                    {campaign.campaignCode}
                   </CardTitle>
                   <Badge
                     variant="outline"
-                    className={`rounded-sm text-xs ${
-                      position?.status === "Active"
+                    className={`rounded-sm text-xs ${account?.status === "Active"
                         ? "border-green-500 text-green-500"
-                        : position?.status === "Standby"
-                        ? "border-yellow-500 text-yellow-500"
-                        : "border-gray-500 text-gray-500"
-                    }`}
-                    data-testid={`fleet-status-${mission.id}`}
+                        : account?.status === "Paused"
+                          ? "border-yellow-500 text-yellow-500"
+                          : "border-gray-500 text-gray-500"
+                      }`}
+                    data-testid={`fleet-status-${campaign.id}`}
                   >
-                    {position?.status || "Unknown"}
+                    {account?.status || "Unknown"}
                   </Badge>
                 </div>
-                <CardDescription className="font-medium text-foreground/80">{mission.name}</CardDescription>
+                <CardDescription className="font-medium text-foreground/80">
+                  {account?.companyName || campaign.name}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
-                {position ? (
+                {account ? (
                   <>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-sector-${mission.id}`}>
-                          {position.sector}
+                        <Building2 className="size-4 text-muted-foreground" />
+                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-sector-${campaign.id}`}>
+                          {account.industry}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Navigation className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-velocity-${mission.id}`}>
-                          {position.velocity.toLocaleString()} km/h
+                        <DollarSign className="size-4 text-muted-foreground" />
+                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-velocity-${campaign.id}`}>
+                          ${account.monthlyBudget.toLocaleString()} presupuesto
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Globe className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-distance-${mission.id}`}>
-                          {position.distance.toLocaleString()} km away
+                        <TrendingUp className="size-4 text-muted-foreground" />
+                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-distance-${campaign.id}`}>
+                          ${account.currentSpend.toLocaleString()} gastado
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-lastcontact-${mission.id}`}>
-                          Last contact {formatDistanceToNow(new Date(position.lastContact), { addSuffix: true })}
+                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-lastcontact-${campaign.id}`}>
+                          Última actividad {formatDistanceToNow(new Date(account.lastContact), { addSuffix: true })}
                         </span>
                       </div>
                     </div>
                     <div className="pt-2 border-t border-border">
                       <div className="flex justify-between text-xs mb-1 font-mono text-muted-foreground">
-                        <span>COORDINATES</span>
+                        <span>HEALTH SCORE</span>
+                        <span data-testid={`fleet-coordinates-${campaign.id}`}>{account.healthScore}%</span>
                       </div>
-                      <p className="font-mono text-xs text-primary" data-testid={`fleet-coordinates-${mission.id}`}>
-                        {position.coordinates}
-                      </p>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${account.healthScore >= 80 ? "bg-green-500" :
+                              account.healthScore >= 50 ? "bg-yellow-500" :
+                                "bg-red-500"
+                            }`}
+                          style={{ width: `${account.healthScore}%` }}
+                        />
+                      </div>
                     </div>
+                    {account.nextMilestone && (
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Target className="size-4 text-muted-foreground" />
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {account.nextMilestone}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenDialog(position)}
+                        onClick={() => handleOpenDialog(account)}
                         className="flex-1 rounded-sm h-11"
-                        data-testid={`button-edit-fleet-${mission.id}`}
+                        data-testid={`button-edit-fleet-${campaign.id}`}
                       >
                         <Pencil className="size-4 mr-1" />
-                        Edit
+                        Editar
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setDeleteMissionId(mission.id)}
+                        onClick={() => setDeleteCampaignId(campaign.id)}
                         className="flex-1 rounded-sm text-destructive hover:text-destructive h-11"
-                        data-testid={`button-delete-fleet-${mission.id}`}
+                        data-testid={`button-delete-fleet-${campaign.id}`}
                       >
                         <Trash2 className="size-4 mr-1" />
-                        Delete
+                        Eliminar
                       </Button>
                     </div>
                   </>
                 ) : (
                   <div className="py-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-3">Position data unavailable</p>
+                    <p className="text-sm text-muted-foreground mb-3">Datos de cuenta no disponibles</p>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setFormData({ ...formData, missionId: mission.id });
+                        setFormData({ ...formData, campaignId: campaign.id });
                         setIsDialogOpen(true);
                       }}
                       className="rounded-sm h-11"
-                      data-testid={`button-create-fleet-${mission.id}`}
+                      data-testid={`button-create-fleet-${campaign.id}`}
                     >
                       <Plus className="size-4 mr-1" />
-                      Add Position
+                      Agregar Cuenta
                     </Button>
                   </div>
                 )}
                 <div className="pt-2 border-t border-border">
                   <div className="flex justify-between text-xs mb-1 font-mono text-muted-foreground">
-                    <span>MISSION PROGRESS</span>
-                    <span data-testid={`fleet-progress-${mission.id}`}>{mission.progress}%</span>
+                    <span>PROGRESO CAMPAÑA</span>
+                    <span data-testid={`fleet-progress-${campaign.id}`}>{campaign.progress}%</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary transition-all duration-500"
-                      style={{ width: `${mission.progress}%` }}
+                      style={{ width: `${campaign.progress}%` }}
                     />
                   </div>
                 </div>
@@ -321,10 +345,10 @@ const FleetTracking = memo(function FleetTracking() {
           ))}
         </div>
 
-        {fleetData.length === 0 && (
+        {clientData.length === 0 && (
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-12 text-center">
-              <p className="text-muted-foreground">No fleet vessels currently tracked</p>
+              <p className="text-muted-foreground">No hay clientes registrados actualmente</p>
             </CardContent>
           </Card>
         )}
@@ -333,26 +357,26 @@ const FleetTracking = memo(function FleetTracking() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-sm">
           <DialogHeader>
-            <DialogTitle>{editingPosition ? "Edit Fleet Position" : "New Fleet Position"}</DialogTitle>
+            <DialogTitle>{editingAccount ? "Editar Cuenta del Cliente" : "Nueva Cuenta de Cliente"}</DialogTitle>
             <DialogDescription>
-              {editingPosition ? "Update the fleet position details" : "Add a new fleet position for a mission"}
+              {editingAccount ? "Actualiza los detalles de la cuenta del cliente" : "Agrega una nueva cuenta de cliente para una campaña"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="mission">Mission *</Label>
+              <Label htmlFor="campaign">Campaña *</Label>
               <Select
-                value={formData.missionId?.toString()}
-                onValueChange={(value) => setFormData({ ...formData, missionId: parseInt(value) })}
-                disabled={!!editingPosition}
+                value={formData.campaignId?.toString()}
+                onValueChange={(value) => setFormData({ ...formData, campaignId: parseInt(value) })}
+                disabled={!!editingAccount}
               >
-                <SelectTrigger id="mission" className="h-11" data-testid="select-mission">
-                  <SelectValue placeholder="Select a mission" />
+                <SelectTrigger id="campaign" className="h-11" data-testid="select-mission">
+                  <SelectValue placeholder="Selecciona una campaña" />
                 </SelectTrigger>
                 <SelectContent>
-                  {missions.map((mission) => (
-                    <SelectItem key={mission.id} value={mission.id.toString()}>
-                      {mission.missionCode} - {mission.name}
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id.toString()}>
+                      {campaign.campaignCode} - {campaign.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -360,49 +384,57 @@ const FleetTracking = memo(function FleetTracking() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sector">Sector *</Label>
+              <Label htmlFor="companyName">Nombre del Cliente *</Label>
               <Input
-                id="sector"
-                value={formData.sector}
-                onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                placeholder="e.g., Alpha-7"
+                id="companyName"
+                value={formData.companyName}
+                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                placeholder="ej. Acme Corporation"
                 className="h-11"
                 data-testid="input-sector"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="coordinates">Coordinates *</Label>
-              <Input
-                id="coordinates"
-                value={formData.coordinates}
-                onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
-                placeholder="e.g., 45.2°N, 122.3°W"
-                className="h-11"
-                data-testid="input-coordinates"
-              />
+              <Label htmlFor="industry">Industria *</Label>
+              <Select
+                value={formData.industry}
+                onValueChange={(value) => setFormData({ ...formData, industry: value })}
+              >
+                <SelectTrigger id="industry" className="h-11" data-testid="input-coordinates">
+                  <SelectValue placeholder="Selecciona una industria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Tech">Tech</SelectItem>
+                  <SelectItem value="Retail">Retail</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Health">Health</SelectItem>
+                  <SelectItem value="Education">Education</SelectItem>
+                  <SelectItem value="Otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="velocity">Velocity (km/h) *</Label>
+                <Label htmlFor="monthlyBudget">Presupuesto ($) *</Label>
                 <Input
-                  id="velocity"
+                  id="monthlyBudget"
                   type="number"
-                  value={formData.velocity}
-                  onChange={(e) => setFormData({ ...formData, velocity: parseFloat(e.target.value) || 0 })}
+                  value={formData.monthlyBudget}
+                  onChange={(e) => setFormData({ ...formData, monthlyBudget: parseFloat(e.target.value) || 0 })}
                   className="h-11"
                   data-testid="input-velocity"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="distance">Distance (km) *</Label>
+                <Label htmlFor="currentSpend">Gasto Actual ($) *</Label>
                 <Input
-                  id="distance"
+                  id="currentSpend"
                   type="number"
-                  value={formData.distance}
-                  onChange={(e) => setFormData({ ...formData, distance: parseFloat(e.target.value) || 0 })}
+                  value={formData.currentSpend}
+                  onChange={(e) => setFormData({ ...formData, currentSpend: parseFloat(e.target.value) || 0 })}
                   className="h-11"
                   data-testid="input-distance"
                 />
@@ -410,18 +442,44 @@ const FleetTracking = memo(function FleetTracking() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
+              <Label htmlFor="healthScore">Health Score (0-100) *</Label>
+              <Input
+                id="healthScore"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.healthScore}
+                onChange={(e) => setFormData({ ...formData, healthScore: parseInt(e.target.value) || 0 })}
+                className="h-11"
+                data-testid="input-healthscore"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nextMilestone">Próximo Hito</Label>
+              <Input
+                id="nextMilestone"
+                value={formData.nextMilestone || ""}
+                onChange={(e) => setFormData({ ...formData, nextMilestone: e.target.value })}
+                placeholder="ej. Lanzamiento de campaña Q2"
+                className="h-11"
+                data-testid="input-milestone"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Estado *</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as "Active" | "Standby" | "Docked" })}
+                onValueChange={(value) => setFormData({ ...formData, status: value as "Active" | "Paused" | "Planning" })}
               >
                 <SelectTrigger id="status" className="h-11" data-testid="select-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Standby">Standby</SelectItem>
-                  <SelectItem value="Docked">Docked</SelectItem>
+                  <SelectItem value="Paused">Paused</SelectItem>
+                  <SelectItem value="Planning">Planning</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -434,7 +492,7 @@ const FleetTracking = memo(function FleetTracking() {
                 className="rounded-sm h-11"
                 data-testid="button-cancel-fleet"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 type="submit"
@@ -442,37 +500,37 @@ const FleetTracking = memo(function FleetTracking() {
                 disabled={createMutation.isPending || updateMutation.isPending}
                 data-testid="button-submit-fleet"
               >
-                {editingPosition ? "Update" : "Create"} Position
+                {editingAccount ? "Actualizar" : "Crear"} Cuenta
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteMissionId !== null} onOpenChange={() => setDeleteMissionId(null)}>
+      <AlertDialog open={deleteCampaignId !== null} onOpenChange={() => setDeleteCampaignId(null)}>
         <AlertDialogContent className="rounded-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Fleet Position</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar Cuenta del Cliente</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this fleet position? This action cannot be undone.
+              ¿Estás seguro de que deseas eliminar esta cuenta de cliente? Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete-fleet">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete-fleet">Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteMissionId && deleteMutation.mutate(deleteMissionId)}
+              onClick={() => deleteCampaignId && deleteMutation.mutate(deleteCampaignId)}
               className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="button-confirm-delete-fleet"
             >
-              Delete
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <MobileFAB 
-        label="New Position" 
-        onClick={() => handleOpenDialog()} 
+      <MobileFAB
+        label="Nueva Cuenta"
+        onClick={() => handleOpenDialog()}
       />
     </div>
   );

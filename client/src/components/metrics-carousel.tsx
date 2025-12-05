@@ -54,20 +54,20 @@ const MetricCard = memo(({ icon: Icon, title, value, subtitle, trend, status = "
 MetricCard.displayName = "MetricCard";
 
 interface MetricsCarouselProps {
-  fleetStatus: { operational: number; total: number };
-  personnel: { active: number; trend: string };
+  clientStatus: { operational: number; total: number };
+  team: { active: number; trend: string };
   systemLoad: { percent: number; status: string };
   threatLevel: { level: string; incidents: number };
 }
 
-export const MetricsCarousel = memo(({ 
-  fleetStatus, 
-  personnel, 
-  systemLoad, 
-  threatLevel 
+export const MetricsCarousel = memo(({
+  clientStatus,
+  team,
+  systemLoad,
+  threatLevel
 }: MetricsCarouselProps) => {
-  const [emblaRef] = useEmblaCarousel({ 
-    align: "start", 
+  const [emblaRef] = useEmblaCarousel({
+    align: "start",
     containScroll: "trimSnaps",
     dragFree: true
   });
@@ -77,38 +77,38 @@ export const MetricsCarousel = memo(({
       <div className="flex gap-3">
         <MetricCard
           icon={Rocket}
-          title="Fleet Status"
-          value={`${fleetStatus.operational}/${fleetStatus.total}`}
-          subtitle="Operational"
-          trend={`${Math.round((fleetStatus.operational / fleetStatus.total) * 100)}% active`}
-          status={fleetStatus.operational === fleetStatus.total ? "success" : "warning"}
+          title="Clientes Activos"
+          value={`${clientStatus.operational}/${clientStatus.total}`}
+          subtitle="ESTADO"
+          trend={`${Math.round((clientStatus.operational / clientStatus.total) * 100)}% activos`}
+          status={clientStatus.operational === clientStatus.total ? "success" : "warning"}
         />
         <MetricCard
           icon={Users}
-          title="Active Personnel"
-          value={personnel.active.toString()}
-          subtitle="On Duty"
-          trend={personnel.trend}
+          title="Equipo Activo"
+          value={team.active.toString()}
+          subtitle="EN SERVICIO"
+          trend={team.trend}
           status="success"
         />
         <MetricCard
           icon={Cpu}
-          title="System Load"
+          title="Carga del Sistema"
           value={`${systemLoad.percent}%`}
-          subtitle="Capacity Used"
+          subtitle="Capacidad Usada"
           trend={systemLoad.status}
           status={systemLoad.percent > 80 ? "danger" : systemLoad.percent > 60 ? "warning" : "success"}
         />
         <MetricCard
           icon={ShieldAlert}
-          title="Threat Level"
+          title="Nivel de Urgencia"
           value={threatLevel.level}
-          subtitle="Secure"
-          trend={`${threatLevel.incidents} incidents`}
+          subtitle="Seguro"
+          trend={`${threatLevel.incidents} incidentes`}
           status={
-            threatLevel.level === "HIGH" ? "danger" : 
-            threatLevel.level === "MEDIUM" ? "warning" : 
-            "success"
+            threatLevel.level === "HIGH" ? "danger" :
+              threatLevel.level === "MEDIUM" ? "warning" :
+                "success"
           }
         />
       </div>

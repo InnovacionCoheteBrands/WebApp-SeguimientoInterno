@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 
 interface CompactMissionCardProps {
   id: number;
-  missionCode: string;
+  campaignCode: string;
   name: string;
   status: string;
   priority: string;
@@ -21,7 +21,7 @@ interface CompactMissionCardProps {
 
 export const CompactMissionCard = memo(({ 
   id, 
-  missionCode, 
+  campaignCode, 
   name, 
   status, 
   priority, 
@@ -32,15 +32,18 @@ export const CompactMissionCard = memo(({
 }: CompactMissionCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const statusColors: Record<string, string> = {
-    Pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    Planning: "bg-purple-500/20 text-purple-400 border-purple-500/30",
     Active: "bg-green-500/20 text-green-400 border-green-500/30",
-    Completed: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    "In Progress": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    Paused: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    Completed: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   };
 
   const priorityColors: Record<string, string> = {
     Low: "bg-gray-500/20 text-gray-400",
     Medium: "bg-yellow-500/20 text-yellow-400",
-    High: "bg-red-500/20 text-red-400",
+    High: "bg-orange-500/20 text-orange-400",
+    Critical: "bg-red-500/20 text-red-400",
   };
 
   // Calculate circular progress arc
@@ -64,7 +67,7 @@ export const CompactMissionCard = memo(({
           >
             <div className="flex items-center gap-1 flex-1">
               <p className="text-[10px] uppercase tracking-widest text-primary font-display font-bold truncate">
-                {missionCode}
+                {campaignCode}
               </p>
               {expanded ? (
                 <ChevronUp className="size-3 text-primary shrink-0" />

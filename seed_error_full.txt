@@ -1,0 +1,46 @@
+﻿node.exe : 
+C:\Users\Departamento AI\One
+Drive\Documents\C├│digos\Web
+App - Control\DesignSystemMi
+ssionControl\db\index.ts:5
+En línea: 1 Carácter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Users\Departamento 
+AI\AppDat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (C:\Us  
+  ers\Depart...l\db\index   
+ .ts:5:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+  throw new Error(
+        ^
+
+
+Error: DATABASE_URL must be 
+set. Did you forget to 
+provision a database?
+    at <anonymous> 
+(C:\Users\Departamento AI\On
+eDrive\Documents\C├│digos\We
+bApp - Control\DesignSystemM
+issionControl\db\index.ts:5:
+9)
+    at ModuleJob.run (node:i
+nternal/modules/esm/module_j
+ob:343:25)
+    at async onImport.traceP
+romise.__proto__ (node:inter
+nal/modules/esm/loader:647:2
+6)
+    at async asyncRunEntryPo
+intWithESMLoader (node:inter
+nal/modules/run_main:117:5)
+
+Node.js v22.18.0
