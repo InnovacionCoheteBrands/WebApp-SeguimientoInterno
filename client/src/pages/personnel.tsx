@@ -1,111 +1,142 @@
-import { useMemo, memo, useState } from "react";
-import { ArrowLeft, Users, Shield, Clock, UserCheck, Plus, Pencil, Trash2, UserPlus } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft, Users, Shield, Clock, Plus, Search, Filter,
+  TrendingUp, TrendingDown, DollarSign, Briefcase, Zap,
+  MoreVertical, Calendar, CheckCircle2, AlertCircle, XCircle, Settings
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  fetchTeam, 
-  fetchTeamAssignments, 
-  fetchCampaigns, 
-  createTeam, 
-  updateTeam, 
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { RoleCatalogDialog } from "@/components/role-catalog-dialog";
+import {
+  fetchTeam,
+  fetchTeamAssignments,
+  fetchCampaigns,
+  fetchProjects,
+  createTeam,
+  updateTeam,
   deleteTeam,
   createTeamAssignment,
-  deleteTeamAssignment
+  deleteTeamAssignment,
+  fetchAgencyRoles,
+  createRecurringTransaction
 } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import type { InsertTeam, UpdateTeam, Team, InsertTeamAssignment, Campaign } from "@shared/schema";
+import type { InsertTeam, UpdateTeam, Team, InsertTeamAssignment, AgencyRole, InsertRecurringTransaction } from "@shared/schema";
 
-const Personnel = memo(function Personnel() {
+export default function Personnel() {
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+
   const [editingMember, setEditingMember] = useState<Team | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [assigningToMember, setAssigningToMember] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: teamMembers = [] } = useQuery({
-    queryKey: ["team"],
-    queryFn: fetchTeam,
-  });
+  // --- Data Fetching ---
+  const { data: teamMembers = [] } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
+  const { data: assignments = [] } = useQuery({ queryKey: ["team-assignments"], queryFn: fetchTeamAssignments });
+  const { data: campaigns = [] } = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
+  const { data: projects = [] } = useQuery({ queryKey: ["projects"], queryFn: fetchProjects });
+  const { data: roles = [] } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ["team-assignments"],
-    queryFn: fetchTeamAssignments,
-  });
-
-  const { data: campaigns = [] } = useQuery({
-    queryKey: ["campaigns"],
-    queryFn: fetchCampaigns,
-  });
-
-  const stats = useMemo(() => {
-    const available = teamMembers.filter(m => m.status === "Disponible").length;
-    const seniorLevel = teamMembers.filter(m => 
-      m.department === "Senior" || 
-      m.department === "Lead" ||
-      m.department === "Director"
-    ).length;
-    
-    return {
-      total: teamMembers.length,
-      available,
-      seniorLevel,
-      assigned: new Set(assignments.map(a => a.teamId)).size,
-    };
-  }, [teamMembers, assignments]);
-
-  const teamWithAssignments = useMemo(() => {
+  // --- Derived State & Logic ---
+  const teamWithMetrics = useMemo(() => {
     return teamMembers.map((member) => {
       const memberAssignments = assignments.filter(a => a.teamId === member.id);
-      const assignedCampaigns = memberAssignments
-        .map(a => ({
-          assignment: a,
-          campaign: campaigns.find(c => c.id === a.campaignId)
-        }))
-        .filter(item => item.campaign);
-      
+
+      const totalHoursAllocated = memberAssignments.reduce((acc, curr) => acc + (curr.hoursAllocated || 0), 0);
+      const capacity = member.weeklyCapacity || 40;
+      const utilizationRate = Math.min((totalHoursAllocated / capacity) * 100, 100);
+
+      // Auto-determine status based on utilization
+      let computedStatus = "Available";
+      if (utilizationRate >= 95) computedStatus = "Saturated";
+      else if (utilizationRate >= 75) computedStatus = "Ocupado"; // High load
+      else if (member.status === "Vacaciones") computedStatus = "Vacaciones"; // Manual override possibility
+      else computedStatus = "Available";
+
       return {
         ...member,
+        status: computedStatus,
         assignments: memberAssignments,
-        assignedCampaigns: assignedCampaigns.length,
-        campaignNames: assignedCampaigns.map(item => item.campaign?.campaignCode).join(", "),
+        totalHoursAllocated,
+        utilizationRate,
+        efficiencyScore: utilizationRate // Simplified proxy for now
       };
     });
-  }, [teamMembers, assignments, campaigns]);
+  }, [teamMembers, assignments]);
 
-  const [formData, setFormData] = useState<Partial<InsertTeam>>({
-    name: "",
-    role: "",
-    department: "Junior",
-    status: "Disponible",
-    workHoursStart: "09:00",
-    workHoursEnd: "18:00",
-  });
+  const stats = useMemo(() => {
+    const totalMembers = teamWithMetrics.length;
+    const totalCapacity = teamWithMetrics.reduce((acc, m) => acc + (m.weeklyCapacity || 40), 0);
+    const totalAllocated = teamWithMetrics.reduce((acc, m) => acc + m.totalHoursAllocated, 0);
+    const avgUtilization = totalCapacity > 0 ? (totalAllocated / totalCapacity) * 100 : 0;
 
-  const [assignmentForm, setAssignmentForm] = useState({
-    campaignId: 0,
-  });
+    // Financials (Mock/Derived)
+    const totalBurnRate = teamWithMetrics.reduce((acc, m) => acc + (parseFloat(m.internalCostHour?.toString() || "0") * 40 * 4), 0); // Monthly approx
+    const potentialRevenue = teamWithMetrics.reduce((acc, m) => acc + (parseFloat(m.billableRate?.toString() || "0") * m.totalHoursAllocated * 4), 0);
 
+    return {
+      efficiencyRate: avgUtilization.toFixed(1),
+      totalCapacity,
+      saturatedCount: teamWithMetrics.filter(m => m.utilizationRate >= 90).length,
+      availableCount: teamWithMetrics.filter(m => m.utilizationRate < 50).length,
+      potentialRevenue
+    };
+  }, [teamWithMetrics]);
+
+  const filteredTeam = useMemo(() => {
+    return teamWithMetrics.filter(member => {
+      const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (member.skills && member.skills.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesRole = filterRole === "all" || member.role === filterRole;
+      return matchesSearch && matchesRole;
+    });
+  }, [teamWithMetrics, searchTerm, filterRole]);
+
+  // --- Mutations ---
   const createTeamMutation = useMutation({
     mutationFn: createTeam,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["team"] });
+      // Handle Payroll Integration if selected
+      if (formData.addToPayroll && formData.monthlySalary && parseFloat(formData.monthlySalary as string) > 0) {
+        const transaction: InsertRecurringTransaction = {
+          name: `Nomina: ${data.name}`,
+          type: "Gasto",
+          category: "Nómina",
+          amount: formData.monthlySalary as string,
+          frequency: "monthly",
+          dayOfMonth: 1,
+          isActive: true,
+          nextExecutionDate: new Date().toISOString(),
+          description: `Recurring salary for ${data.name} (${data.role})`
+        };
+        createRecurringTransaction(transaction)
+          .then(() => toast({ title: "Payroll Integrated", description: "Recurring expense created in Finance Hub." }))
+          .catch(() => toast({ title: "Warning", description: "Team created but failed to add to payroll.", variant: "destructive" }));
+      }
+
       setIsTeamDialogOpen(false);
       resetForm();
-      toast({ title: "Éxito", description: "Miembro creado exitosamente" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Talento Agregado", description: "El perfil ha sido creado exitosamente." });
     },
   });
 
@@ -116,10 +147,7 @@ const Personnel = memo(function Personnel() {
       setIsTeamDialogOpen(false);
       setEditingMember(null);
       resetForm();
-      toast({ title: "Éxito", description: "Miembro actualizado exitosamente" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Perfil Actualizado", description: "Los datos del talento han sido guardados." });
     },
   });
 
@@ -128,10 +156,7 @@ const Personnel = memo(function Personnel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team"] });
       setDeleteId(null);
-      toast({ title: "Éxito", description: "Miembro eliminado exitosamente" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Perfil Eliminado", description: "El miembro ha sido removido del sistema." });
     },
   });
 
@@ -141,11 +166,8 @@ const Personnel = memo(function Personnel() {
       queryClient.invalidateQueries({ queryKey: ["team-assignments"] });
       setIsAssignmentDialogOpen(false);
       setAssigningToMember(null);
-      setAssignmentForm({ campaignId: 0 });
-      toast({ title: "Éxito", description: "Asignación creada exitosamente" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setAssignmentForm({ projectId: 0, hoursAllocated: 0 });
+      toast({ title: "Asignación Creada", description: "Carga de trabajo actualizada." });
     },
   });
 
@@ -153,11 +175,30 @@ const Personnel = memo(function Personnel() {
     mutationFn: deleteTeamAssignment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-assignments"] });
-      toast({ title: "Éxito", description: "Asignación eliminada exitosamente" });
+      toast({ title: "Asignación Removida", description: "Capacidad liberada." });
     },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
+  });
+
+  // --- Forms ---
+  const [formData, setFormData] = useState<Partial<InsertTeam> & { addToPayroll?: boolean }>({
+    name: "",
+    role: "",
+    department: "Junior",
+    status: "Available",
+    workHoursStart: "09:00",
+    workHoursEnd: "18:00",
+    weeklyCapacity: 40,
+    internalCostHour: "0",
+    billableRate: "0",
+    monthlySalary: "0",
+    skills: "",
+    roleCatalogId: undefined,
+    addToPayroll: false
+  });
+
+  const [assignmentForm, setAssignmentForm] = useState({
+    projectId: 0,
+    hoursAllocated: 10
   });
 
   const resetForm = () => {
@@ -165,9 +206,16 @@ const Personnel = memo(function Personnel() {
       name: "",
       role: "",
       department: "Junior",
-      status: "Disponible",
+      status: "Available",
       workHoursStart: "09:00",
       workHoursEnd: "18:00",
+      weeklyCapacity: 40,
+      internalCostHour: "0",
+      billableRate: "0",
+      monthlySalary: "0",
+      skills: "",
+      roleCatalogId: undefined,
+      addToPayroll: false
     });
     setEditingMember(null);
   };
@@ -182,6 +230,13 @@ const Personnel = memo(function Personnel() {
         status: member.status,
         workHoursStart: member.workHoursStart,
         workHoursEnd: member.workHoursEnd,
+        weeklyCapacity: member.weeklyCapacity || 40,
+        internalCostHour: member.internalCostHour?.toString() || "0",
+        billableRate: member.billableRate?.toString() || "0",
+        monthlySalary: member.monthlySalary?.toString() || "0",
+        skills: member.skills || "",
+        roleCatalogId: member.roleCatalogId,
+        addToPayroll: false
       });
     } else {
       resetForm();
@@ -189,313 +244,365 @@ const Personnel = memo(function Personnel() {
     setIsTeamDialogOpen(true);
   };
 
+  // Smart Autofill from Catalog
+  const handleRoleSelect = (catalogId: string) => {
+    const roleId = parseInt(catalogId);
+    const selectedRole = roles.find(r => r.id === roleId);
+    if (selectedRole) {
+      const activities = selectedRole.allowedActivities ? JSON.parse(selectedRole.allowedActivities as string) : [];
+      setFormData(prev => ({
+        ...prev,
+        role: selectedRole.roleName,
+        roleCatalogId: roleId,
+        department: selectedRole.department,
+        billableRate: selectedRole.defaultBillableRate?.toString() || "0",
+        skills: activities.join(", ")
+      }));
+    }
+  };
+
+  // Auto-calculate Internal Cost
+  useEffect(() => {
+    const salary = parseFloat(formData.monthlySalary?.toString() || "0");
+    const hours = formData.weeklyCapacity || 40;
+    if (salary > 0 && hours > 0) {
+      // 4.33 weeks per month average
+      const costPerHour = (salary / (hours * 4.33)).toFixed(2);
+      setFormData(prev => ({ ...prev, internalCostHour: costPerHour }));
+    }
+  }, [formData.monthlySalary, formData.weeklyCapacity]);
+
   const handleSubmitTeam = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.role || !formData.department) {
-      toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
-      return;
-    }
+    // Exclude addToPayroll before sending to API
+    const { addToPayroll, ...dataToSend } = formData;
 
     if (editingMember) {
-      updateTeamMutation.mutate({ id: editingMember.id, data: formData as UpdateTeam });
+      updateTeamMutation.mutate({ id: editingMember.id, data: dataToSend as UpdateTeam });
     } else {
-      createTeamMutation.mutate(formData as InsertTeam);
+      createTeamMutation.mutate(dataToSend as InsertTeam);
     }
   };
 
   const handleSubmitAssignment = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!assigningToMember || !assignmentForm.campaignId) {
-      toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
-      return;
-    }
+    if (!assigningToMember || !assignmentForm.projectId) return;
 
     createAssignmentMutation.mutate({
       teamId: assigningToMember,
-      campaignId: assignmentForm.campaignId,
+      projectId: assignmentForm.projectId,
+      hoursAllocated: assignmentForm.hoursAllocated
     });
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map(word => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const getInitials = (name: string) => name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Disponible":
-        return "border-green-500 text-green-500";
-      case "Ocupado":
-        return "border-yellow-500 text-yellow-500";
-      case "Vacaciones":
-        return "border-blue-500 text-blue-500";
-      default:
-        return "border-gray-500 text-gray-500";
-    }
-  };
-
+  // --- UI Components ---
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans">
+      <div className="max-w-[1600px] mx-auto space-y-8">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="outline" size="icon" className="rounded-sm" data-testid="button-back">
+              <Button variant="outline" size="icon" className="rounded-sm border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800">
                 <ArrowLeft className="size-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight">Gestión de Equipo</h1>
-              <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
-                Administrar Equipo y Asignaciones
-              </p>
+              <h1 className="text-3xl font-display font-bold tracking-tight text-white">Strategic Talent Hub</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-mono tracking-wider">
+                  RESOURCE INTELLIGENCE
+                </Badge>
+                <span className="text-xs text-muted-foreground font-mono">CAPACITY: {stats.totalCapacity}h / WEEK</span>
+              </div>
             </div>
           </div>
-          <Button 
-            onClick={() => handleOpenTeamDialog()} 
-            className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
-            data-testid="button-new-personnel"
-          >
-            <Plus className="size-4 mr-2" />
-            Nuevo Miembro
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 hidden sm:flex"
+              onClick={() => setIsCatalogOpen(true)}
+            >
+              <Settings className="size-4 mr-2" />
+              Configure Agency
+            </Button>
+            <Button
+              onClick={() => handleOpenTeamDialog()}
+              className="bg-primary text-black font-medium hover:bg-primary/90 rounded-sm"
+            >
+              <Plus className="size-4 mr-2" />
+              Add Talent
+            </Button>
+          </div>
         </div>
 
+        {/* Top Stats - Financial Tickers */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Miembros</span>
-                <Users className="size-4 text-muted-foreground" />
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Efficiency Rate</p>
+                <h3 className="text-2xl font-mono font-bold text-white mt-1">{stats.efficiencyRate}%</h3>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-total">
-                  {stats.total}
-                </h3>
-                <p className="text-xs text-muted-foreground">Total de Miembros</p>
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Zap className="size-5 text-primary" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Disponibles</span>
-                <Clock className="size-4 text-muted-foreground" />
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Saturated Resources</p>
+                <h3 className="text-2xl font-mono font-bold text-white mt-1">{stats.saturatedCount}</h3>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-on-duty">
-                  {stats.available}
-                </h3>
-                <p className="text-xs text-muted-foreground">Miembros Disponibles</p>
+              <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertCircle className="size-5 text-red-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Nivel Senior+</span>
-                <Shield className="size-4 text-muted-foreground" />
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Available Capacity</p>
+                <h3 className="text-2xl font-mono font-bold text-white mt-1">{stats.availableCount}</h3>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-security">
-                  {stats.seniorLevel}
-                </h3>
-                <p className="text-xs text-muted-foreground">Senior, Lead, Director</p>
+              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                <CheckCircle2 className="size-5 text-green-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Asignados</span>
-                <UserCheck className="size-4 text-muted-foreground" />
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Est. Revenue Potential</p>
+                <h3 className="text-2xl font-mono font-bold text-white mt-1">${(stats.potentialRevenue / 1000).toFixed(1)}k</h3>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="personnel-assigned">
-                  {stats.assigned}
-                </h3>
-                <p className="text-xs text-muted-foreground">En Campañas</p>
+              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <DollarSign className="size-5 text-blue-500" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="border-border bg-card/50 rounded-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-display">Equipo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {teamWithAssignments.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-start justify-between p-4 border border-border rounded-sm hover:bg-muted/30 transition-colors"
-                  data-testid={`personnel-card-${member.id}`}
-                >
-                  <div className="flex items-start gap-4 flex-1">
-                    <Avatar className="size-12 border-2 border-primary/20">
-                      <AvatarFallback className="font-display font-bold bg-primary/10 text-primary">
-                        {getInitials(member.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <p className="font-medium text-sm" data-testid={`personnel-name-${member.id}`}>{member.name}</p>
-                          <p className="text-xs text-muted-foreground" data-testid={`personnel-role-${member.id}`}>{member.role}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-mono text-muted-foreground mb-1" data-testid={`personnel-clearance-${member.id}`}>
-                            {member.department}
-                          </p>
-                          <p className="text-xs font-mono text-muted-foreground" data-testid={`personnel-shift-${member.id}`}>
-                            {member.workHoursStart} - {member.workHoursEnd}
-                          </p>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={`rounded-sm text-xs ${getStatusColor(member.status)}`}
-                          data-testid={`personnel-status-${member.id}`}
-                        >
-                          {member.status}
-                        </Badge>
-                      </div>
-                      
-                      {member.assignments.length > 0 && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-mono text-muted-foreground">Campañas Asignadas:</p>
-                          {member.assignments.map((assignment) => {
-                            const campaign = campaigns.find(c => c.id === assignment.campaignId);
-                            return campaign ? (
-                              <div key={assignment.id} className="flex items-center justify-between bg-muted/50 rounded px-2 py-1">
-                                <p className="text-xs text-primary font-mono">
-                                  {campaign.campaignCode}
-                                </p>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteAssignmentMutation.mutate(assignment.id)}
-                                  className="h-6 px-2"
-                                  data-testid={`button-delete-assignment-${assignment.id}`}
-                                >
-                                  <Trash2 className="size-3" />
-                                </Button>
-                              </div>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setAssigningToMember(member.id);
-                            setIsAssignmentDialogOpen(true);
-                          }}
-                          className="rounded-sm"
-                          data-testid={`button-assign-mission-${member.id}`}
-                        >
-                          <UserPlus className="size-3 mr-1" />
-                          Asignar a Campaña
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenTeamDialog(member)}
-                          className="rounded-sm"
-                          data-testid={`button-edit-personnel-${member.id}`}
-                        >
-                          <Pencil className="size-3 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setDeleteId(member.id)}
-                          className="rounded-sm text-destructive hover:text-destructive"
-                          data-testid={`button-delete-personnel-${member.id}`}
-                        >
-                          <Trash2 className="size-3 mr-1" />
-                          Eliminar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        {/* Smart Filters */}
+        <Card className="bg-zinc-900/50 border-zinc-800 rounded-sm">
+          <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
+              <Input
+                placeholder="Filter by Name, Skill (e.g. React, Copy)..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-zinc-950 border-zinc-800 rounded-sm h-10 focus-visible:ring-primary/20"
+              />
             </div>
-            {teamMembers.length === 0 && (
-              <div className="py-12 text-center">
-                <p className="text-muted-foreground">No hay miembros del equipo</p>
-              </div>
-            )}
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-full md:w-[200px] h-10 bg-zinc-950 border-zinc-800 rounded-sm">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="Creative Director">Creative Director</SelectItem>
+                <SelectItem value="Senior Strategist">Senior Strategist</SelectItem>
+                <SelectItem value="Developer">Developer</SelectItem>
+                <SelectItem value="Designer">Designer</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Mobile Catalog Button */}
+            <Button
+              variant="outline"
+              className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 sm:hidden w-full"
+              onClick={() => setIsCatalogOpen(true)}
+            >
+              <Settings className="size-4 mr-2" />
+              Configure Agency
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Resource Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredTeam.map((member) => (
+            <Card
+              key={member.id}
+              className={`bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all group relative overflow-hidden rounded-sm
+                  ${member.utilizationRate >= 95 ? 'hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 'hover:shadow-[0_0_20px_rgba(34,197,94,0.1)]'}
+                `}
+            >
+              {/* Status Indicator Line */}
+              <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent 
+                   ${member.utilizationRate >= 95 ? 'via-red-500' :
+                  member.utilizationRate >= 75 ? 'via-yellow-500' : 'via-green-500'}
+                   to-transparent opacity-70 group-hover:opacity-100 transition-opacity
+                `} />
+
+              <CardContent className="p-5 pl-7 space-y-4">
+                {/* Header */}
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 rounded-sm border border-zinc-700">
+                      <AvatarFallback className="bg-zinc-800 text-zinc-400 font-mono">{getInitials(member.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{member.name}</h4>
+                      <p className="text-xs text-zinc-500">{member.role}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={`rounded-sm text-[10px] font-mono
+                         ${member.department === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-zinc-700 text-zinc-500'}
+                      `}>
+                    {member.department}
+                  </Badge>
+                </div>
+
+                {/* Burnout Bar */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+                    <span>UTILIZATION</span>
+                    <span className={
+                      member.utilizationRate >= 95 ? 'text-red-500 font-bold' :
+                        member.utilizationRate < 50 ? 'text-green-500' : 'text-white'
+                    }>{Math.round(member.utilizationRate)}%</span>
+                  </div>
+                  <Progress
+                    value={member.utilizationRate}
+                    className="h-1.5 bg-zinc-800 rounded-sm"
+                    indicatorClassName={
+                      member.utilizationRate >= 95 ? 'bg-red-500' :
+                        member.utilizationRate >= 75 ? 'bg-yellow-500' : 'bg-green-500'
+                    }
+                  />
+                  <p className="text-[10px] text-zinc-600 text-right">
+                    {member.totalHoursAllocated}h / {member.weeklyCapacity}h
+                  </p>
+                </div>
+
+                {/* Skills */}
+                {member.skills && (
+                  <div className="flex flex-wrap gap-1">
+                    {member.skills.split(',').slice(0, 3).map(skill => (
+                      <Badge key={skill} variant="secondary" className="text-[9px] h-4 rounded-sm bg-zinc-800 text-zinc-400 hover:text-white border-0">
+                        {skill.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Financial Stats (Director/Lead View) */}
+                <div className="pt-3 border-t border-zinc-800 grid grid-cols-2 gap-2">
+                  <div className="bg-zinc-950/50 p-2 rounded-sm border border-zinc-800/50">
+                    <p className="text-[9px] text-zinc-500 uppercase">Cost/Hr</p>
+                    <p className="text-xs font-mono text-zinc-300">${member.internalCostHour}</p>
+                  </div>
+                  <div className="bg-zinc-950/50 p-2 rounded-sm border border-zinc-800/50">
+                    <p className="text-[9px] text-zinc-500 uppercase">Billable</p>
+                    <p className="text-xs font-mono text-primary">${member.billableRate}</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-7 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white rounded-sm"
+                    onClick={() => {
+                      setAssigningToMember(member.id);
+                      setIsAssignmentDialogOpen(true);
+                    }}
+                  >
+                    Assign
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-zinc-500 hover:text-primary"
+                    onClick={() => handleOpenTeamDialog(member)}
+                  >
+                    <MoreVertical className="size-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Empty State */}
+          {filteredTeam.length === 0 && (
+            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-sm">
+              <Users className="size-8 text-zinc-700 mb-2" />
+              <p className="text-zinc-500">No matching talent found</p>
+            </div>
+          )}
+        </div>
+
       </div>
 
+      {/* --- DIALOGS --- */}
+
+      {/* Team Member Dialog */}
       <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-sm">
+        <DialogContent className="sm:max-w-[600px] border-zinc-800 bg-zinc-900 text-white rounded-sm">
           <DialogHeader>
-            <DialogTitle>{editingMember ? "Editar Miembro" : "Nuevo Miembro"}</DialogTitle>
-            <DialogDescription>
-              {editingMember ? "Actualizar detalles del miembro" : "Agregar un nuevo miembro al equipo"}
+            <DialogTitle>{editingMember ? "Edit Strategic Asset" : "Onboard New Talent"}</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Configure resource capacity, financial metrics, and skills.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitTeam} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="ej., Ana García"
-                data-testid="input-name"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label className="text-zinc-400">Master Service Role</Label>
+                <Select
+                  value={formData.roleCatalogId?.toString()}
+                  onValueChange={handleRoleSelect}
+                >
+                  <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-sm">
+                    <SelectValue placeholder="Select from Catalog (Recommended)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map(role => (
+                      <SelectItem key={role.id} value={role.id.toString()}>
+                        {role.roleName} <span className="text-zinc-500 text-xs ml-2">(${role.defaultBillableRate}/hr)</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Rol *</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger id="role" data-testid="input-role">
-                  <SelectValue placeholder="Selecciona un rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Creative Director">Creative Director</SelectItem>
-                  <SelectItem value="Copywriter">Copywriter</SelectItem>
-                  <SelectItem value="Designer">Designer</SelectItem>
-                  <SelectItem value="Social Media Manager">Social Media Manager</SelectItem>
-                  <SelectItem value="SEO Specialist">SEO Specialist</SelectItem>
-                  <SelectItem value="Account Manager">Account Manager</SelectItem>
-                  <SelectItem value="Strategist">Strategist</SelectItem>
-                  <SelectItem value="Data Analyst">Data Analyst</SelectItem>
-                  <SelectItem value="Developer">Developer</SelectItem>
-                  <SelectItem value="Project Manager">Project Manager</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label className="text-zinc-400">Full Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                  placeholder="e.g. Alex Chen"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-zinc-400">Custom Role Title</Label>
+                <Input
+                  value={formData.role}
+                  onChange={e => setFormData({ ...formData, role: e.target.value })}
+                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="department">Nivel *</Label>
-                <Select
-                  value={formData.department}
-                  onValueChange={(value) => setFormData({ ...formData, department: value })}
-                >
-                  <SelectTrigger id="department" data-testid="select-clearance">
+                <Label className="text-zinc-400">Seniority</Label>
+                <Select value={formData.department} onValueChange={v => setFormData({ ...formData, department: v })}>
+                  <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -507,147 +614,159 @@ const Personnel = memo(function Personnel() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="status">Estado *</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger id="status" data-testid="select-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Disponible">Disponible</SelectItem>
-                    <SelectItem value="Ocupado">Ocupado</SelectItem>
-                    <SelectItem value="Vacaciones">Vacaciones</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-zinc-400">Weekly Capacity (Hours)</Label>
+                <Input
+                  type="number"
+                  value={formData.weeklyCapacity}
+                  onChange={e => setFormData({ ...formData, weeklyCapacity: parseInt(e.target.value) })}
+                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                />
+              </div>
+            </div>
+
+            <div className="p-3 bg-zinc-950/50 border border-zinc-800 rounded-sm space-y-3">
+              <h4 className="text-xs font-mono uppercase text-primary tracking-wider">Financial Intelligence</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-zinc-500">Internal Cost / Hr</Label>
+                  <Input
+                    type="number"
+                    value={formData.internalCostHour}
+                    onChange={e => setFormData({ ...formData, internalCostHour: e.target.value })}
+                    className="bg-zinc-900 border-zinc-800 rounded-sm h-8 text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-2 text-green-500">
+                  <Label className="text-xs text-green-700/70">Theoretical Margin</Label>
+                  <div className="h-8 flex items-center gap-2 font-mono text-sm">
+                    {(() => {
+                      const cost = parseFloat(formData.internalCostHour as string || "0");
+                      const rate = parseFloat(formData.billableRate as string || "0");
+                      if (rate > 0 && cost > 0) {
+                        const margin = ((rate - cost) / rate * 100).toFixed(1);
+                        return <span className={Number(margin) > 50 ? 'text-green-500' : 'text-yellow-500'}>{margin}%</span>
+                      }
+                      return <span className="text-zinc-600">--</span>
+                    })()}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-zinc-500">Billing Rate / Hr</Label>
+                  <Input
+                    type="number"
+                    value={formData.billableRate}
+                    onChange={e => setFormData({ ...formData, billableRate: e.target.value })}
+                    className="bg-zinc-900 border-zinc-800 rounded-sm h-8 text-xs font-mono text-green-500"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2 border-t border-zinc-800 pt-2 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-zinc-400">Add to Payroll</Label>
+                    <p className="text-[10px] text-zinc-500">Automatically create a monthly recurring expense.</p>
+                  </div>
+                  <Switch
+                    checked={formData.addToPayroll}
+                    onCheckedChange={(c) => setFormData({ ...formData, addToPayroll: c })}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="workHoursStart">Hora de Inicio *</Label>
+                <Label className="text-zinc-400">Monthly Salary</Label>
                 <Input
-                  id="workHoursStart"
-                  type="time"
-                  value={formData.workHoursStart}
-                  onChange={(e) => setFormData({ ...formData, workHoursStart: e.target.value })}
-                  data-testid="input-shift-start"
+                  type="number"
+                  value={formData.monthlySalary}
+                  onChange={e => setFormData({ ...formData, monthlySalary: e.target.value })}
+                  className="bg-zinc-950 border-zinc-800 rounded-sm"
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="workHoursEnd">Hora de Fin *</Label>
-                <Input
-                  id="workHoursEnd"
-                  type="time"
-                  value={formData.workHoursEnd}
-                  onChange={(e) => setFormData({ ...formData, workHoursEnd: e.target.value })}
-                  data-testid="input-shift-end"
-                />
+                <Label className="text-zinc-500 text-xs mt-8">
+                  Calculated Internal Cost: <span className="text-zinc-300 font-mono">${formData.internalCostHour}</span>/hr
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-400">Skills (Comma separated)</Label>
+              <Input
+                value={formData.skills || ""}
+                onChange={e => setFormData({ ...formData, skills: e.target.value })}
+                className="bg-zinc-950 border-zinc-800 rounded-sm"
+                placeholder="React, TypeScript, SEO, Copywriting..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-zinc-400">Shift Start</Label>
+                <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-zinc-950 border-zinc-800 rounded-sm" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-zinc-400">Shift End</Label>
+                <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-zinc-950 border-zinc-800 rounded-sm" />
               </div>
             </div>
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsTeamDialogOpen(false)}
-                className="rounded-sm"
-                data-testid="button-cancel-personnel"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="rounded-sm"
-                disabled={createTeamMutation.isPending || updateTeamMutation.isPending}
-                data-testid="button-submit-personnel"
-              >
-                {editingMember ? "Actualizar" : "Crear"}
+              <Button type="button" variant="ghost" onClick={() => setIsTeamDialogOpen(false)} className="hover:bg-zinc-800 rounded-sm">Cancel</Button>
+              <Button type="submit" className="bg-primary text-black hover:bg-primary/90 rounded-sm">
+                {editingMember ? "Save Changes" : "Create Asset"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Assignment Dialog */}
       <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-sm">
+        <DialogContent className="sm:max-w-[400px] border-zinc-800 bg-zinc-900 text-white rounded-sm">
           <DialogHeader>
-            <DialogTitle>Asignar a Campaña</DialogTitle>
-            <DialogDescription>
-              Crear una nueva asignación de campaña para este miembro
+            <DialogTitle>Assign Capacity</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Allocate hours to a specific project.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitAssignment} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="campaignId">Campaña *</Label>
-              <Select
-                value={assignmentForm.campaignId.toString()}
-                onValueChange={(value) => setAssignmentForm({ ...assignmentForm, campaignId: parseInt(value) })}
-              >
-                <SelectTrigger id="campaignId" data-testid="select-campaign">
-                  <SelectValue placeholder="Selecciona una campaña" />
+              <Label className="text-zinc-400">Project Strategy</Label>
+              <Select value={assignmentForm.projectId.toString()} onValueChange={v => setAssignmentForm({ ...assignmentForm, projectId: parseInt(v) })}>
+                <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-sm">
+                  <SelectValue placeholder="Select Project..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {campaigns.map((campaign) => (
-                    <SelectItem key={campaign.id} value={campaign.id.toString()}>
-                      {campaign.campaignCode} - {campaign.name}
-                    </SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={p.id.toString()}>{p.name} ({p.client?.companyName})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-zinc-400">Weekly Allocation (Hours)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={assignmentForm.hoursAllocated}
+                  onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: parseInt(e.target.value) })}
+                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                />
+                <span className="text-xs text-zinc-500 font-mono">HRS/WK</span>
+              </div>
+            </div>
+
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsAssignmentDialogOpen(false)}
-                className="rounded-sm"
-                data-testid="button-cancel-assignment"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="rounded-sm"
-                disabled={createAssignmentMutation.isPending}
-                data-testid="button-submit-assignment"
-              >
-                Asignar
-              </Button>
+              <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-zinc-800 rounded-sm">Cancel</Button>
+              <Button type="submit" className="bg-primary text-black hover:bg-primary/90 rounded-sm">Confirm Allocation</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="rounded-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar miembro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente al miembro del equipo y todas sus asignaciones.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteId && deleteTeamMutation.mutate(deleteId)}
-              className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RoleCatalogDialog open={isCatalogOpen} onOpenChange={setIsCatalogOpen} />
     </div>
   );
-});
-
-export default Personnel;
+}

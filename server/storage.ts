@@ -66,6 +66,10 @@ import {
   projects,
   projectDeliverables,
   projectAttachments,
+  agencyRoleCatalog,
+  type AgencyRole,
+  type InsertAgencyRole,
+  type UpdateAgencyRole,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -79,6 +83,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserSettings(userId: string, settings: any): Promise<User>;
+  updateUserWebhook(userId: string, webhookUrl: string): Promise<User>;
+  regenerateApiKey(userId: string): Promise<string>;
 
   getCampaigns(): Promise<Campaign[]>;
   getCampaignById(id: number): Promise<Campaign | undefined>;
@@ -117,6 +124,13 @@ export interface IStorage {
   updateResource(id: number, resource: Partial<InsertResource>): Promise<Resource | undefined>;
   deleteResource(id: number): Promise<boolean>;
   cleanupOldResources(keepLast: number): Promise<void>;
+
+  // Agency Role Catalog
+  getAgencyRoles(): Promise<AgencyRole[]>;
+  getAgencyRoleById(id: number): Promise<AgencyRole | undefined>;
+  createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole>;
+  updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole | undefined>;
+  deleteAgencyRole(id: number): Promise<boolean>;
 
   // Ads Command Center methods
   getAdPlatforms(): Promise<AdPlatform[]>;
@@ -295,6 +309,33 @@ export class DBStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async updateUserSettings(userId: string, settings: any): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ settings: JSON.stringify(settings) })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserWebhook(userId: string, webhookUrl: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ webhookUrl })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async regenerateApiKey(userId: string): Promise<string> {
+    const newKey = "sk_live_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    await db
+      .update(users)
+      .set({ apiKey: newKey })
+      .where(eq(users.id, userId));
+    return newKey;
   }
 
   async getCampaigns(): Promise<Campaign[]> {
@@ -507,6 +548,35 @@ export class DBStorage implements IStorage {
       DELETE FROM ${resources}
       WHERE id NOT IN (SELECT id FROM keep)
     `);
+  }
+
+  // Agency Role Catalog implementation
+  async getAgencyRoles(): Promise<AgencyRole[]> {
+    return await db.select().from(agencyRoleCatalog).orderBy(desc(agencyRoleCatalog.createdAt));
+  }
+
+  async getAgencyRoleById(id: number): Promise<AgencyRole | undefined> {
+    const [role] = await db.select().from(agencyRoleCatalog).where(eq(agencyRoleCatalog.id, id));
+    return role;
+  }
+
+  async createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole> {
+    const [newRole] = await db.insert(agencyRoleCatalog).values(role).returning();
+    return newRole;
+  }
+
+  async updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole | undefined> {
+    const [updated] = await db
+      .update(agencyRoleCatalog)
+      .set(role)
+      .where(eq(agencyRoleCatalog.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAgencyRole(id: number): Promise<boolean> {
+    const result = await db.delete(agencyRoleCatalog).where(eq(agencyRoleCatalog.id, id));
+    return (result as any).count > 0;
   }
 
   // Ads Command Center implementation

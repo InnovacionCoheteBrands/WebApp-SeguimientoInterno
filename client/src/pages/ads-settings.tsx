@@ -195,16 +195,18 @@ export default function AdsSettings() {
             </div>
 
             {/* Platform Connections Hub */}
-            <Card className="border-border bg-card/50 rounded-sm">
-                <CardHeader className="p-3 sm:p-4 pb-2">
-                    <CardTitle className="text-base sm:text-lg font-display uppercase">
+            <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
+                <CardHeader className="p-3 sm:p-6 pb-2">
+                    <CardTitle className="text-base sm:text-lg font-display uppercase tracking-tight flex items-center gap-2">
+                        <Zap className="size-4 text-primary" />
                         Conexiones de Plataformas
                     </CardTitle>
                     <CardDescription className="font-mono text-xs uppercase tracking-wider">
                         OAuth o API Key - Elige tu método preferido
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="p-3 sm:p-6 pt-0">
+                <CardContent className="p-3 sm:p-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {platforms.map((platform) => {
                             const connection = connections.find(c => c.platformName.toLowerCase() === platform.id);
@@ -213,8 +215,9 @@ export default function AdsSettings() {
                             return (
                                 <div
                                     key={platform.id}
-                                    className="p-4 rounded-sm border border-border hover:border-primary/50 transition-all"
+                                    className="p-4 rounded-sm border border-border bg-card hover:border-primary/50 transition-all shadow-sm relative overflow-hidden group/item"
                                 >
+                                    <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${isConnected ? 'bg-green-500' : 'bg-gray-500'} opacity-70 group-hover/item:opacity-100 transition-opacity`} />
                                     <div className="flex items-center gap-3 mb-3">
                                         <span className="text-2xl">{platform.icon}</span>
                                         <div className="flex-1">
@@ -448,9 +451,11 @@ export default function AdsSettings() {
             </Card>
 
             {/* Account Mapping */}
-            <Card className="border-border bg-card/50 rounded-sm">
-                <CardHeader className="p-3 sm:p-4 pb-2">
-                    <CardTitle className="text-base sm:text-lg font-display uppercase">
+            <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500 to-blue-500/0 opacity-50" />
+                <CardHeader className="p-3 sm:p-6 pb-2">
+                    <CardTitle className="text-base sm:text-lg font-display uppercase tracking-tight flex items-center gap-2">
+                        <Link2 className="size-4 text-blue-500" />
                         Mapeo de Cuentas
                     </CardTitle>
                     <CardDescription className="font-mono text-xs uppercase tracking-wider">
@@ -494,9 +499,11 @@ export default function AdsSettings() {
             </Card>
 
             {/* Client KPI Configuration */}
-            <Card className="border-border bg-card/50 rounded-sm">
-                <CardHeader className="p-3 sm:p-4 pb-2">
-                    <CardTitle className="text-base sm:text-lg font-display uppercase">
+            <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0 opacity-50" />
+                <CardHeader className="p-3 sm:p-6 pb-2">
+                    <CardTitle className="text-base sm:text-lg font-display uppercase tracking-tight flex items-center gap-2">
+                        <Target className="size-4 text-orange-500" />
                         Configuración de KPIs por Cliente
                     </CardTitle>
                     <CardDescription className="font-mono text-xs uppercase tracking-wider">

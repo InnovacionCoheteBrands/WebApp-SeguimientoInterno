@@ -8,6 +8,11 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").default("user").notNull(),
+  // Settings & Integrations
+  settings: text("settings").default("{}"), // JSON string for preferences
+  apiKey: text("api_key"),
+  webhookUrl: text("webhook_url"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -110,6 +115,12 @@ export const team = pgTable("team", {
   avatarUrl: text("avatar_url"),
   workHoursStart: text("work_hours_start").notNull(),
   workHoursEnd: text("work_hours_end").notNull(),
+  internalCostHour: numeric("internal_cost_hour").default("0"),
+  billableRate: numeric("billable_rate").default("0"),
+  monthlySalary: numeric("monthly_salary").default("0"),
+  weeklyCapacity: integer("weekly_capacity").default(40),
+  roleCatalogId: integer("role_catalog_id"), // FK to agency_role_catalog (added below, circular dependency handled by drizzle usually or just integer)
+  skills: text("skills"), // JSON string or comma-separated
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -127,7 +138,9 @@ export type UpdateTeam = z.infer<typeof updateTeamSchema>;
 export const teamAssignments = pgTable("team_assignments", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
-  campaignId: integer("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
+  campaignId: integer("campaign_id").references(() => campaigns.id, { onDelete: "cascade" }), // Made nullable to allow project-only assignments
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  hoursAllocated: integer("hours_allocated").default(0),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
 });
 
@@ -158,6 +171,27 @@ export const insertResourceSchema = createInsertSchema(resources).omit({
 
 export type Resource = typeof resources.$inferSelect;
 export type InsertResource = z.infer<typeof insertResourceSchema>;
+
+// Master Service Catalog
+export const agencyRoleCatalog = pgTable("agency_role_catalog", {
+  id: serial("id").primaryKey(),
+  roleName: text("role_name").notNull(),
+  department: text("department").notNull(), // Creative, Tech, Growth, etc.
+  defaultBillableRate: numeric("default_billable_rate").notNull().default("0"),
+  allowedActivities: text("allowed_activities"), // JSON string array ["Logo Design", "Coding"]
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAgencyRoleSchema = createInsertSchema(agencyRoleCatalog).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateAgencyRoleSchema = insertAgencyRoleSchema.partial();
+
+export type AgencyRole = typeof agencyRoleCatalog.$inferSelect;
+export type InsertAgencyRole = z.infer<typeof insertAgencyRoleSchema>;
+export type UpdateAgencyRole = z.infer<typeof updateAgencyRoleSchema>;
 
 // Ads Command Center Tables
 export const adPlatforms = pgTable("ad_platforms", {

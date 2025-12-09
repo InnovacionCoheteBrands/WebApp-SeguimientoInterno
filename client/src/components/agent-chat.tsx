@@ -222,7 +222,7 @@ export function AgentChat() {
 
                   <div className={`flex flex-col gap-2 max-w-[80%]`}>
                     <div
-                      className={`rounded-lg px-4 py-2 ${message.role === "user"
+                      className={`rounded-sm px-4 py-2 ${message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
                         }`}
@@ -292,7 +292,7 @@ export function AgentChat() {
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Bot className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="bg-muted rounded-lg px-4 py-2">
+                  <div className="bg-muted rounded-sm px-4 py-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 </div>

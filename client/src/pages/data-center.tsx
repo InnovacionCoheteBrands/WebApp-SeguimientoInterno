@@ -183,7 +183,7 @@ const DataCenter = memo(function DataCenter() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name) {
       toast({ title: "Error", description: "Por favor ingrese el nombre del recurso", variant: "destructive" });
       return;
@@ -224,8 +224,8 @@ const DataCenter = memo(function DataCenter() {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={() => handleOpenDialog()} 
+          <Button
+            onClick={() => handleOpenDialog()}
             className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
             data-testid="button-new-resource"
           >
@@ -235,174 +235,195 @@ const DataCenter = memo(function DataCenter() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Almacenamiento Total</span>
-                <HardDrive className="size-4 text-muted-foreground" />
+          {/* Storage - Blue Accent */}
+          <Card status="info" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <span className="text-[10px] sm:text-xs font-mono uppercase text-zinc-500 tracking-wider">Almacenamiento Total</span>
+                <HardDrive className="size-4 text-blue-500 opacity-70 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="total-storage">
+                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="total-storage">
                   {stats.totalSize} MB
                 </h3>
-                <p className="text-xs text-muted-foreground">Espacio utilizado</p>
+                <p className="text-[10px] sm:text-xs text-zinc-500">Espacio utilizado</p>
               </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
-                <span className="text-primary">Total</span>
-                <span className="text-muted-foreground ml-2">en archivos</span>
+              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
+                <span className="text-blue-400">Total</span>
+                <span className="text-zinc-500 ml-2">en archivos</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Recursos Disponibles</span>
-                <CheckCircle2 className="size-4 text-muted-foreground" />
+          {/* Available - Green Accent */}
+          <Card status="success" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <span className="text-[10px] sm:text-xs font-mono uppercase text-zinc-500 tracking-wider">Recursos Disponibles</span>
+                <CheckCircle2 className="size-4 text-green-500 opacity-70 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="resources-available">
+                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="resources-available">
                   {stats.disponibles}/{stats.total}
                 </h3>
-                <p className="text-xs text-muted-foreground">Listos para usar</p>
+                <p className="text-[10px] sm:text-xs text-zinc-500">Listos para usar</p>
               </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
+              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
                 <span className={stats.disponibles > 0 ? "text-green-400" : "text-yellow-400"}>
                   {stats.total > 0 ? Math.round((stats.disponibles / stats.total) * 100) : 0}%
                 </span>
-                <span className="text-muted-foreground ml-2">disponibilidad</span>
+                <span className="text-zinc-500 ml-2">disponibilidad</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">En Uso</span>
-                <Clock className="size-4 text-muted-foreground" />
+          {/* In Use - Yellow Accent */}
+          <Card status="warning" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <span className="text-[10px] sm:text-xs font-mono uppercase text-zinc-500 tracking-wider">En Uso</span>
+                <Clock className="size-4 text-orange-500 opacity-70 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="resources-in-use">
+                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="resources-in-use">
                   {stats.enUso}
                 </h3>
-                <p className="text-xs text-muted-foreground">Recursos activos</p>
+                <p className="text-[10px] sm:text-xs text-zinc-500">Recursos activos</p>
               </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
-                <span className={stats.enUso > 0 ? "text-yellow-400" : "text-green-400"}>
+              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
+                <span className={stats.enUso > 0 ? "text-orange-400" : "text-green-400"}>
                   {stats.enUso > 0 ? "Activo" : "Disponible"}
                 </span>
-                <span className="text-muted-foreground ml-2">estado</span>
+                <span className="text-zinc-500 ml-2">estado</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Total de Recursos</span>
-                <FolderKanban className="size-4 text-muted-foreground" />
+          {/* Total - Amber Accent (Primary) */}
+          <Card status="default" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+            {/* Note: Card default status handles border color if empty, but usually we might want specific colors. Card component default is primary/amber. */}
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-amber-500" />
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <span className="text-[10px] sm:text-xs font-mono uppercase text-zinc-500 tracking-wider">Total de Recursos</span>
+                <FolderKanban className="size-4 text-amber-500 opacity-70 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="total-resources">
+                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="total-resources">
                   {stats.total}
                 </h3>
-                <p className="text-xs text-muted-foreground">Entregables registrados</p>
+                <p className="text-[10px] sm:text-xs text-zinc-500">Entregables registrados</p>
               </div>
-              <div className="mt-4 flex items-center text-xs font-mono">
-                <span className="text-primary">Activos</span>
-                <span className="text-muted-foreground ml-2">en catálogo</span>
+              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
+                <span className="text-amber-500">Activos</span>
+                <span className="text-zinc-500 ml-2">en catálogo</span>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="border-border bg-card/50 rounded-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-display">Recursos y Entregables</CardTitle>
+        <Card className="border-zinc-800 bg-zinc-900/50 shadow-sm relative overflow-hidden">
+          <CardHeader className="p-4 sm:p-6 pb-4">
+            <CardTitle className="text-lg font-display uppercase tracking-tight flex items-center gap-2">
+              <FolderKanban className="size-5 text-amber-500" />
+              Recursos y Entregables
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {resources.map((resource) => (
-                <div
-                  key={resource.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-sm hover:bg-muted/30 transition-colors"
-                  data-testid={`resource-card-${resource.id}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center size-10 rounded-full bg-muted">
-                      {getResourceIcon(resource.type)}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm" data-testid={`resource-name-${resource.id}`}>
-                          {resource.name}
-                        </p>
-                        <Badge variant="outline" className="rounded-sm text-xs">
-                          {resource.type}
-                        </Badge>
+            <div className="space-y-3">
+              {resources.map((resource) => {
+                // Determine accent color based on status
+                const statusColor =
+                  resource.status === "Disponible" ? "bg-green-500" :
+                    resource.status === "En Uso" ? "bg-orange-500" :
+                      resource.status === "En Revisión" ? "bg-blue-500" :
+                        resource.status === "Aprobado" ? "bg-emerald-600" : "bg-zinc-500";
+
+                return (
+                  <div
+                    key={resource.id}
+                    className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-sm border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 transition-all gap-3 relative overflow-hidden"
+                    data-testid={`resource-card-${resource.id}`}
+                  >
+                    {/* Status Accent Line */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${statusColor} opacity-70`} />
+
+                    <div className="flex items-center gap-4 pl-2 w-full sm:w-auto">
+                      <div className="flex items-center justify-center size-10 rounded-full bg-black/40 shrink-0 border border-zinc-800">
+                        {getResourceIcon(resource.type)}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span data-testid={`resource-format-${resource.id}`}>
-                          Formato: {resource.format}
-                        </span>
-                        <span>•</span>
-                        <span data-testid={`resource-size-${resource.id}`}>
-                          {parseFloat(resource.fileSize || "0").toFixed(2)} MB
-                        </span>
-                        {resource.campaignId && getCampaignName(resource.campaignId) && (
-                          <>
-                            <span>•</span>
-                            <span data-testid={`resource-campaign-${resource.id}`}>
-                              Campaña: {getCampaignName(resource.campaignId)}
-                            </span>
-                          </>
-                        )}
-                        {resource.lastModified && (
-                          <>
-                            <span>•</span>
-                            <span data-testid={`resource-modified-${resource.id}`}>
-                              {formatDistanceToNow(new Date(resource.lastModified), { addSuffix: true, locale: es })}
-                            </span>
-                          </>
-                        )}
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm text-foreground truncate" data-testid={`resource-name-${resource.id}`}>
+                            {resource.name}
+                          </p>
+                          <Badge variant="outline" className="rounded-sm text-[10px] h-5 px-1.5 font-normal border-zinc-700 bg-zinc-950 text-zinc-400">
+                            {resource.type}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-[10px] text-zinc-500 font-mono">
+                          <span data-testid={`resource-format-${resource.id}`}>
+                            {resource.format}
+                          </span>
+                          <span>•</span>
+                          <span data-testid={`resource-size-${resource.id}`}>
+                            {parseFloat(resource.fileSize || "0").toFixed(2)} MB
+                          </span>
+                          {resource.campaignId && getCampaignName(resource.campaignId) && (
+                            <>
+                              <span>•</span>
+                              <span data-testid={`resource-campaign-${resource.id}`}>
+                                {getCampaignName(resource.campaignId)}
+                              </span>
+                            </>
+                          )}
+                          {resource.lastModified && (
+                            <>
+                              <span className="hidden sm:inline">•</span>
+                              <span data-testid={`resource-modified-${resource.id}`} className="hidden sm:inline">
+                                {formatDistanceToNow(new Date(resource.lastModified), { addSuffix: true, locale: es })}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-4 pl-2 sm:pl-0">
+                      <Badge
+                        variant="outline"
+                        className={`rounded-sm text-[10px] font-normal ${getStatusBadgeClass(resource.status)}`}
+                        data-testid={`resource-status-${resource.id}`}
+                      >
+                        {resource.status}
+                      </Badge>
+                      <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDialog(resource)}
+                          className="rounded-sm h-8 w-8 p-0 text-zinc-500 hover:text-amber-500"
+                          data-testid={`button-edit-resource-${resource.id}`}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteId(resource.id)}
+                          className="rounded-sm h-8 w-8 p-0 text-zinc-600 hover:text-red-500 hover:bg-red-500/10"
+                          data-testid={`button-delete-resource-${resource.id}`}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <Badge
-                      variant="outline"
-                      className={`rounded-sm text-xs ${getStatusBadgeClass(resource.status)}`}
-                      data-testid={`resource-status-${resource.id}`}
-                    >
-                      {resource.status}
-                    </Badge>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenDialog(resource)}
-                        className="rounded-sm"
-                        data-testid={`button-edit-resource-${resource.id}`}
-                      >
-                        <Pencil className="size-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDeleteId(resource.id)}
-                        className="rounded-sm text-destructive hover:text-destructive"
-                        data-testid={`button-delete-resource-${resource.id}`}
-                      >
-                        <Trash2 className="size-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             {resources.length === 0 && (
-              <div className="py-12 text-center">
-                <p className="text-muted-foreground">No hay recursos disponibles</p>
+              <div className="py-12 text-center text-zinc-500">
+                <p>No hay recursos disponibles</p>
               </div>
             )}
           </CardContent>
