@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     FolderKanban, ArrowLeft, Plus, Search, Filter, Calendar,
-    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play
+    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play, MoreVertical
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,11 @@ import type { InsertProject, UpdateProject } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 const STATUS_COLUMNS = [
-    { id: "Planificación", label: "Planificación", icon: Calendar, color: "bg-blue-500/10 text-blue-500 border-blue-500/30" },
-    { id: "En Curso", label: "En Curso", icon: Play, color: "bg-green-500/10 text-green-500 border-green-500/30" },
-    { id: "En Revisión", label: "En Revisión", icon: CheckCircle2, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" },
-    { id: "Bloqueado", label: "Bloqueado", icon: XCircle, color: "bg-red-500/10 text-red-500 border-red-500/30" },
-    { id: "Completado", label: "Completado", icon: CheckCircle2, color: "bg-gray-500/10 text-gray-500 border-gray-500/30" },
+    { id: "Planificación", label: "Planificación", icon: Calendar, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
+    { id: "En Curso", label: "En Curso", icon: Play, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
+    { id: "En Revisión", label: "En Revisión", icon: CheckCircle2, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
+    { id: "Bloqueado", label: "Bloqueado", icon: XCircle, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
+    { id: "Completado", label: "Completado", icon: CheckCircle2, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
 ];
 
 const SERVICE_TYPES = ["SEO", "Web", "Ads", "General"];
@@ -251,9 +251,9 @@ export default function Proyectos() {
                         return (
                             <div key={column.id} className="flex flex-col gap-3">
                                 <div className={`flex items-center gap-2 p-3 rounded-sm border ${column.color}`}>
-                                    <Icon className="size-4" />
-                                    <span className="font-semibold text-sm">{column.label}</span>
-                                    <Badge variant="secondary" className="ml-auto rounded-sm text-xs">
+                                    <Icon className="size-4 text-zinc-500" />
+                                    <span className="font-bold text-xs uppercase tracking-wider">{column.label}</span>
+                                    <Badge variant="outline" className="ml-auto rounded-sm text-xs border-zinc-700 bg-black/40 text-zinc-500">
                                         {projectsInColumn.length}
                                     </Badge>
                                 </div>
@@ -266,68 +266,69 @@ export default function Proyectos() {
                                         return (
                                             <Card
                                                 key={project.id}
-                                                className="border-border bg-card rounded-sm hover:border-primary/50 transition-all cursor-pointer group"
+                                                status={project.health === 'green' ? 'success' : project.health === 'yellow' ? 'warning' : 'error'}
+                                                className="hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
                                                 onClick={() => handleOpenDialog(project)}
                                             >
                                                 <CardHeader className="p-4 pb-3">
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="flex-1 min-w-0">
-                                                            <CardTitle className="text-base font-bold truncate">
+                                                            <CardTitle className="text-sm font-bold truncate flex items-center gap-2">
                                                                 {project.name}
+                                                                {isOverdue && <AlertCircle className="size-3 text-red-500" />}
                                                             </CardTitle>
-                                                            <p className="text-xs text-muted-foreground truncate">
+                                                            <p className="text-[10px] text-muted-foreground truncate uppercase font-mono tracking-wider mt-1">
                                                                 {project.client.companyName}
                                                             </p>
                                                         </div>
-                                                        <div className={`size-3 rounded-full ${health.bg} border-2 ${health.border} flex-shrink-0`} />
+                                                        <Badge variant="outline" className="rounded-sm text-[10px] px-1.5 h-5 font-normal border-border bg-secondary/20">
+                                                            {project.serviceType}
+                                                        </Badge>
                                                     </div>
                                                 </CardHeader>
                                                 <CardContent className="p-4 pt-0 space-y-3">
-                                                    <Badge variant="outline" className="rounded-sm text-xs">
-                                                        {project.serviceType}
-                                                    </Badge>
-
                                                     {/* Progress Bar */}
                                                     <div>
-                                                        <div className="flex justify-between text-xs mb-1 font-mono text-muted-foreground">
+                                                        <div className="flex justify-between text-[10px] mb-1.5 font-mono text-muted-foreground">
                                                             <span>PROGRESO</span>
-                                                            <span>{project.progress}%</span>
+                                                            <span className={project.progress === 100 ? "text-green-500" : ""}>{project.progress}%</span>
                                                         </div>
-                                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                                             <div
-                                                                className="h-full bg-primary transition-all duration-500"
+                                                                className={`h-full transition-all duration-500 ${project.progress === 100 ? 'bg-green-500' : 'bg-primary'}`}
                                                                 style={{ width: `${project.progress}%` }}
                                                             />
                                                         </div>
                                                     </div>
 
-                                                    {/* Deadline */}
-                                                    {project.deadline && (
-                                                        <div className={`flex items-center gap-2 text-xs ${isOverdue ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                                            <Clock className="size-3" />
-                                                            <span>
-                                                                {isOverdue ? 'Vencido ' : ''}
-                                                                {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
-                                                            </span>
-                                                        </div>
-                                                    )}
+                                                    <div className="flex items-center justify-between pt-1">
+                                                        {project.deadline ? (
+                                                            <div className={`flex items-center gap-1.5 text-[10px] font-mono ${isOverdue ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                                                <Clock className="size-3" />
+                                                                <span>
+                                                                    {isOverdue ? 'VENCIDO ' : ''}
+                                                                    {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
+                                                                </span>
+                                                            </div>
+                                                        ) : <div />}
 
-                                                    {/* Status Change */}
-                                                    <Select
-                                                        value={project.status}
-                                                        onValueChange={(newStatus) => {
-                                                            handleStatusChange(project.id, newStatus);
-                                                        }}
-                                                    >
-                                                        <SelectTrigger className="h-9 rounded-sm text-xs" onClick={(e) => e.stopPropagation()}>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {STATUS_COLUMNS.map((col) => (
-                                                                <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                        {/* Status Change Mini-Dropdown */}
+                                                        <Select
+                                                            value={project.status}
+                                                            onValueChange={(newStatus) => {
+                                                                handleStatusChange(project.id, newStatus);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="h-6 w-[24px] p-0 border-0 rounded-sm hover:bg-muted focus:ring-0" onClick={(e) => e.stopPropagation()}>
+                                                                <MoreVertical className="size-3 text-muted-foreground" />
+                                                            </SelectTrigger>
+                                                            <SelectContent align="end">
+                                                                {STATUS_COLUMNS.map((col) => (
+                                                                    <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
                                                 </CardContent>
                                             </Card>
                                         );

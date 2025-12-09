@@ -35,7 +35,7 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
   );
 
   const className = `w-full justify-start gap-3 px-4 py-2 h-11 rounded-sm transition-all duration-200 ${active
-    ? "bg-sidebar-accent text-primary border-r-2 border-primary"
+    ? "bg-amber-500/10 text-amber-500 border-r-2 border-amber-500"
     : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
     }`;
 
@@ -80,7 +80,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen bg-background text-foreground flex overflow-hidden font-sans">
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar/50 backdrop-blur-sm fixed left-0 top-0 h-screen z-30">
+      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar fixed left-0 top-0 h-screen z-30">
         <div className="p-6 flex items-center justify-center border-b border-border h-24">
           <img
             src={logoUrl}
@@ -96,7 +96,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">GESTIÓN</p>
             <NavButton icon={Building2} label="Clientes" active={location === "/clientes"} href="/clientes" />
             <NavButton icon={FolderKanban} label="Proyectos" active={location === "/proyectos"} href="/proyectos" />
-            <NavButton icon={Users} label="Equipo" active={location === "/equipo"} href="/equipo" />
+            <NavButton icon={Users} label="Talento" active={location === "/equipo"} href="/equipo" />
             <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" />
             <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
             <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" />
@@ -141,7 +141,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">GESTIÓN</p>
               <NavButton icon={Building2} label="Clientes" active={location === "/clientes"} href="/clientes" />
               <NavButton icon={FolderKanban} label="Proyectos" active={location === "/proyectos"} href="/proyectos" />
-              <NavButton icon={Users} label="Equipo" active={location === "/equipo"} href="/equipo" />
+              <NavButton icon={Users} label="Talento" active={location === "/equipo"} href="/equipo" />
               <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" />
               <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
               <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" />

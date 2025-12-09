@@ -209,137 +209,135 @@ const FleetTracking = memo(function FleetTracking() {
         {/* Desktop Grid - 3 Columns */}
         <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {clientData.map(({ campaign, account }) => (
-            <Card key={campaign.id} className="border-border bg-card/50 rounded-sm hover:border-primary/50 transition-colors" data-testid={`fleet-card-${campaign.id}`}>
-              <CardHeader className="p-4 sm:p-6">
+            <Card
+              key={campaign.id}
+              status={account?.status === "Active" ? "success" : account?.status === "Paused" ? "warning" : "default"}
+              className="bg-zinc-900 border-zinc-800 rounded-sm hover:border-zinc-700 transition-all group relative overflow-hidden"
+              data-testid={`fleet-card-${campaign.id}`}
+            >
+              <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base sm:text-lg font-display flex items-center gap-2">
-                    <Briefcase className="size-4" />
-                    {campaign.campaignCode}
-                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="size-4 text-zinc-500" />
+                    <CardTitle className="text-base font-display font-bold tracking-tight">
+                      {campaign.campaignCode}
+                    </CardTitle>
+                  </div>
                   <Badge
                     variant="outline"
-                    className={`rounded-sm text-xs ${account?.status === "Active"
-                        ? "border-green-500 text-green-500"
-                        : account?.status === "Paused"
-                          ? "border-yellow-500 text-yellow-500"
-                          : "border-gray-500 text-gray-500"
+                    className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-zinc-950 ${account?.status === "Active" ? "text-green-500" :
+                      account?.status === "Paused" ? "text-yellow-500" : "text-zinc-500"
                       }`}
                     data-testid={`fleet-status-${campaign.id}`}
                   >
                     {account?.status || "Unknown"}
                   </Badge>
                 </div>
-                <CardDescription className="font-medium text-foreground/80">
+                <CardDescription className="font-mono text-xs uppercase tracking-wider text-zinc-500 mt-1 truncate">
                   {account?.companyName || campaign.name}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
+              <CardContent className="space-y-4 p-4 sm:p-5 pt-2">
                 {account ? (
                   <>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Building2 className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-sector-${campaign.id}`}>
-                          {account.industry}
-                        </span>
+                    <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase text-zinc-600 font-mono">Industria</span>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
+                          <Building2 className="size-3 text-amber-500/70" />
+                          <span data-testid={`fleet-sector-${campaign.id}`}>{account.industry}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-velocity-${campaign.id}`}>
-                          ${account.monthlyBudget.toLocaleString()} presupuesto
-                        </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase text-zinc-600 font-mono">Presupuesto</span>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
+                          <DollarSign className="size-3 text-amber-500/70" />
+                          <span data-testid={`fleet-velocity-${campaign.id}`}>{account.monthlyBudget.toLocaleString()}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <TrendingUp className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-distance-${campaign.id}`}>
-                          ${account.currentSpend.toLocaleString()} gastado
-                        </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase text-zinc-600 font-mono">Gasto</span>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
+                          <TrendingUp className="size-3 text-amber-500/70" />
+                          <span data-testid={`fleet-distance-${campaign.id}`}>{account.currentSpend.toLocaleString()}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-xs text-muted-foreground" data-testid={`fleet-lastcontact-${campaign.id}`}>
-                          Última actividad {formatDistanceToNow(new Date(account.lastContact), { addSuffix: true })}
-                        </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase text-zinc-600 font-mono">Actividad</span>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
+                          <Clock className="size-3 text-amber-500/70" />
+                          <span className="truncate" data-testid={`fleet-lastcontact-${campaign.id}`}>
+                            {formatDistanceToNow(new Date(account.lastContact), { addSuffix: true })}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="pt-2 border-t border-border">
-                      <div className="flex justify-between text-xs mb-1 font-mono text-muted-foreground">
+
+                    <div className="pt-2 border-t border-zinc-800">
+                      <div className="flex justify-between text-[10px] mb-1.5 font-mono text-zinc-500">
                         <span>HEALTH SCORE</span>
-                        <span data-testid={`fleet-coordinates-${campaign.id}`}>{account.healthScore}%</span>
+                        <span data-testid={`fleet-coordinates-${campaign.id}`} className={account.healthScore >= 80 ? 'text-green-500' : account.healthScore < 50 ? 'text-red-500' : 'text-yellow-500'}>{account.healthScore}%</span>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-500 ${account.healthScore >= 80 ? "bg-green-500" :
-                              account.healthScore >= 50 ? "bg-yellow-500" :
-                                "bg-red-500"
+                            account.healthScore >= 50 ? "bg-yellow-500" :
+                              "bg-red-500"
                             }`}
                           style={{ width: `${account.healthScore}%` }}
                         />
                       </div>
                     </div>
                     {account.nextMilestone && (
-                      <div className="pt-2 border-t border-border">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Target className="size-4 text-muted-foreground" />
-                          <span className="font-mono text-xs text-muted-foreground">
+                      <div className="px-3 py-2 bg-zinc-950/50 rounded-sm border border-zinc-800">
+                        <div className="flex items-center gap-2 text-xs">
+                          <Target className="size-3 text-amber-500" />
+                          <span className="font-mono text-zinc-400 truncate">
                             {account.nextMilestone}
                           </span>
                         </div>
                       </div>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleOpenDialog(account)}
-                        className="flex-1 rounded-sm h-11"
+                        className="flex-1 rounded-sm h-8 text-xs border-dashed border-zinc-700 hover:border-amber-500/50 hover:bg-zinc-800 hover:text-amber-500"
                         data-testid={`button-edit-fleet-${campaign.id}`}
                       >
-                        <Pencil className="size-4 mr-1" />
+                        <Pencil className="size-3 mr-1.5" />
                         Editar
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => setDeleteCampaignId(campaign.id)}
-                        className="flex-1 rounded-sm text-destructive hover:text-destructive h-11"
+                        className="rounded-sm h-8 w-8 p-0 text-zinc-500 hover:text-red-500 hover:bg-red-500/10"
                         data-testid={`button-delete-fleet-${campaign.id}`}
                       >
-                        <Trash2 className="size-4 mr-1" />
-                        Eliminar
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </div>
                   </>
                 ) : (
-                  <div className="py-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-3">Datos de cuenta no disponibles</p>
+                  <div className="py-6 text-center border border-dashed border-zinc-800 rounded-sm bg-zinc-950/50">
+                    <p className="text-xs text-zinc-500 mb-3 font-mono">Sin configuración de cuenta</p>
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={() => {
                         setFormData({ ...formData, campaignId: campaign.id });
                         setIsDialogOpen(true);
                       }}
-                      className="rounded-sm h-11"
+                      className="rounded-sm h-8 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
                       data-testid={`button-create-fleet-${campaign.id}`}
                     >
-                      <Plus className="size-4 mr-1" />
-                      Agregar Cuenta
+                      <Plus className="size-3 mr-1.5" />
+                      Configurar
                     </Button>
                   </div>
                 )}
-                <div className="pt-2 border-t border-border">
-                  <div className="flex justify-between text-xs mb-1 font-mono text-muted-foreground">
-                    <span>PROGRESO CAMPAÑA</span>
-                    <span data-testid={`fleet-progress-${campaign.id}`}>{campaign.progress}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-500"
-                      style={{ width: `${campaign.progress}%` }}
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
           ))}

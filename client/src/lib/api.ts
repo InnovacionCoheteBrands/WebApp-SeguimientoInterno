@@ -26,7 +26,10 @@ import type {
   InsertProjectDeliverable,
   UpdateProjectDeliverable,
   ProjectAttachment,
-  InsertProjectAttachment
+  InsertProjectAttachment,
+  AgencyRole,
+  InsertAgencyRole,
+  UpdateAgencyRole
 } from "@shared/schema";
 
 export type ClientAccount = Omit<DBClientAccount, 'lastContact' | 'timestamp'> & {
@@ -565,4 +568,38 @@ export async function deleteProjectAttachment(id: number): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete attachment");
+}
+
+// Agency Role Catalog
+export async function fetchAgencyRoles(): Promise<AgencyRole[]> {
+  const res = await fetch("/api/agency/roles");
+  if (!res.ok) throw new Error("Failed to fetch agency roles");
+  return res.json();
+}
+
+export async function createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole> {
+  const res = await fetch("/api/agency/roles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(role),
+  });
+  if (!res.ok) throw new Error("Failed to create agency role");
+  return res.json();
+}
+
+export async function updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole> {
+  const res = await fetch(`/api/agency/roles/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(role),
+  });
+  if (!res.ok) throw new Error("Failed to update agency role");
+  return res.json();
+}
+
+export async function deleteAgencyRole(id: number): Promise<void> {
+  const res = await fetch(`/api/agency/roles/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete agency role");
 }

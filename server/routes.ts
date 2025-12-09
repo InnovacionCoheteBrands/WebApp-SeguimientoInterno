@@ -11,6 +11,8 @@ import miscRouter from "./controllers/misc";
 import projectsRouter from "./controllers/projects";
 import adsRouter from "./controllers/ads";
 import agentRouter from "./controllers/agent";
+import agencyRouter from "./controllers/agency";
+import settingsRouter from "./controllers/settings";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Mount all controllers at /api
@@ -23,6 +25,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", projectsRouter);
   app.use("/api", adsRouter);
   app.use("/api", agentRouter);
+  app.use("/api", agencyRouter);
+  app.use("/api", settingsRouter);
 
   const httpServer = createServer(app);
   setupWebSocket(httpServer);

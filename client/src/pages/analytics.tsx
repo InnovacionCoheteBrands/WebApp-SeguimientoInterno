@@ -77,69 +77,69 @@ const Analytics = memo(function Analytics() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card status="default" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Total de Campañas</span>
-                <BarChart3 className="size-4 text-muted-foreground" />
+                <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Total de Campañas</span>
+                <BarChart3 className="size-4 text-zinc-500 group-hover:text-amber-500 transition-colors" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-total">
+                <h3 className="text-2xl font-display font-medium tracking-tight text-foreground" data-testid="analytics-total">
                   {analytics?.totalCampaigns || 0}
                 </h3>
-                <p className="text-xs text-muted-foreground">Todas las Campañas</p>
+                <p className="text-xs text-zinc-500">Todas las Campañas</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card status="info" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Campañas Activas</span>
-                <Activity className="size-4 text-muted-foreground" />
+                <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Campañas Activas</span>
+                <Activity className="size-4 text-zinc-500 group-hover:text-blue-500 transition-colors" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-active">
+                <h3 className="text-2xl font-display font-medium tracking-tight text-foreground" data-testid="analytics-active">
                   {analytics?.activeCampaigns || 0}
                 </h3>
-                <p className="text-xs text-muted-foreground">En Progreso</p>
+                <p className="text-xs text-zinc-500">En Progreso</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card status="warning" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Progreso Promedio</span>
-                <TrendingUp className="size-4 text-muted-foreground" />
+                <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Progreso Promedio</span>
+                <TrendingUp className="size-4 text-zinc-500 group-hover:text-orange-500 transition-colors" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-progress">
+                <h3 className="text-2xl font-display font-medium tracking-tight text-foreground" data-testid="analytics-progress">
                   {analytics?.averageProgress || 0}%
                 </h3>
-                <p className="text-xs text-muted-foreground">Tasa de Completado</p>
+                <p className="text-xs text-zinc-500">Tasa de Completado</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card status="success" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Tasa de Finalización</span>
-                <Target className="size-4 text-muted-foreground" />
+                <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Tasa de Finalización</span>
+                <Target className="size-4 text-zinc-500 group-hover:text-green-500 transition-colors" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-bold tracking-tight" data-testid="analytics-success">
+                <h3 className="text-2xl font-display font-medium tracking-tight text-foreground" data-testid="analytics-success">
                   {successRate}%
                 </h3>
-                <p className="text-xs text-muted-foreground">Completadas</p>
+                <p className="text-xs text-zinc-500">Completadas</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
             <CardHeader>
               <CardTitle className="text-lg font-display">Campañas por Estado</CardTitle>
               <CardDescription className="font-mono text-xs uppercase tracking-wider">Análisis de Distribución</CardDescription>
@@ -179,7 +179,7 @@ const Analytics = memo(function Analytics() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
             <CardHeader>
               <CardTitle className="text-lg font-display">Campañas por Prioridad</CardTitle>
               <CardDescription className="font-mono text-xs uppercase tracking-wider">Desglose por Prioridad</CardDescription>
@@ -221,7 +221,7 @@ const Analytics = memo(function Analytics() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
             <CardHeader>
               <CardTitle className="text-lg font-display">Campañas por Canal</CardTitle>
               <CardDescription className="font-mono text-xs uppercase tracking-wider">Distribución de Canales</CardDescription>
@@ -261,7 +261,7 @@ const Analytics = memo(function Analytics() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
             <CardHeader>
               <CardTitle className="text-lg font-display">Rendimiento Reciente</CardTitle>
               <CardDescription className="font-mono text-xs uppercase tracking-wider">Últimos 10 Puntos de Datos</CardDescription>

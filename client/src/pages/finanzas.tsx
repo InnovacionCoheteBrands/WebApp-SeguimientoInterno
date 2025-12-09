@@ -666,175 +666,177 @@ export default function Finanzas() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <Card className="border-border bg-card/50 rounded-sm">
+                {/* Ingresos - Green Accent */}
+                <Card status="success" className="hover:shadow-md transition-shadow group relative overflow-hidden">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground">
+                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground flex justify-between items-center">
                             Ingresos Totales
+                            <TrendingUp className="size-4 text-green-500 opacity-70" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="flex items-baseline justify-between">
-                            <span className="text-2xl font-display font-bold text-green-500">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                                 {summaryLoading ? "..." : formatCurrency(summary?.totalIncome || 0)}
                             </span>
-                            <TrendingUp className="size-5 text-green-500" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Mes actual</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">Mes actual</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card/50 rounded-sm">
+                {/* Gastos - Red Accent */}
+                <Card status="error" className="hover:shadow-md transition-shadow group relative overflow-hidden">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground">
+                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground flex justify-between items-center">
                             Gastos Totales
+                            <TrendingDown className="size-4 text-red-500 opacity-70" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="flex items-baseline justify-between">
-                            <span className="text-2xl font-display font-bold text-red-500">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                                 {summaryLoading ? "..." : formatCurrency(summary?.totalExpenses || 0)}
                             </span>
-                            <TrendingDown className="size-5 text-red-500" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Mes actual</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">Mes actual</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card/50 rounded-sm">
+                {/* Beneficio - Blue Accent */}
+                <Card status="info" className="hover:shadow-md transition-shadow group relative overflow-hidden">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground">
+                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground flex justify-between items-center">
                             Beneficio Neto
+                            <DollarSign className="size-4 text-blue-500 opacity-70" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="flex items-baseline justify-between">
-                            <span className={`text-2xl font-display font-bold ${(summary?.netProfit || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                                 {summaryLoading ? "..." : formatCurrency(summary?.netProfit || 0)}
                             </span>
-                            <DollarSign className="size-5 text-primary" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Ingresos - Gastos</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">Ingresos - Gastos</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card/50 rounded-sm">
+                {/* Cash Flow - Warning Accent */}
+                <Card status="warning" className="hover:shadow-md transition-shadow group relative overflow-hidden">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground">
+                        <CardTitle className="text-sm font-mono uppercase tracking-wider text-muted-foreground flex justify-between items-center">
                             Cash Flow
+                            <div className="md:hidden size-2 rounded-full bg-orange-500 animate-pulse" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="flex items-baseline justify-between">
-                            <span className="text-2xl font-display font-bold text-primary">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                                 {summaryLoading ? "..." : formatCurrency(summary?.cashFlow || 0)}
                             </span>
-                            <TrendingUp className="size-5 text-primary" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Disponible</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">Disponible</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Monthly Obligations Section */}
-            <Card className="border-border bg-card/50 rounded-sm">
-                <CardHeader className="p-4">
-                    <CardTitle className="text-base sm:text-lg font-display">
-                        Obligaciones del Mes  ({new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })})
-                    </CardTitle>
-                    <CardDescription className="font-mono text-xs uppercase tracking-wider">
-                        Sistema de control de flujo de caja
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Cuentas por Pagar */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Cuentas por Pagar */}
+                <Card className="border-border bg-card">
+                    <CardHeader className="p-4 border-b border-border/50">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-sm bg-red-500/10">
                                 <TrendingDown className="size-4 text-red-500" />
-                                <h3 className="font-mono font-semibold text-sm uppercase tracking-wider">
-                                    Cuentas por Pagar
-                                </h3>
-                                <Badge variant="outline" className="ml-auto text-xs">
-                                    {monthlyPayables.length}
-                                </Badge>
                             </div>
-                            {payablesLoading ? (
-                                <p className="text-sm text-muted-foreground">Cargando...</p>
-                            ) : monthlyPayables.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No hay gastos recurrentes pendientes</p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {monthlyPayables.map((obligation) => (
-                                        <div key={obligation.id} className="p-3 border border-border rounded-sm bg-background hover:bg-accent/50 transition-colors">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex-1">
-                                                    <p className="font-semibold text-sm">{obligation.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{obligation.category}</p>
-                                                </div>
-                                                <p className="text-sm font-bold text-red-500">
-                                                    {formatCurrency(parseFloat(obligation.amount))}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                onClick={() => markAsPaidMutation.mutate({ id: obligation.id })}
-                                                disabled={markAsPaidMutation.isPending}
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full text-xs"
-                                            >
-                                                ✓ Marcar como Pagado
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <div>
+                                <CardTitle className="text-base font-display">CUENTAS POR PAGAR</CardTitle>
+                                <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
+                                    Pendientes del mes ({monthlyPayables.length})
+                                </CardDescription>
+                            </div>
                         </div>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-3">
+                        {payablesLoading ? (
+                            <p className="text-sm text-muted-foreground">Cargando...</p>
+                        ) : monthlyPayables.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">No hay pagos pendientes</p>
+                        ) : (
+                            monthlyPayables.map((obligation) => (
+                                <div key={obligation.id} className="group flex items-center justify-between p-3 bg-secondary/20 hover:bg-secondary/40 relative overflow-hidden transition-colors rounded-sm">
+                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-70" />
+                                    <div className="pl-2">
+                                        <p className="font-medium text-sm text-foreground">{obligation.name}</p>
+                                        <p className="text-[10px] font-mono text-muted-foreground uppercase">{obligation.category}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-bold text-red-500 font-mono mb-1">
+                                            {formatCurrency(parseFloat(obligation.amount))}
+                                        </p>
+                                        <Button
+                                            onClick={() => markAsPaidMutation.mutate({ id: obligation.id })}
+                                            disabled={markAsPaidMutation.isPending}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-[10px] uppercase tracking-wider hover:bg-red-500/10 hover:text-red-500"
+                                        >
+                                            Marcar Pagado
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </CardContent>
+                </Card>
 
-                        {/* Cuentas por Cobrar */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-border">
+                {/* Cuentas por Cobrar */}
+                <Card className="border-border bg-card">
+                    <CardHeader className="p-4 border-b border-border/50">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-sm bg-green-500/10">
                                 <TrendingUp className="size-4 text-green-500" />
-                                <h3 className="font-mono font-semibold text-sm uppercase tracking-wider">
-                                    Cuentas por Cobrar
-                                </h3>
-                                <Badge variant="outline" className="ml-auto text-xs">
-                                    {monthlyReceivables.length}
-                                </Badge>
                             </div>
-                            {receivablesLoading ? (
-                                <p className="text-sm text-muted-foreground">Cargando...</p>
-                            ) : monthlyReceivables.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No hay ingresos recurrentes pendientes</p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {monthlyReceivables.map((obligation) => (
-                                        <div key={obligation.id} className="p-3 border border-border rounded-sm bg-background hover:bg-accent/50 transition-colors">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex-1">
-                                                    <p className="font-semibold text-sm">{obligation.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{obligation.category}</p>
-                                                </div>
-                                                <p className="text-sm font-bold text-green-500">
-                                                    {formatCurrency(parseFloat(obligation.amount))}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                onClick={() => markAsPaidMutation.mutate({ id: obligation.id })}
-                                                disabled={markAsPaidMutation.isPending}
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full text-xs"
-                                            >
-                                                ✓ Marcar como Cobrado
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <div>
+                                <CardTitle className="text-base font-display">CUENTAS POR COBRAR</CardTitle>
+                                <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
+                                    Pendientes del mes ({monthlyReceivables.length})
+                                </CardDescription>
+                            </div>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-3">
+                        {receivablesLoading ? (
+                            <p className="text-sm text-muted-foreground">Cargando...</p>
+                        ) : monthlyReceivables.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">No hay cobros pendientes</p>
+                        ) : (
+                            monthlyReceivables.map((obligation) => (
+                                <div key={obligation.id} className="group flex items-center justify-between p-3 bg-secondary/20 hover:bg-secondary/40 relative overflow-hidden transition-colors rounded-sm">
+                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-transparent via-green-500 to-transparent opacity-70" />
+                                    <div className="pl-2">
+                                        <p className="font-medium text-sm text-foreground">{obligation.name}</p>
+                                        <p className="text-[10px] font-mono text-muted-foreground uppercase">{obligation.category}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-bold text-green-500 font-mono mb-1">
+                                            {formatCurrency(parseFloat(obligation.amount))}
+                                        </p>
+                                        <Button
+                                            onClick={() => markAsPaidMutation.mutate({ id: obligation.id })}
+                                            disabled={markAsPaidMutation.isPending}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-[10px] uppercase tracking-wider hover:bg-green-500/10 hover:text-green-500"
+                                        >
+                                            Marcar Cobrado
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Transactions Section - Dual Table Layout (moved above chart) */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -943,7 +945,8 @@ export default function Finanzas() {
                 </Card>
 
                 {/* Resolved Transactions (sidebar - 1/3 width on desktop) */}
-                <Card className="border-border bg-card/50 rounded-sm border-l-4 border-l-green-500/50">
+                <Card className="border-border bg-card/50 rounded-sm relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-transparent via-green-500 to-transparent opacity-50" />
                     <CardHeader className="p-4">
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="size-5 text-green-500" />
@@ -965,12 +968,13 @@ export default function Finanzas() {
                                 {resolvedTransactions.map((transaction) => (
                                     <div
                                         key={transaction.id}
-                                        className="flex items-center gap-3 p-3 rounded-sm bg-green-500/5 border border-green-500/20 hover:bg-green-500/10 transition-colors"
+                                        className="flex items-center gap-3 p-3 rounded-sm bg-green-500/5 hover:bg-green-500/10 transition-colors relative overflow-hidden"
                                     >
+                                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-transparent via-green-500 to-transparent opacity-50" />
                                         <Checkbox
                                             checked={true}
                                             onCheckedChange={() => handleToggleTransactionStatus(transaction)}
-                                            className="border-green-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                            className="border-green-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 ml-2"
                                         />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate">{transaction.category}</p>
