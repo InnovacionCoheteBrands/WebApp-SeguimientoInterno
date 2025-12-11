@@ -113,11 +113,10 @@ export default function Finanzas() {
         category: "",
         amount: "0",
         date: new Date(),
-        isPaid: true,  // ✅ Use new field
-        paidDate: new Date(),  // ✅ Use new field
+        isPaid: true,
+        paidDate: new Date(),
         description: "",
-        status: "Pagado",  // ⚠️ Sync with isPaid for backward compatibility
-        relatedClient: "",  // ⚠️ TODO: Replace with clientId selector
+        // status and relatedClient removed from initial state to rely on backend/cleaner logic
     });
 
     const [editTransaction, setEditTransaction] = useState<UpdateTransaction>({});
@@ -338,8 +337,6 @@ export default function Finanzas() {
             isPaid: true,
             paidDate: new Date(),
             description: "",
-            status: "Pagado",
-            relatedClient: "",
         });
         // Reset recurrence config
         setIsRecurring(false);
@@ -439,7 +436,7 @@ export default function Finanzas() {
                 ...newTransaction,
                 description: newTransaction.description?.trim() || undefined,
                 relatedClient: newTransaction.relatedClient?.trim() || undefined,
-                status: newTransaction.isPaid ? "Pagado" : "Pendiente",
+                // Status is now handled by backend based on isPaid
             };
 
             createMutation.mutate(transactionData);
@@ -449,13 +446,11 @@ export default function Finanzas() {
     const handleEditTransaction = useCallback(() => {
         if (!selectedTransaction) return;
 
-        // Prepare edit data - convert empty strings to null for optional fields
         const editData: UpdateTransaction = {
             ...editTransaction,
             description: editTransaction.description?.trim() || undefined,
             relatedClient: editTransaction.relatedClient?.trim() || undefined,
-            // ✅ Ensure status is synced with isPaid (backward compatibility)
-            status: editTransaction.isPaid ? "Pagado" : "Pendiente",
+            // Status update removed, backend syncs it from isPaid
         };
 
         updateMutation.mutate({
@@ -490,14 +485,12 @@ export default function Finanzas() {
         setDeleteDialogOpen(true);
     }, []);
 
-    // Toggle transaction between Pagado/Pendiente
     const handleToggleTransactionStatus = useCallback((transaction: Transaction) => {
-        const newStatus = transaction.status === "Pagado" ? "Pendiente" : "Pagado";
-        const newIsPaid = newStatus === "Pagado";
+        // Just toggle isPaid, backend will sync status
+        const newIsPaid = !transaction.isPaid;
         updateMutation.mutate({
             id: transaction.id,
             data: {
-                status: newStatus,
                 isPaid: newIsPaid,
                 paidDate: newIsPaid ? new Date() : undefined,
             },

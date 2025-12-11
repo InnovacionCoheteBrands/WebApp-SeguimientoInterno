@@ -865,14 +865,42 @@ export class DBStorage implements IStorage {
   }
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    const [newTransaction] = await db.insert(transactions).values(transaction).returning();
+    // 🛡️ SYNC LOGIC: Enforce legacy 'status' field matches modern 'isPaid' field
+    const syncedTransaction = {
+      ...transaction,
+      // If isPaid is true, status MUST be 'Pagado', otherwise 'Pendiente'
+      status: transaction.isPaid ? "Pagado" : "Pendiente",
+      // If isPaid is true but no paidDate provided, default to now
+      paidDate: transaction.isPaid && !transaction.paidDate ? new Date() : transaction.paidDate,
+    };
+
+    const [newTransaction] = await db.insert(transactions).values(syncedTransaction).returning();
     return newTransaction;
   }
 
   async updateTransaction(id: number, transaction: UpdateTransaction): Promise<Transaction | undefined> {
+    // 🛡️ SYNC LOGIC: Enforce synchronization during updates
+    let syncedTransaction = { ...transaction };
+
+    // If 'isPaid' is being updated, we must update 'status' too
+    if (transaction.isPaid !== undefined) {
+      syncedTransaction.status = transaction.isPaid ? "Pagado" : "Pendiente";
+      // If marking as paid and no date provided, set it
+      if (transaction.isPaid && !transaction.paidDate) {
+        syncedTransaction.paidDate = new Date();
+      }
+    }
+    // Fallback: If 'status' is updated via legacy API but 'isPaid' is missing, sync 'isPaid'
+    else if (transaction.status !== undefined) {
+      syncedTransaction.isPaid = transaction.status === "Pagado";
+      if (syncedTransaction.isPaid && !transaction.paidDate) {
+        syncedTransaction.paidDate = new Date();
+      }
+    }
+
     const [updated] = await db
       .update(transactions)
-      .set({ ...transaction, updatedAt: new Date() })
+      .set({ ...syncedTransaction, updatedAt: new Date() })
       .where(eq(transactions.id, id))
       .returning();
     return updated;
