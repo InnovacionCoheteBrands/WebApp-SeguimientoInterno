@@ -505,3 +505,5 @@ export const insertProjectAttachmentSchema = createInsertSchema(projectAttachmen
 
 export type ProjectAttachment = typeof projectAttachments.$inferSelect;
 export type InsertProjectAttachment = z.infer<typeof insertProjectAttachmentSchema>;
+
+

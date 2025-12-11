@@ -71,91 +71,99 @@
 
 /* MISSION CONTROL THEME - Cohete Brands OS */
 :root {
-  /* Industrial Technical Dark Mode - Zinc Palette */
-  --background: 240 10% 3.9%;
-  /* Zinc 950 */
-  --foreground: 0 0% 98%;
-  /* White */
+  /* Default to Light Mode if no class present, or use this for shared variables */
+  /* However, the previous root was DARK. I will change root to start with light values or keep it dark? 
+     The user asked for Light Mode. I will add a .light class and keep root as base/dark or make root light? 
+     Convention: :root is default. If app was dark only, root was dark. 
+     Now we want swappable. 
+     Let's define light variables in a `.light` class and keep `:root` as base or define light in `:root` and dark in `.dark`.
+     
+     Actually, looking at `theme-provider.tsx`, it removes `light` and `dark` classes and adds one. 
+     So if I select 'light', it adds `.light`. I need `.light` in css.
+  */
 
-  --card: 240 10% 7%;
-  /* Zinc 925/Almost Black */
-  --card-foreground: 0 0% 98%;
+  /* Shared variables */
+  --radius: 0px;
+  --font-sans: 'Inter', 'Roboto', sans-serif;
+  --font-display: 'Oswald', 'Montserrat', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Roboto Mono', monospace;
 
-  --popover: 240 10% 5%;
-  --popover-foreground: 0 0% 98%;
+  /* Chart colors (Shared) */
+  --chart-1: 43 96% 56%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 217 91% 60%;
+  --chart-4: 262 83% 58%;
+  --chart-5: 0 84% 60%;
+
+  /* LIGHT MODE DEFAULTS (Zinc Palette) */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
 
   --primary: 43 96% 56%;
-  /* Amber 500 */
   --primary-foreground: 240 10% 3.9%;
 
-  --secondary: 240 4% 16%;
-  /* Zinc 800 */
-  --secondary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
 
-  --muted: 240 6% 13%;
-  /* Zinc 900 */
-  --muted-foreground: 240 5% 65%;
-  /* Zinc 400 */
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
 
-  --accent: 240 6% 13%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
 
-  --destructive: 0 84% 60%;
-  /* Red 500 */
+  --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 3.7% 15.9%;
-  /* Zinc 800 */
-  --input: 240 3.7% 15.9%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
   --ring: 43 96% 56%;
 
-  --radius: 0px;
-  /* SHARP CORNERS - Industrial */
-
-  /* Chart colors */
-  --chart-1: 43 96% 56%;
-  /* Amber */
-  --chart-2: 142 71% 45%;
-  /* Green 500 */
-  --chart-3: 217 91% 60%;
-  /* Blue 500 */
-  --chart-4: 262 83% 58%;
-  /* Purple 500 */
-  --chart-5: 0 84% 60%;
-  /* Red 500 */
-
-  --sidebar: 240 10% 2%;
-  /* Zinc 975 */
-  --sidebar-foreground: 240 5% 90%;
-  --sidebar-primary: 43 96% 56%;
-  --sidebar-primary-foreground: 240 10% 4%;
-  --sidebar-accent: 240 4% 16%;
-  --sidebar-accent-foreground: 240 5% 90%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 43 96% 56%;
+  --sidebar: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 240 5.9% 10%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 217.2 91.2% 59.8%;
 }
 
 .dark {
-  /* Same as root - forced dark mode */
+  /* Industrial Technical Dark Mode - Zinc Palette */
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
+
   --card: 240 10% 7%;
   --card-foreground: 0 0% 98%;
+
   --popover: 240 10% 5%;
   --popover-foreground: 0 0% 98%;
+
   --primary: 43 96% 56%;
   --primary-foreground: 240 10% 3.9%;
+
   --secondary: 240 4% 16%;
   --secondary-foreground: 0 0% 98%;
+
   --muted: 240 6% 13%;
   --muted-foreground: 240 5% 65%;
+
   --accent: 240 6% 13%;
   --accent-foreground: 0 0% 98%;
+
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
+
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 43 96% 56%;
+
   --sidebar: 240 10% 2%;
   --sidebar-foreground: 240 5% 90%;
   --sidebar-primary: 43 96% 56%;
@@ -165,6 +173,7 @@
   --sidebar-border: 240 3.7% 15.9%;
   --sidebar-ring: 43 96% 56%;
 }
+
 
 @layer base {
   * {

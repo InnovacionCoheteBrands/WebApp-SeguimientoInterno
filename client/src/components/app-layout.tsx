@@ -21,6 +21,7 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCampaigns } from "@/lib/api";
+import { useLanguage } from "@/components/language-provider";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -59,6 +60,7 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
 export function AppLayout({ children }: AppLayoutProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [location] = useLocation();
+  const { t } = useLanguage();
   const { data: campaigns = [] } = useQuery({
     queryKey: ["campaigns"],
     queryFn: fetchCampaigns,
@@ -90,16 +92,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          <NavButton icon={LayoutDashboard} label="Dashboard" active={location === "/"} href="/" />
+          <NavButton icon={LayoutDashboard} label={t("dashboard")} active={location === "/"} href="/" />
 
           <div className="pt-2 border-t border-border/50">
-            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">GESTIÓN</p>
-            <NavButton icon={Building2} label="Clientes" active={location === "/clientes"} href="/clientes" />
-            <NavButton icon={FolderKanban} label="Proyectos" active={location === "/proyectos"} href="/proyectos" />
-            <NavButton icon={Users} label="Talento" active={location === "/equipo"} href="/equipo" />
-            <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" />
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">{t("mission_control")}</p>
+            <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" />
+            <NavButton icon={FolderKanban} label={t("projects")} active={location === "/proyectos"} href="/proyectos" />
+            <NavButton icon={Users} label={t("team")} active={location === "/equipo"} href="/equipo" />
+            <NavButton icon={TrendingUp} label={t("analytics")} active={location === "/kpis"} href="/kpis" />
             <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
-            <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" />
+            <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" />
           </div>
         </nav>
 
@@ -136,15 +138,15 @@ export function AppLayout({ children }: AppLayoutProps) {
             />
           </div>
           <nav className="flex-1 p-4 space-y-1">
-            <NavButton icon={LayoutDashboard} label="Dashboard" active={location === "/"} href="/" />
+            <NavButton icon={LayoutDashboard} label={t("dashboard")} active={location === "/"} href="/" />
             <div className="pt-2 border-t border-border/50">
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">GESTIÓN</p>
-              <NavButton icon={Building2} label="Clientes" active={location === "/clientes"} href="/clientes" />
-              <NavButton icon={FolderKanban} label="Proyectos" active={location === "/proyectos"} href="/proyectos" />
-              <NavButton icon={Users} label="Talento" active={location === "/equipo"} href="/equipo" />
-              <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" />
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">{t("mission_control")}</p>
+              <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" />
+              <NavButton icon={FolderKanban} label={t("projects")} active={location === "/proyectos"} href="/proyectos" />
+              <NavButton icon={Users} label={t("team")} active={location === "/equipo"} href="/equipo" />
+              <NavButton icon={TrendingUp} label={t("analytics")} active={location === "/kpis"} href="/kpis" />
               <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
-              <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" />
+              <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" />
             </div>
           </nav>
           <div className="p-4 border-t border-border">

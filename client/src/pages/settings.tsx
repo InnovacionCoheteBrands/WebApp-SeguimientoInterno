@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTheme } from "@/components/theme-provider";
+import { useLanguage } from "@/components/language-provider";
 
 interface Settings {
   // System
@@ -49,6 +51,8 @@ const defaultSettings: Settings = {
 const Settings = memo(function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setTheme } = useTheme();
+  const { setLanguage, t } = useLanguage();
   const [localSettings, setLocalSettings] = useState<Settings>(defaultSettings);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -73,8 +77,11 @@ const Settings = memo(function Settings() {
   useEffect(() => {
     if (serverSettings) {
       setLocalSettings(serverSettings);
+      // Sync contexts initially too
+      if (serverSettings.theme) setTheme(serverSettings.theme as any);
+      if (serverSettings.language) setLanguage(serverSettings.language as any);
     }
-  }, [serverSettings]);
+  }, [serverSettings, setTheme, setLanguage]);
 
   // Mutation for saving settings
   const saveMutation = useMutation({
@@ -156,6 +163,10 @@ const Settings = memo(function Settings() {
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setLocalSettings(prev => ({ ...prev, [key]: value }));
     setHasChanges(true);
+
+    // Apply strict settings immediately for better UX
+    if (key === 'theme') setTheme(value as any);
+    if (key === 'language') setLanguage(value as any);
   };
 
   const handleGenerateApiKey = () => {
@@ -181,9 +192,9 @@ const Settings = memo(function Settings() {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-display font-bold tracking-wide">SYSTEM CONFIGURATION</h1>
+                <h1 className="text-2xl font-display font-bold tracking-wide">{t("system_configuration")}</h1>
                 <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
-                  Application preferences and settings
+                  {t("settings_description") || "Application preferences and settings"}
                 </p>
               </div>
             </div>
@@ -194,7 +205,7 @@ const Settings = memo(function Settings() {
               data-testid="button-save-settings"
             >
               <Save className="size-4 mr-2" />
-              {saveMutation.isPending ? "Saving..." : "Save Changes"}
+              {saveMutation.isPending ? "Saving..." : t("save_changes")}
             </Button>
           </div>
         </div>
