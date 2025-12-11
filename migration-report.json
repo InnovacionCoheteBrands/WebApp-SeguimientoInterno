@@ -1,6 +1,6 @@
 {
-  "totalTransactions": 0,
-  "statusSynced": 0,
+  "totalTransactions": 12,
+  "statusSynced": 1,
   "clientsLinked": 0,
   "clientsUnmatched": 0,
   "unmatchedClients": []
