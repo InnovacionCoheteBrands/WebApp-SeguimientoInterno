@@ -81,6 +81,7 @@ import type { Transaction, InsertTransaction, UpdateTransaction, RecurringTransa
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/format-currency";
 import { format } from "date-fns";
+import { ClientSelector } from "@/components/financial/client-selector";
 
 // Category options
 const INCOME_CATEGORIES = [
@@ -116,7 +117,8 @@ export default function Finanzas() {
         isPaid: true,
         paidDate: new Date(),
         description: "",
-        // status and relatedClient removed from initial state to rely on backend/cleaner logic
+        clientId: null,
+        // status and relatedClient removed from initial state
     });
 
     const [editTransaction, setEditTransaction] = useState<UpdateTransaction>({});
@@ -476,6 +478,7 @@ export default function Finanzas() {
             status: transaction.status,  // ⚠️ Backward compatibility
             description: transaction.description,
             relatedClient: transaction.relatedClient,
+            clientId: transaction.clientId,
         });
         setEditDialogOpen(true);
     }, []);
@@ -1133,7 +1136,6 @@ export default function Finanzas() {
                                             ...newTransaction,
                                             isPaid,
                                             paidDate: isPaid ? (newTransaction.paidDate || new Date()) : undefined,
-                                            status: isPaid ? "Pagado" : "Pendiente",  // Sync legacy field
                                         });
                                     }}
                                 />
@@ -1179,12 +1181,10 @@ export default function Finanzas() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-mono uppercase">Cliente Relacionado (Opcional)</Label>
-                            <Input
-                                placeholder="Nombre del cliente"
-                                value={newTransaction.relatedClient || ""}
-                                onChange={(e) => setNewTransaction({ ...newTransaction, relatedClient: e.target.value })}
-                                className="rounded-sm border-border bg-background h-11"
+                            <Label className="text-xs font-mono uppercase">Cliente Relacionado</Label>
+                            <ClientSelector
+                                value={newTransaction.clientId}
+                                onChange={(clientId) => setNewTransaction({ ...newTransaction, clientId })}
                             />
                         </div>
 
@@ -1374,7 +1374,6 @@ export default function Finanzas() {
                                             ...editTransaction,
                                             isPaid,
                                             paidDate: isPaid ? (editTransaction.paidDate || new Date()) : undefined,
-                                            status: isPaid ? "Pagado" : "Pendiente",  // Sync legacy field
                                         });
                                     }}
                                 />
@@ -1420,12 +1419,9 @@ export default function Finanzas() {
 
                         <div className="space-y-2">
                             <Label className="text-xs font-mono uppercase">Cliente Relacionado</Label>
-                            <Input
-                                value={editTransaction.relatedClient || ""}
-                                onChange={(e) =>
-                                    setEditTransaction({ ...editTransaction, relatedClient: e.target.value })
-                                }
-                                className="rounded-sm border-border bg-background h-11"
+                            <ClientSelector
+                                value={editTransaction.clientId}
+                                onChange={(clientId) => setEditTransaction({ ...editTransaction, clientId })}
                             />
                         </div>
                     </div>
