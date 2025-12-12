@@ -866,7 +866,7 @@ export class DBStorage implements IStorage {
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
     // 🛡️ SYNC LOGIC: Enforce legacy 'status' field matches modern 'isPaid' field
-    const syncedTransaction = {
+    const syncedTransaction: any = {
       ...transaction,
       // If isPaid is true, status MUST be 'Pagado', otherwise 'Pendiente'
       status: transaction.isPaid ? "Pagado" : "Pendiente",
@@ -874,13 +874,25 @@ export class DBStorage implements IStorage {
       paidDate: transaction.isPaid && !transaction.paidDate ? new Date() : transaction.paidDate,
     };
 
+    // 🛡️ TAX LOGIC: Auto-calculate Total if Subtotal is present
+    // Ensure numeric fields are strings for Drizzle/Postgres
+    if (transaction.subtotal) {
+      const sub = parseFloat(transaction.subtotal.toString());
+      // Use provided IVA or default to 16%
+      const tax = transaction.iva ? parseFloat(transaction.iva.toString()) : sub * 0.16;
+
+      syncedTransaction.subtotal = sub.toFixed(2);
+      syncedTransaction.iva = tax.toFixed(2);
+      syncedTransaction.amount = (sub + tax).toFixed(2);
+    }
+
     const [newTransaction] = await db.insert(transactions).values(syncedTransaction).returning();
     return newTransaction;
   }
 
   async updateTransaction(id: number, transaction: UpdateTransaction): Promise<Transaction | undefined> {
     // 🛡️ SYNC LOGIC: Enforce synchronization during updates
-    let syncedTransaction = { ...transaction };
+    let syncedTransaction: any = { ...transaction };
 
     // If 'isPaid' is being updated, we must update 'status' too
     if (transaction.isPaid !== undefined) {
@@ -895,6 +907,22 @@ export class DBStorage implements IStorage {
       syncedTransaction.isPaid = transaction.status === "Pagado";
       if (syncedTransaction.isPaid && !transaction.paidDate) {
         syncedTransaction.paidDate = new Date();
+      }
+    }
+
+    // 🛡️ TAX LOGIC: Recalculate if Subtotal is being updated
+    if (transaction.subtotal !== undefined) {
+      // If null/empty, do nothing or handle clearing? Assumption: if passed, it's a value.
+      if (transaction.subtotal) {
+        const sub = parseFloat(transaction.subtotal.toString());
+        // If IVA is also updated, use it. If not, we might need to fetch current IVA?
+        // For now, if Subtotal changes, we enforce 16% unless IVA is strictly provided in this update.
+        // This is a safe simplification: changing subtotal usually resets tax calc.
+        const tax = transaction.iva ? parseFloat(transaction.iva.toString()) : sub * 0.16;
+
+        syncedTransaction.subtotal = sub.toFixed(2);
+        syncedTransaction.iva = tax.toFixed(2);
+        syncedTransaction.amount = (sub + tax).toFixed(2);
       }
     }
 

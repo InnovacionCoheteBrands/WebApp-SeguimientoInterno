@@ -43,7 +43,7 @@ export function ClientSelector({ value, onChange, className }: ClientSelectorPro
                     aria-expanded={open}
                     className={cn("w-full justify-between font-normal", !value && "text-muted-foreground", className)}
                 >
-                    {selectedClient ? selectedClient.name : "Seleccionar cliente..."}
+                    {selectedClient ? selectedClient.companyName : "Seleccionar cliente..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
@@ -56,7 +56,7 @@ export function ClientSelector({ value, onChange, className }: ClientSelectorPro
                             {!isLoading && clients.map((client) => (
                                 <CommandItem
                                     key={client.id}
-                                    value={client.name}
+                                    value={client.companyName}
                                     onSelect={() => {
                                         onChange(client.id === value ? null : client.id);
                                         setOpen(false);
@@ -68,7 +68,7 @@ export function ClientSelector({ value, onChange, className }: ClientSelectorPro
                                             value === client.id ? "opacity-100" : "opacity-0"
                                         )}
                                     />
-                                    {client.name}
+                                    {client.companyName}
                                 </CommandItem>
                             ))}
                         </CommandGroup>
