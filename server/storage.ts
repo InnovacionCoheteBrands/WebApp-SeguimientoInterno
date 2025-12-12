@@ -1057,15 +1057,22 @@ export class DBStorage implements IStorage {
       amount: recurring.amount,
       date: executionDate,
       isPaid: true,  // ✅ Mark as paid immediately when executed
-      paidDate: executionDate,  // ✅ Set paid date
-      clientId: recurring.clientId || undefined,  // ✅ Use clientId FK if available
-      isRecurringInstance: true,  // ✅ Mark as generated from template
-      recurringTemplateId: id,  // ✅ Link to the template
-      source: 'recurring_template',  // ✅ Track origin
-      sourceId: id,  // ✅ Reference to template ID
-      status: 'Pagado',  // ⚠️ Backward compatibility with legacy field
-      description: recurring.description || undefined,
-      relatedClient: null,  // ⚠️ Explicitly null (use clientId instead)
+      // paidDate: executionDate, // createTransaction sets this if isPaid=true
+      clientId: recurring.clientId || undefined,
+      isRecurringInstance: true,
+      recurringTemplateId: id,
+      source: 'recurring_template',
+      sourceId: id,
+      status: 'Pagado',
+      description: recurring.description || recurring.name, // Use concept if available
+      relatedClient: null,
+
+      // ✅ Fiscal Data
+      provider: recurring.provider || undefined,
+      rfc: recurring.rfc || undefined,
+      subtotal: recurring.subtotal ? recurring.subtotal.toString() : undefined,
+      iva: recurring.iva ? recurring.iva.toString() : undefined,
+      notes: recurring.notes || undefined,
     });
 
     // Calculate next execution date
@@ -1107,6 +1114,8 @@ export class DBStorage implements IStorage {
     const next = new Date(now);
 
     switch (frequency) {
+      // ... existing case logic is fine, keeping it consistent or viewing it if needed
+      // Re-using existing helper logic if unchanged
       case 'weekly':
         // Set to next occurrence of dayOfWeek
         const targetDay = dayOfWeek ?? 1; // Default to Monday if not set

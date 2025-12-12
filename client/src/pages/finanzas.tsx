@@ -63,6 +63,8 @@ import { TransactionTable } from "@/components/financial/transaction-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+import { AutomationHub } from "@/components/financial/automation-hub";
+
 export default function Finanzas() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -76,38 +78,28 @@ export default function Finanzas() {
     const [deleteTransactionId, setDeleteTransactionId] = useState<number | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    // Recurring Management States
-    const [isRecurringManageOpen, setIsRecurringManageOpen] = useState(false);
-    const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
-    const [isEditRecurringDialogOpen, setIsEditRecurringDialogOpen] = useState(false);
-
     // Filter States
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
     // Queries
     const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
         queryKey: ["transactions"],
-        queryFn: fetchTransactions,
+        queryFn: () => fetchTransactions(),
     });
 
     const { data: summary } = useQuery<FinancialSummary>({
         queryKey: ["financial-summary"],
-        queryFn: fetchFinancialSummary,
+        queryFn: () => fetchFinancialSummary(),
     });
 
     const { data: monthlyPayables = [] } = useQuery({
         queryKey: ["monthly-payables"],
-        queryFn: fetchMonthlyPayables,
+        queryFn: () => fetchMonthlyPayables(),
     });
 
     const { data: monthlyReceivables = [] } = useQuery({
         queryKey: ["monthly-receivables"],
-        queryFn: fetchMonthlyReceivables,
-    });
-
-    const { data: recurringTransactions = [] } = useQuery({
-        queryKey: ["recurring-transactions"],
-        queryFn: fetchRecurringTransactions,
+        queryFn: () => fetchMonthlyReceivables(),
     });
 
     // Mutations
@@ -132,25 +124,6 @@ export default function Finanzas() {
         },
     });
 
-    const updateRecurringMutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: any }) => updateRecurringTransaction(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
-            toast({ title: "Recurrente actualizado" });
-            setIsEditRecurringDialogOpen(false);
-        }
-    });
-
-    const deleteRecurringMutation = useMutation({
-        mutationFn: deleteRecurringTransaction,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
-            toast({ title: "Recurrente eliminado" });
-            setIsEditRecurringDialogOpen(false);
-        }
-    });
-
-
     // Filtering Logic
     const filteredTransactions = useMemo(() => {
         let filtered = transactions;
@@ -172,8 +145,8 @@ export default function Finanzas() {
 
     // Derived Financials for Chart
     const chartData = useMemo(() => {
-        if (!summary?.monthlyStats) return [];
-        return summary.monthlyStats.slice(0, 6).reverse().map(stat => ({
+        if (!summary?.monthlyData) return [];
+        return summary.monthlyData.slice(0, 6).reverse().map(stat => ({
             month: stat.month,
             Ingresos: Number(stat.income),
             Gastos: Number(stat.expenses),
@@ -221,9 +194,13 @@ export default function Finanzas() {
                         onChange={(e) => setMonthFilter(e.target.value)}
                         className="bg-zinc-950 border-zinc-800 w-[160px] font-mono text-xs"
                     />
-                    <Button variant="outline" size="icon" onClick={() => setIsRecurringManageOpen(true)}>
-                        <Settings2 className="size-4" />
-                    </Button>
+                    <AutomationHub
+                        trigger={
+                            <Button variant="outline" size="icon" title="Automatizaciones">
+                                <CalendarClock className="size-4" />
+                            </Button>
+                        }
+                    />
                 </div>
             </div>
 
@@ -269,8 +246,8 @@ export default function Finanzas() {
                         <DollarSign className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold font-mono ${(summary?.netIncome || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                            {formatCurrency(Number(summary?.netIncome || 0))}
+                        <div className={`text-2xl font-bold font-mono ${(summary?.netProfit || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                            {formatCurrency(Number(summary?.netProfit || 0))}
                         </div>
                         <p className="text-xs text-zinc-500 mt-1">
                             Margen bruto antes de impuestos
@@ -327,7 +304,7 @@ export default function Finanzas() {
                                                 <Button
                                                     size="sm" variant="ghost"
                                                     className="text-[10px] h-6 hover:bg-emerald-500/10 hover:text-emerald-400"
-                                                    onClick={() => markAsPaidMutation.mutate({ id: item.id })}
+                                                    onClick={() => markAsPaidMutation.mutate(item.id)}
                                                     disabled={markAsPaidMutation.isPending}
                                                 >
                                                     Marcar Cobrado
@@ -380,7 +357,7 @@ export default function Finanzas() {
                                                 <Button
                                                     size="sm" variant="ghost"
                                                     className="text-[10px] h-6 hover:bg-rose-500/10 hover:text-rose-400"
-                                                    onClick={() => markAsPaidMutation.mutate({ id: item.id })}
+                                                    onClick={() => markAsPaidMutation.mutate(item.id)}
                                                     disabled={markAsPaidMutation.isPending}
                                                 >
                                                     Marcar Pagado
@@ -475,99 +452,9 @@ export default function Finanzas() {
             </AlertDialog>
 
             {/* Manage Recurring Dialog */}
-            <Dialog open={isRecurringManageOpen} onOpenChange={setIsRecurringManageOpen}>
-                <DialogContent className="bg-zinc-950 border-zinc-800 max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Gestión de Recurrentes</DialogTitle>
-                        <DialogDescription>Administra tus ingresos y gastos fijos</DialogDescription>
-                    </DialogHeader>
 
-                    <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-1 gap-2">
-                            {recurringTransactions.length === 0 ? (
-                                <p className="text-zinc-500 text-center py-8">No hay recurrentes configurados</p>
-                            ) : (
-                                recurringTransactions.map((rec: RecurringTransaction) => (
-                                    <div key={rec.id} className="flex items-center justify-between p-3 border border-zinc-800 rounded bg-zinc-900/30">
-                                        <div>
-                                            <div className="font-medium text-white">{rec.name}</div>
-                                            <div className="text-xs text-zinc-500 font-mono">
-                                                {rec.frequency} • Día {rec.dayOfMonth}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className="font-mono">{formatCurrency(Number(rec.amount))}</span>
-                                            <Button
-                                                size="sm" variant="ghost"
-                                                onClick={() => {
-                                                    setEditingRecurring(rec);
-                                                    setIsEditRecurringDialogOpen(true);
-                                                }}
-                                            >
-                                                <Settings2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
 
-            {/* Edit Recurring Details Dialog */}
-            <Dialog open={isEditRecurringDialogOpen} onOpenChange={setIsEditRecurringDialogOpen}>
-                <DialogContent className="bg-zinc-950 border-zinc-900">
-                    <DialogHeader>
-                        <DialogTitle>Editar Recurrente</DialogTitle>
-                    </DialogHeader>
-                    {editingRecurring && (
-                        <div className="space-y-4 py-2">
-                            <div className="space-y-2">
-                                <Label>Nombre</Label>
-                                <Input
-                                    value={editingRecurring.name}
-                                    onChange={e => setEditingRecurring({ ...editingRecurring, name: e.target.value })}
-                                    className="bg-zinc-900 border-zinc-800"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Monto</Label>
-                                <Input
-                                    type="number"
-                                    value={editingRecurring.amount}
-                                    onChange={e => setEditingRecurring({ ...editingRecurring, amount: e.target.value })} // Handling number convert later
-                                    className="bg-zinc-900 border-zinc-800"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Día del mes</Label>
-                                <Input
-                                    type="number"
-                                    value={editingRecurring.dayOfMonth}
-                                    onChange={e => setEditingRecurring({ ...editingRecurring, dayOfMonth: parseInt(e.target.value) })}
-                                    className="bg-zinc-900 border-zinc-800"
-                                />
-                            </div>
-                            <div className="flex items-center space-x-2 pt-2">
-                                <Switch
-                                    checked={editingRecurring.isActive || false}
-                                    onCheckedChange={(checked) => setEditingRecurring({ ...editingRecurring, isActive: checked })}
-                                />
-                                <Label className="text-sm">Activo</Label>
-                            </div>
-                            <DialogFooter className="gap-2 sm:gap-0">
-                                <Button variant="destructive" onClick={() => deleteRecurringMutation.mutate(editingRecurring.id)}>
-                                    Eliminar
-                                </Button>
-                                <Button onClick={() => updateRecurringMutation.mutate({ id: editingRecurring.id, data: editingRecurring })}>
-                                    Guardar
-                                </Button>
-                            </DialogFooter>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+
         </div>
     );
 }

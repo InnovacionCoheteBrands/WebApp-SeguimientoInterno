@@ -1,0 +1,9 @@
+scripts/apply_fiscal_migration.ts(2,20): error TS2307: Cannot find module '../server/db' or its corresponding type declarations.
+scripts/recurring_migration.ts(2,20): error TS2307: Cannot find module '../server/db' or its corresponding type declarations.
+scripts/seed-ads.ts(1,25): error TS2307: Cannot find module './storage' or its corresponding type declarations.
+scripts/seed-ads.ts(217,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+scripts/seed-ads.ts(217,34): error TS7006: Parameter 'i' implicitly has an 'any' type.
+scripts/seed.ts(2,25): error TS2307: Cannot find module './storage' or its corresponding type declarations.
+server/controllers/agent.ts(163,21): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'ChatCompletionToolMessageParam'.
+server/controllers/agent.ts(184,41): error TS2345: Argument of type 'string | ChatCompletionContentPartText[]' is not assignable to parameter of type 'string'.
+  Type 'ChatCompletionContentPartText[]' is not assignable to type 'string'.

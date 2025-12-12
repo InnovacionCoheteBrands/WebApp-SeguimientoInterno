@@ -1,0 +1,21 @@
+client/src/components/financial/recurring-form.tsx(100,23): error TS2345: Argument of type '{ amount: string; subtotal: string | undefined; iva: string | undefined; startDate: Date; id: number; name: string; description: string | null; type: string; category: string; rfc: string | null; ... 10 more ...; lastExecutionDate: Date | null; }' is not assignable to parameter of type '{ name: string; type: string; category: string; amount: string; frequency: string; nextExecutionDate: Date; description?: string | null | undefined; rfc?: string | null | undefined; ... 9 more ...; startDate?: Date | undefined; } | { ...; } | ResetAction<...> | undefined'.
+  Type '{ amount: string; subtotal: string | undefined; iva: string | undefined; startDate: Date; id: number; name: string; description: string | null; type: string; category: string; rfc: string | null; ... 10 more ...; lastExecutionDate: Date | null; }' is not assignable to type '{ name?: string | undefined; type?: string | undefined; category?: string | undefined; amount?: string | undefined; frequency?: string | undefined; nextExecutionDate?: Date | undefined; ... 11 more ...; startDate?: Date | undefined; }'.
+    Types of property 'dayOfMonth' are incompatible.
+      Type 'number | null' is not assignable to type 'number | undefined'.
+        Type 'null' is not assignable to type 'number | undefined'.
+client/src/pages/finanzas.tsx(148,23): error TS2339: Property 'monthlyStats' does not exist on type 'FinancialSummary'.
+client/src/pages/finanzas.tsx(149,24): error TS2339: Property 'monthlyStats' does not exist on type 'FinancialSummary'.
+client/src/pages/finanzas.tsx(149,63): error TS7006: Parameter 'stat' implicitly has an 'any' type.
+client/src/pages/finanzas.tsx(249,83): error TS2339: Property 'netIncome' does not exist on type 'FinancialSummary'.
+client/src/pages/finanzas.tsx(250,61): error TS2339: Property 'netIncome' does not exist on type 'FinancialSummary'.
+client/src/pages/finanzas.tsx(307,94): error TS2345: Argument of type '{ id: number; }' is not assignable to parameter of type 'number'.
+client/src/pages/finanzas.tsx(360,94): error TS2345: Argument of type '{ id: number; }' is not assignable to parameter of type 'number'.
+scripts/apply_fiscal_migration.ts(2,20): error TS2307: Cannot find module '../server/db' or its corresponding type declarations.
+scripts/recurring_migration.ts(2,20): error TS2307: Cannot find module '../server/db' or its corresponding type declarations.
+scripts/seed-ads.ts(1,25): error TS2307: Cannot find module './storage' or its corresponding type declarations.
+scripts/seed-ads.ts(217,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+scripts/seed-ads.ts(217,34): error TS7006: Parameter 'i' implicitly has an 'any' type.
+scripts/seed.ts(2,25): error TS2307: Cannot find module './storage' or its corresponding type declarations.
+server/controllers/agent.ts(163,21): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'ChatCompletionToolMessageParam'.
+server/controllers/agent.ts(184,41): error TS2345: Argument of type 'string | ChatCompletionContentPartText[]' is not assignable to parameter of type 'string'.
+  Type 'ChatCompletionContentPartText[]' is not assignable to type 'string'.
