@@ -444,10 +444,18 @@ export type UpdateTransaction = z.infer<typeof updateTransactionSchema>;
 // Financial Hub - Recurring Transactions (Templates)
 export const recurringTransactions = pgTable("recurring_transactions", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(), // Template name (e.g., "Nómina Mensual" or "Iguala Cliente ABC")
-  type: text("type").notNull(), // "Ingreso" or "Gasto" - ✅ Bidirectional support
+  name: text("name").notNull(), // Template name
+  description: text("description"), // Concepto validation default
+  type: text("type").notNull(),
   category: text("category").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+
+  // ✅ Fiscal Fields for Templates
+  rfc: text("rfc"),
+  provider: text("provider"),
+  subtotal: numeric("subtotal", { precision: 12, scale: 2 }),
+  iva: numeric("iva", { precision: 12, scale: 2 }),
+  notes: text("notes"),
   frequency: text("frequency").notNull(), // "monthly", "weekly", "biweekly", "quarterly", "yearly"
   dayOfMonth: integer("day_of_month"), // For monthly: 1-31, null for other frequencies
   dayOfWeek: integer("day_of_week"), // For weekly: 0-6 (0=Sunday), null for other frequencies
@@ -455,7 +463,7 @@ export const recurringTransactions = pgTable("recurring_transactions", {
   // ✅ Client Assignment for Retainers/Igualas
   clientId: integer("client_id").references(() => clientAccounts.id, { onDelete: "set null" }),
 
-  description: text("description"), // Template description  
+
   isActive: boolean("is_active").notNull().default(true),
   nextExecutionDate: timestamp("next_execution_date").notNull(),
   lastExecutionDate: timestamp("last_execution_date"),

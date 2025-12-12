@@ -160,7 +160,6 @@ Remember: Actions require explicit user approval before execution.`,
                 toolResults.push({
                     tool_call_id: toolCall.id,
                     role: "tool" as const,
-                    name: functionName,
                     content: JSON.stringify(result),
                 });
             }
@@ -181,7 +180,7 @@ Remember: Actions require explicit user approval before execution.`,
 
             // Check if any tool results contain approval proposals
             const proposedActions = toolResults
-                .map((tr) => JSON.parse(tr.content))
+                .map((tr) => JSON.parse(tr.content as string))
                 .filter((content) => (content as ActionProposal).requiresApproval);
 
             return res.json({
