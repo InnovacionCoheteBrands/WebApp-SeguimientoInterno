@@ -126,7 +126,7 @@ export default function Personnel() {
           frequency: "monthly",
           dayOfMonth: 1,
           isActive: true,
-          nextExecutionDate: new Date().toISOString(),
+          nextExecutionDate: new Date(),
           description: `Recurring salary for ${data.name} (${data.role})`
         };
         createRecurringTransaction(transaction)
@@ -618,7 +618,7 @@ export default function Personnel() {
                 <Label className="text-zinc-400">Weekly Capacity (Hours)</Label>
                 <Input
                   type="number"
-                  value={formData.weeklyCapacity}
+                  value={formData.weeklyCapacity || ""}
                   onChange={e => setFormData({ ...formData, weeklyCapacity: parseInt(e.target.value) })}
                   className="bg-zinc-950 border-zinc-800 rounded-sm"
                 />
@@ -632,7 +632,7 @@ export default function Personnel() {
                   <Label className="text-xs text-zinc-500">Internal Cost / Hr</Label>
                   <Input
                     type="number"
-                    value={formData.internalCostHour}
+                    value={formData.internalCostHour || ""}
                     onChange={e => setFormData({ ...formData, internalCostHour: e.target.value })}
                     className="bg-zinc-900 border-zinc-800 rounded-sm h-8 text-xs font-mono"
                   />
@@ -655,7 +655,7 @@ export default function Personnel() {
                   <Label className="text-xs text-zinc-500">Billing Rate / Hr</Label>
                   <Input
                     type="number"
-                    value={formData.billableRate}
+                    value={formData.billableRate || ""}
                     onChange={e => setFormData({ ...formData, billableRate: e.target.value })}
                     className="bg-zinc-900 border-zinc-800 rounded-sm h-8 text-xs font-mono text-green-500"
                   />
@@ -678,7 +678,7 @@ export default function Personnel() {
                 <Label className="text-zinc-400">Monthly Salary</Label>
                 <Input
                   type="number"
-                  value={formData.monthlySalary}
+                  value={formData.monthlySalary || ""}
                   onChange={e => setFormData({ ...formData, monthlySalary: e.target.value })}
                   className="bg-zinc-950 border-zinc-800 rounded-sm"
                 />

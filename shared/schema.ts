@@ -353,12 +353,54 @@ export type InsertClientKpiConfig = z.infer<typeof insertClientKpiConfigSchema>;
 export type UpdateClientKpiConfig = z.infer<typeof updateClientKpiConfigSchema>;
 
 // Financial Hub - Transactions Table
+// ✅ Strict Categories
+export const INCOME_CATEGORIES = [
+  "Iguala",
+  "Iguala 360",
+  "Desarrollo de Branding",
+  "Página Web",
+  "Plataforma de comunicación",
+  "Proyecto full",
+  "Pauta",
+  "Proyectos impresos",
+  "Instalaciones",
+] as const;
+
+export const EXPENSE_CATEGORIES = [
+  "Limpieza",
+  "Mantenimiento Equipos",
+  "Nómina",
+  "Dispersión",
+  "Viáticos",
+  "Pautas",
+  "Eventos",
+  "Artículos de limpieza/cafetería",
+  "Impresos",
+  "Software",
+  "CFE",
+  "Internet",
+  "Celulares",
+  "Renta",
+  "Uber",
+  "Combustible",
+] as const;
+
+export const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES] as const;
+
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), // "Ingreso" or "Gasto"
+  type: text("type").notNull(), // "Ingreso" or "Gasto" (Mapped to Egreso in UI)
   category: text("category").notNull(),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(), // This is the TOTAL
   date: timestamp("date").notNull(),
+
+  // ✅ Fiscal Fields
+  rfc: text("rfc"),
+  invoiceNumber: text("invoice_number"),
+  provider: text("provider"), // Only for Egresos
+  subtotal: numeric("subtotal", { precision: 12, scale: 2 }),
+  iva: numeric("iva", { precision: 12, scale: 2 }),
+  notes: text("notes"),
 
   // ✅ Payment Status Control (replaces old "status")
   isPaid: boolean("is_paid").notNull().default(false),
@@ -377,7 +419,7 @@ export const transactions = pgTable("transactions", {
 
   // Legacy/Optional fields (marked for deprecation)
   status: text("status").default("Pendiente"), // ⚠️ Deprecated: use isPaid instead. Kept for backward compatibility
-  description: text("description"),
+  description: text("description"), // Mapped to Concepto
   relatedClient: text("related_client"), // ⚠️ Deprecated: use clientId instead
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
