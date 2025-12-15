@@ -41,15 +41,16 @@ export function AutomationHub({ trigger }: { trigger?: React.ReactNode }) {
     const queryClient = useQueryClient();
 
     const { data: recurringTransactions, isLoading } = useQuery<RecurringTransaction[]>({
-        queryKey: ["/api/recurring_transactions"],
+        queryKey: ["/api/recurring-transactions"],
+        queryFn: () => apiRequest("GET", "/api/recurring-transactions"),
     });
 
     const deleteMutation = useMutation({
         mutationFn: async (id: number) => {
-            await apiRequest("DELETE", `/api/recurring_transactions/${id}`);
+            await apiRequest("DELETE", `/api/recurring-transactions/${id}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["/api/recurring_transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/recurring-transactions"] });
             toast({ title: "Eliminado", description: "La automatización ha sido eliminada." });
             setDeleteId(null);
         }

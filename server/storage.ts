@@ -141,7 +141,7 @@ export interface IStorage {
   updateAdPlatform(id: number, platform: Partial<InsertAdPlatform>): Promise<AdPlatform | undefined>;
   deleteAdPlatform(id: number): Promise<boolean>;
 
-  getAdCreatives(): Promise<AdCreative[]>;
+  getAllAdCreatives(): Promise<AdCreative[]>;
   getAdCreativeById(id: number): Promise<AdCreative | undefined>;
   getAdCreativesByPlatform(platformId: number): Promise<AdCreative[]>;
   getTopPerformingCreatives(limit: number): Promise<(AdCreative & { metrics: AdMetric })[]>;
@@ -618,7 +618,7 @@ export class DBStorage implements IStorage {
     return (result as any).count > 0;
   }
 
-  async getAdCreatives(): Promise<AdCreative[]> {
+  async getAllAdCreatives(): Promise<AdCreative[]> {
     return await db.select().from(adCreatives).orderBy(desc(adCreatives.createdAt));
   }
 
