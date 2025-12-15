@@ -63,7 +63,6 @@ const Settings = memo(function Settings() {
             refreshRate: newSettings.refreshRate,
             chartAnimations: newSettings.chartAnimations,
           },
-          webhookUrl: newSettings.webhookUrl,
         }),
       });
       if (!res.ok) throw new Error("Failed to save settings");
@@ -201,7 +200,7 @@ const Settings = memo(function Settings() {
                   <SelectContent>
                     <SelectItem value="dark">Dark Mode</SelectItem>
                     <SelectItem value="light">Light Mode</SelectItem>
-                  <SelectItem value="system">Auto (System)</SelectItem>
+                    <SelectItem value="system">Auto (System)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

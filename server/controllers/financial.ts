@@ -142,7 +142,12 @@ router.post("/recurring-transactions", async (req, res) => {
 router.patch("/recurring-transactions/:id", async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const validatedData = updateRecurringTransactionSchema.parse(req.body);
+        const dataToValidate = {
+            ...req.body,
+            nextExecutionDate: req.body.nextExecutionDate ? new Date(req.body.nextExecutionDate) : undefined,
+            lastExecutionDate: req.body.lastExecutionDate ? new Date(req.body.lastExecutionDate) : undefined,
+        };
+        const validatedData = updateRecurringTransactionSchema.parse(dataToValidate);
         const recurring = await storage.updateRecurringTransaction(id, validatedData);
         if (!recurring) {
             return res.status(404).json({ error: "Recurring transaction not found" });

@@ -21,27 +21,28 @@ router.get("/ads/overview", async (req, res) => {
         const allMetrics = await storage.getAdMetrics();
 
         // Calculate platform breakdown
-        const platformBreakdown = await Promise.all(
-            platforms.map(async (platform) => {
-                const creatives = await storage.getAdCreativesByPlatform(platform.id);
-                const platformMetrics = allMetrics.filter(m => m.platformId === platform.id);
+        const allCreatives = await storage.getAllAdCreatives();
 
-                const totalSpend = platformMetrics.reduce((sum, m) => sum + parseFloat(m.spend?.toString() || '0'), 0);
-                const totalRevenue = platformMetrics.reduce((sum, m) => sum + parseFloat(m.revenue?.toString() || '0'), 0);
-                const platformROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+        // Calculate platform breakdown
+        const platformBreakdown = platforms.map((platform) => {
+            const creatives = allCreatives.filter(c => c.platformId === platform.id);
+            const platformMetrics = allMetrics.filter(m => m.platformId === platform.id);
 
-                return {
-                    platformId: platform.id,
-                    platformName: platform.platformName,
-                    displayName: platform.displayName,
-                    totalSpend,
-                    totalRevenue,
-                    roas: platformROAS,
-                    activeCreatives: creatives.filter(c => c.status === 'active').length,
-                    isActive: platform.isActive === 'true',
-                };
-            })
-        );
+            const totalSpend = platformMetrics.reduce((sum, m) => sum + parseFloat(m.spend?.toString() || '0'), 0);
+            const totalRevenue = platformMetrics.reduce((sum, m) => sum + parseFloat(m.revenue?.toString() || '0'), 0);
+            const platformROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+
+            return {
+                platformId: platform.id,
+                platformName: platform.platformName,
+                displayName: platform.displayName,
+                totalSpend,
+                totalRevenue,
+                roas: platformROAS,
+                activeCreatives: creatives.filter(c => c.status === 'active').length,
+                isActive: platform.isActive === 'true',
+            };
+        });
 
         // Calculate spend pacing (monthly)
         const now = new Date();
