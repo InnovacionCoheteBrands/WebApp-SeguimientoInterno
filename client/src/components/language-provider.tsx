@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 
 type Language = "en" | "es" | "fr" | "de" | "ja";
 
@@ -102,27 +102,14 @@ export function LanguageProvider({
         return (localStorage.getItem(storageKey) as Language) || defaultLanguage;
     });
 
-    // Fetch settings from API to sync language
-    const { data: serverSettings } = useQuery({
-        queryKey: ["settings"],
-        queryFn: async () => {
-            try {
-                const res = await fetch("/api/settings");
-                if (!res.ok) return null;
-                const data = await res.json();
-                return data.settings;
-            } catch {
-                return null;
-            }
-        },
-        retry: false,
-    });
+    // Fetch settings from API (shared cache) to sync language
+    const { data: settings } = useSystemSettings();
 
     useEffect(() => {
-        if (serverSettings?.language) {
-            setLanguage(serverSettings.language as Language);
+        if (settings?.language) {
+            setLanguage(settings.language as Language);
         }
-    }, [serverSettings]);
+    }, [settings]);
 
     useEffect(() => {
         localStorage.setItem(storageKey, language);

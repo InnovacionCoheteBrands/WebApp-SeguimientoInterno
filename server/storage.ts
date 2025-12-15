@@ -84,6 +84,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserSettings(userId: string, settings: any): Promise<User>;
+  /** @deprecated Feature not implemented. Kept for backward compatibility. */
   updateUserWebhook(userId: string, webhookUrl: string): Promise<User>;
   regenerateApiKey(userId: string): Promise<string>;
 
@@ -320,6 +321,10 @@ export class DBStorage implements IStorage {
     return user;
   }
 
+  /**
+   * @deprecated Feature not implemented. Kept for backward compatibility.
+   * TODO: Either implement webhook sender functionality or remove this method entirely.
+   */
   async updateUserWebhook(userId: string, webhookUrl: string): Promise<User> {
     const [user] = await db
       .update(users)

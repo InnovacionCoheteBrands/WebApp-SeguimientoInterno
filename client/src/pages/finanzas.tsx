@@ -62,12 +62,14 @@ import { TransactionForm } from "@/components/financial/transaction-form";
 import { TransactionTable } from "@/components/financial/transaction-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 
 import { AutomationHub } from "@/components/financial/automation-hub";
 
 export default function Finanzas() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const { data: settings } = useSystemSettings();
     const [selectedTab, setSelectedTab] = useState("ingresos");
 
     // Dialog States
@@ -417,8 +419,8 @@ export default function Finanzas() {
                                                 formatter={(value: number) => [formatCurrency(value), ""]}
                                             />
                                             <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                                            <Bar dataKey="Ingresos" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                            <Bar dataKey="Gastos" name="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                            <Bar dataKey="Ingresos" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} isAnimationActive={settings?.chartAnimations ?? true} />
+                                            <Bar dataKey="Gastos" name="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} isAnimationActive={settings?.chartAnimations ?? true} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
