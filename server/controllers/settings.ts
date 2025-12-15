@@ -4,14 +4,26 @@ import { insertUserSchema } from "@shared/schema";
 
 const router = Router();
 
-// Helper to get or create the default user
+/**
+ * @deprecated Hardcoded credentials are a security risk and prevent multi-user support.
+ * 
+ * TODO: Migrate to proper authentication system:
+ * 1. Implement user authentication with hashed passwords (bcrypt/argon2)
+ * 2. Add session management (JWT or session cookies)
+ * 3. Move credentials to environment variables or secure secret management
+ * 4. Add user registration/login endpoints
+ * 5. Protect settings routes with authentication middleware
+ * 6. Support per-user settings instead of single "admin" user
+ * 
+ * For now, this function creates a single default user for development/demo purposes.
+ */
 async function getDefaultUser() {
     const username = "admin";
     let user = await storage.getUserByUsername(username);
     if (!user) {
         user = await storage.createUser({
             username,
-            password: "password", // Default password, simple for now
+            password: "password", // SECURITY WARNING: Hardcoded password for demo only
         });
     }
     return user;
@@ -54,6 +66,7 @@ router.put("/settings", async (req, res) => {
             await storage.updateUserSettings(user.id, settings);
         }
 
+        // @deprecated webhookUrl feature not implemented
         if (webhookUrl !== undefined) {
             await storage.updateUserWebhook(user.id, webhookUrl);
         }

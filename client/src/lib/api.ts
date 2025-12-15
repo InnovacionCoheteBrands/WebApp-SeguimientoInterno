@@ -243,6 +243,15 @@ export async function fetchAnalytics(): Promise<Analytics> {
   return res.json();
 }
 
+// =========================
+// System Settings (Settings)
+// =========================
+export async function fetchSystemSettings(): Promise<unknown> {
+  const res = await fetch("/api/settings");
+  if (!res.ok) throw new Error("Failed to fetch settings");
+  return res.json();
+}
+
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;

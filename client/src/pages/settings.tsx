@@ -12,38 +12,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/components/theme-provider";
 import { useLanguage } from "@/components/language-provider";
+import { useSystemSettings } from "@/hooks/use-system-settings";
+import type { NormalizedSystemSettings, ThemeSetting, LanguageSetting } from "@/lib/system-settings";
+import { DEFAULT_SYSTEM_SETTINGS, normalizeSystemSettings } from "@/lib/system-settings";
 
-interface Settings {
-  // System
-  theme: string;
-  language: string;
-  timezone: string;
-
-  // Notifications
-  campaignAlerts: boolean;
-  analyticsAlerts: boolean;
-  systemAlerts: boolean;
-  emailNotifications: boolean;
-
-  // Visualization
-  refreshRate: string;
-  chartAnimations: boolean;
-
-  // API
-  apiKey: string;
-  webhookUrl: string;
-}
+type Settings = NormalizedSystemSettings;
 
 const defaultSettings: Settings = {
-  theme: "dark",
-  language: "en",
-  timezone: "UTC",
-  campaignAlerts: true,
-  analyticsAlerts: true,
-  systemAlerts: true,
-  emailNotifications: false,
-  refreshRate: "5",
-  chartAnimations: true,
+  ...DEFAULT_SYSTEM_SETTINGS,
   apiKey: "",
   webhookUrl: "",
 };
@@ -56,22 +32,8 @@ const Settings = memo(function Settings() {
   const [localSettings, setLocalSettings] = useState<Settings>(defaultSettings);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Fetch settings from API
-  const { data: serverSettings, isLoading } = useQuery({
-    queryKey: ["settings"],
-    queryFn: async () => {
-      const res = await fetch("/api/settings");
-      if (!res.ok) throw new Error("Failed to fetch settings");
-      const data = await res.json();
-      // Merge server data with defaults to ensure all fields exist
-      return {
-        ...defaultSettings,
-        ...data.settings,
-        apiKey: data.apiKey,
-        webhookUrl: data.webhookUrl
-      };
-    },
-  });
+  // Fetch settings from API (shared cache)
+  const { data: serverSettings, isLoading } = useSystemSettings();
 
   // Sync local state with server state on load
   useEffect(() => {
@@ -101,19 +63,14 @@ const Settings = memo(function Settings() {
             refreshRate: newSettings.refreshRate,
             chartAnimations: newSettings.chartAnimations,
           },
-          webhookUrl: newSettings.webhookUrl
+          webhookUrl: newSettings.webhookUrl,
         }),
       });
       if (!res.ok) throw new Error("Failed to save settings");
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["settings"], {
-        ...defaultSettings,
-        ...data.settings,
-        apiKey: data.apiKey,
-        webhookUrl: data.webhookUrl
-      });
+      queryClient.setQueryData(["/api/settings"], normalizeSystemSettings(data));
       setHasChanges(false);
       toast({
         title: "Settings Saved",
@@ -141,7 +98,7 @@ const Settings = memo(function Settings() {
       setHasChanges(true); // User might want to verify before navigating away, or we could auto-save. 
       // Actually, generating a key is a server action that updates DB immediately usually.
       // Let's assume it updates backend immediately.
-      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "New API Key Generated",
         description: "Your previous key has been invalidated",
@@ -236,7 +193,7 @@ const Settings = memo(function Settings() {
                 <Label htmlFor="theme" className="text-xs font-mono uppercase text-zinc-400">Theme</Label>
                 <Select
                   value={localSettings.theme}
-                  onValueChange={(value) => updateSetting("theme", value)}
+                  onValueChange={(value) => updateSetting("theme", value as ThemeSetting)}
                 >
                   <SelectTrigger className="rounded-sm border-zinc-800 bg-zinc-950" data-testid="select-theme">
                     <SelectValue />
@@ -244,7 +201,7 @@ const Settings = memo(function Settings() {
                   <SelectContent>
                     <SelectItem value="dark">Dark Mode</SelectItem>
                     <SelectItem value="light">Light Mode</SelectItem>
-                    <SelectItem value="auto">Auto (System)</SelectItem>
+                  <SelectItem value="system">Auto (System)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -253,7 +210,7 @@ const Settings = memo(function Settings() {
                 <Label htmlFor="language" className="text-xs font-mono uppercase text-zinc-400">Language</Label>
                 <Select
                   value={localSettings.language}
-                  onValueChange={(value) => updateSetting("language", value)}
+                  onValueChange={(value) => updateSetting("language", value as LanguageSetting)}
                 >
                   <SelectTrigger className="rounded-sm border-zinc-800 bg-zinc-950" data-testid="select-language">
                     <SelectValue />
@@ -457,6 +414,7 @@ const Settings = memo(function Settings() {
                   </p>
                 </div>
 
+                {/* Webhook URL - DEPRECATED: Feature not yet implemented
                 <div className="space-y-2">
                   <Label htmlFor="webhook-url" className="text-xs font-mono uppercase text-zinc-400">Webhook URL</Label>
                   <Input
@@ -467,11 +425,13 @@ const Settings = memo(function Settings() {
                     placeholder="https://your-domain.com/webhook"
                     className="rounded-sm border-zinc-800 bg-zinc-950"
                     data-testid="input-webhook-url"
+                    disabled
                   />
                   <p className="text-xs text-zinc-500">
-                    Receive real-time campaign updates at this endpoint.
+                    Esta funcionalidad no está disponible actualmente. Próximamente.
                   </p>
                 </div>
+                */}
               </div>
             </CardContent>
           </Card>

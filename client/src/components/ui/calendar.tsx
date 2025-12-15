@@ -10,6 +10,8 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { useSystemSettings } from "@/hooks/use-system-settings"
+import { formatMonth } from "@/lib/date-format"
 
 function Calendar({
   className,
@@ -24,6 +26,7 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const { data: settings } = useSystemSettings()
 
   return (
     <DayPicker
@@ -36,8 +39,7 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+        formatMonthDropdown: (date) => formatMonth(date, settings, "short"),
         ...formatters,
       }}
       classNames={{

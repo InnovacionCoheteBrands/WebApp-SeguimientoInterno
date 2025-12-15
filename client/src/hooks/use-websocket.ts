@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSystemSettings } from "./use-system-settings";
 
 interface WebSocketMessage {
   type: "telemetry" | "campaign_update" | "metrics_update";
@@ -10,6 +11,8 @@ export function useWebSocket(url: string) {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUpdateTimeRef = useRef<Record<string, number>>({});
+  const { settings } = useSystemSettings();
 
   const connect = () => {
     try {
@@ -27,6 +30,22 @@ export function useWebSocket(url: string) {
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          
+          // Apply refreshRate throttling for telemetry and metrics updates
+          const refreshRateMs = (settings?.refreshRate ? parseInt(settings.refreshRate) : 5) * 1000;
+          const now = Date.now();
+          const messageType = message.type;
+          
+          // Only throttle telemetry and metrics updates, not campaign updates (those are important)
+          if (messageType === "telemetry" || messageType === "metrics_update") {
+            const lastUpdate = lastUpdateTimeRef.current[messageType] || 0;
+            if (now - lastUpdate < refreshRateMs) {
+              // Skip this message, not enough time has passed
+              return;
+            }
+            lastUpdateTimeRef.current[messageType] = now;
+          }
+          
           setLastMessage(message);
         } catch (error) {
           console.error("[websocket] Error parsing message:", error);

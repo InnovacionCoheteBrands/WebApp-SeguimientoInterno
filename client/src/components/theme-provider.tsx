@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSystemSettings } from "@/hooks/use-system-settings";
+import { normalizeTheme } from "@/lib/system-settings";
 
 type Theme = "dark" | "light" | "system";
 
@@ -28,31 +29,18 @@ export function ThemeProvider({
     storageKey = "vite-ui-theme",
 }: ThemeProviderProps) {
     const [theme, setTheme] = useState<Theme>(() => {
-        return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+        const stored = localStorage.getItem(storageKey) as any;
+        return (normalizeTheme(stored) as Theme) || defaultTheme;
     });
 
-    // Fetch settings from API to sync theme
-    const { data: serverSettings } = useQuery({
-        queryKey: ["settings"],
-        queryFn: async () => {
-            // If this fails (e.g. 404 or 500), we just ignore it and use local state
-            try {
-                const res = await fetch("/api/settings");
-                if (!res.ok) return null;
-                const data = await res.json();
-                return data.settings;
-            } catch {
-                return null;
-            }
-        },
-        retry: false,
-    });
+    // Fetch settings from API (shared cache) to sync theme
+    const { data: settings } = useSystemSettings();
 
     useEffect(() => {
-        if (serverSettings?.theme) {
-            setTheme(serverSettings.theme as Theme);
+        if (settings?.theme) {
+            setTheme(settings.theme as Theme);
         }
-    }, [serverSettings]);
+    }, [settings]);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -75,8 +63,9 @@ export function ThemeProvider({
     const value = {
         theme,
         setTheme: (theme: Theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+            const normalized = normalizeTheme(theme as any) as Theme;
+            localStorage.setItem(storageKey, normalized);
+            setTheme(normalized);
         },
     };
 

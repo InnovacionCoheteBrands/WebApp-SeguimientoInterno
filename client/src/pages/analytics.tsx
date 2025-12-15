@@ -6,8 +6,10 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAnalytics } from "@/lib/api";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from "recharts";
+import { useSystemSettings } from "@/hooks/use-system-settings";
 
 const Analytics = memo(function Analytics() {
+  const { data: settings } = useSystemSettings();
   const { data: analytics } = useQuery({
     queryKey: ["analytics"],
     queryFn: fetchAnalytics,
@@ -172,7 +174,7 @@ const Analytics = memo(function Analytics() {
                         fontFamily: 'var(--font-mono)'
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} isAnimationActive={settings?.chartAnimations ?? true} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -212,7 +214,7 @@ const Analytics = memo(function Analytics() {
                         fontFamily: 'var(--font-mono)'
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} isAnimationActive={settings?.chartAnimations ?? true} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -254,7 +256,7 @@ const Analytics = memo(function Analytics() {
                         fontFamily: 'var(--font-mono)'
                       }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} isAnimationActive={settings?.chartAnimations ?? true} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -294,7 +296,7 @@ const Analytics = memo(function Analytics() {
                         fontFamily: 'var(--font-mono)'
                       }}
                     />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} isAnimationActive={settings?.chartAnimations ?? true} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   // Settings & Integrations
   settings: text("settings").default("{}"), // JSON string for preferences
   apiKey: text("api_key"),
+  /** @deprecated Feature not implemented. Kept for backward compatibility. Consider removing in future version. */
   webhookUrl: text("webhook_url"),
 });
 

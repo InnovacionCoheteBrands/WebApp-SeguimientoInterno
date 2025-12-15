@@ -60,6 +60,8 @@ import type { InsertCampaign, Campaign } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { useSystemSettings } from "@/hooks/use-system-settings";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export default function Dashboard() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -96,6 +98,10 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isConnected, lastMessage } = useWebSocket("/ws");
+  const { data: settings } = useSystemSettings();
+  
+  // Enable in-app notifications based on settings
+  useNotifications(lastMessage);
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns"],
@@ -372,6 +378,7 @@ export default function Dashboard() {
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorValue)"
+                      isAnimationActive={settings?.chartAnimations ?? true}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
