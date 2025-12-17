@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
-import { insertClientAccountSchema } from "@shared/schema";
+import { insertClientAccountSchema, updateClientAccountSchema } from "@shared/schema";
 import { z } from "zod";
 
 const router = Router();
@@ -17,6 +17,19 @@ router.get("/clients", async (req, res) => {
     }
 });
 
+router.get("/clients/:id", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const account = await storage.getClientAccountById(id);
+        if (!account) {
+            return res.status(404).json({ error: "Client account not found" });
+        }
+        res.json(account);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch client account" });
+    }
+});
+
 router.post("/clients", async (req, res) => {
     try {
         const validatedData = insertClientAccountSchema.parse(req.body);
@@ -30,11 +43,11 @@ router.post("/clients", async (req, res) => {
     }
 });
 
-router.patch("/clients/:campaignId", async (req, res) => {
+router.patch("/clients/:id", async (req, res) => {
     try {
-        const campaignId = parseInt(req.params.campaignId);
-        const validatedData = insertClientAccountSchema.partial().parse(req.body);
-        const account = await storage.updateClientAccount(campaignId, validatedData);
+        const id = parseInt(req.params.id);
+        const validatedData = updateClientAccountSchema.parse(req.body);
+        const account = await storage.updateClientAccount(id, validatedData);
         if (!account) {
             return res.status(404).json({ error: "Client account not found" });
         }
@@ -47,10 +60,10 @@ router.patch("/clients/:campaignId", async (req, res) => {
     }
 });
 
-router.delete("/clients/:campaignId", async (req, res) => {
+router.delete("/clients/:id", async (req, res) => {
     try {
-        const campaignId = parseInt(req.params.campaignId);
-        const deleted = await storage.deleteClientAccount(campaignId);
+        const id = parseInt(req.params.id);
+        const deleted = await storage.deleteClientAccount(id);
         if (!deleted) {
             return res.status(404).json({ error: "Client account not found" });
         }

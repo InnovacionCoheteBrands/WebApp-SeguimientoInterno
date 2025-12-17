@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useSystemSettings } from "@/hooks/use-system-settings";
 import { normalizeTheme } from "@/lib/system-settings";
 
@@ -60,14 +60,16 @@ export function ThemeProvider({
         root.classList.add(theme);
     }, [theme]);
 
-    const value = {
+    const setThemeCallback = useCallback((newTheme: Theme) => {
+        const normalized = normalizeTheme(newTheme as any) as Theme;
+        localStorage.setItem(storageKey, normalized);
+        setTheme(normalized);
+    }, [storageKey]);
+
+    const value = useMemo(() => ({
         theme,
-        setTheme: (theme: Theme) => {
-            const normalized = normalizeTheme(theme as any) as Theme;
-            localStorage.setItem(storageKey, normalized);
-            setTheme(normalized);
-        },
-    };
+        setTheme: setThemeCallback,
+    }), [theme, setThemeCallback]);
 
     return (
         <ThemeProviderContext.Provider value={value}>

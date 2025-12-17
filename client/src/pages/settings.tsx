@@ -36,14 +36,13 @@ const Settings = memo(function Settings() {
   const { data: serverSettings, isLoading } = useSystemSettings();
 
   // Sync local state with server state on load
+  // Note: Theme and Language contexts are synced via their own providers (ThemeProvider/LanguageProvider)
+  // that listen to the shared useSystemSettings cache, so we only update localSettings here
   useEffect(() => {
     if (serverSettings) {
       setLocalSettings(serverSettings);
-      // Sync contexts initially too
-      if (serverSettings.theme) setTheme(serverSettings.theme as any);
-      if (serverSettings.language) setLanguage(serverSettings.language as any);
     }
-  }, [serverSettings, setTheme, setLanguage]);
+  }, [serverSettings]);
 
   // Mutation for saving settings
   const saveMutation = useMutation({
@@ -69,7 +68,11 @@ const Settings = memo(function Settings() {
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["/api/settings"], normalizeSystemSettings(data));
+      const normalized = normalizeSystemSettings(data);
+      queryClient.setQueryData(["/api/settings"], normalized);
+      // Explicitly update theme and language contexts to ensure immediate UI update
+      setTheme(normalized.theme as any);
+      setLanguage(normalized.language as any);
       setHasChanges(false);
       toast({
         title: "Settings Saved",
@@ -413,7 +416,6 @@ const Settings = memo(function Settings() {
                   </p>
                 </div>
 
-                {/* Webhook URL - DEPRECATED: Feature not yet implemented
                 <div className="space-y-2">
                   <Label htmlFor="webhook-url" className="text-xs font-mono uppercase text-zinc-400">Webhook URL</Label>
                   <Input
@@ -422,15 +424,15 @@ const Settings = memo(function Settings() {
                     value={localSettings.webhookUrl || ""}
                     onChange={(e) => updateSetting("webhookUrl", e.target.value)}
                     placeholder="https://your-domain.com/webhook"
-                    className="rounded-sm border-zinc-800 bg-zinc-950"
+                    className="rounded-sm border-zinc-800 bg-zinc-950 opacity-50 cursor-not-allowed"
                     data-testid="input-webhook-url"
                     disabled
                   />
-                  <p className="text-xs text-zinc-500">
-                    Esta funcionalidad no está disponible actualmente. Próximamente.
+                  <p className="text-xs text-zinc-500 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-yellow-500"></span>
+                    Coming Soon: Webhook integration is currently in development.
                   </p>
                 </div>
-                */}
               </div>
             </CardContent>
           </Card>
