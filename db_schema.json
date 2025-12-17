@@ -1,0 +1,26 @@
+[
+  {
+    "column_name": "id",
+    "data_type": "character varying"
+  },
+  {
+    "column_name": "username",
+    "data_type": "text"
+  },
+  {
+    "column_name": "password",
+    "data_type": "text"
+  },
+  {
+    "column_name": "settings",
+    "data_type": "text"
+  },
+  {
+    "column_name": "api_key",
+    "data_type": "text"
+  },
+  {
+    "column_name": "webhook_url",
+    "data_type": "text"
+  }
+]

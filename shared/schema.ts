@@ -87,7 +87,6 @@ export type InsertTelemetryData = z.infer<typeof insertTelemetryDataSchema>;
 
 export const clientAccounts = pgTable("client_accounts", {
   id: serial("id").primaryKey(),
-  campaignId: integer("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
   companyName: text("company_name").notNull(),
   industry: text("industry").notNull(),
   monthlyBudget: integer("monthly_budget").notNull(),
@@ -96,16 +95,21 @@ export const clientAccounts = pgTable("client_accounts", {
   nextMilestone: text("next_milestone"),
   lastContact: timestamp("last_contact").defaultNow().notNull(),
   status: text("status").notNull().default("Active"),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertClientAccountSchema = createInsertSchema(clientAccounts).omit({
   id: true,
-  timestamp: true,
+  createdAt: true,
+  updatedAt: true,
 });
+
+export const updateClientAccountSchema = insertClientAccountSchema.partial();
 
 export type ClientAccount = typeof clientAccounts.$inferSelect;
 export type InsertClientAccount = z.infer<typeof insertClientAccountSchema>;
+export type UpdateClientAccount = z.infer<typeof updateClientAccountSchema>;
 
 export const team = pgTable("team", {
   id: serial("id").primaryKey(),

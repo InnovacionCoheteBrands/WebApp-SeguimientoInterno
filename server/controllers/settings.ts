@@ -88,7 +88,10 @@ router.put("/settings", async (req, res) => {
             webhookUrl: updatedUser?.webhookUrl
         });
     } catch (error) {
-        res.status(500).json({ error: "Failed to update settings" });
+        res.status(500).json({
+            error: "Failed to update settings",
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 });
 

@@ -55,20 +55,11 @@ export async function getTeam(ctx: AgentToolContext) {
 
 export async function getClientStatus(ctx: AgentToolContext) {
   const clientAccounts = await ctx.storage.getClientAccounts();
-  const campaigns = await ctx.storage.getCampaigns();
-
-  const clientData = campaigns.map((campaign) => {
-    const account = clientAccounts.find((a) => a.campaignId === campaign.id);
-    return {
-      campaign,
-      account,
-    };
-  });
 
   return {
     success: true,
-    data: clientData,
-    message: `Retrieved status for ${clientData.length} client accounts`,
+    data: clientAccounts,
+    message: `Retrieved ${clientAccounts.length} client accounts`,
   };
 }
 

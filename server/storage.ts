@@ -103,10 +103,10 @@ export interface IStorage {
   cleanupOldMetrics(keepLast: number): Promise<void>;
 
   getClientAccounts(): Promise<ClientAccount[]>;
-  getClientAccountByCampaignId(campaignId: number): Promise<ClientAccount | undefined>;
+  getClientAccountById(id: number): Promise<ClientAccount | undefined>;
   createClientAccount(account: InsertClientAccount): Promise<ClientAccount>;
-  updateClientAccount(campaignId: number, account: Partial<InsertClientAccount>): Promise<ClientAccount | undefined>;
-  deleteClientAccount(campaignId: number): Promise<boolean>;
+  updateClientAccount(id: number, account: Partial<InsertClientAccount>): Promise<ClientAccount | undefined>;
+  deleteClientAccount(id: number): Promise<boolean>;
 
   getTeam(): Promise<Team[]>;
   getTeamById(id: number): Promise<Team | undefined>;
@@ -426,15 +426,14 @@ export class DBStorage implements IStorage {
     return await db
       .select()
       .from(clientAccounts)
-      .orderBy(desc(clientAccounts.timestamp));
+      .orderBy(desc(clientAccounts.createdAt));
   }
 
-  async getClientAccountByCampaignId(campaignId: number): Promise<ClientAccount | undefined> {
+  async getClientAccountById(id: number): Promise<ClientAccount | undefined> {
     const [account] = await db
       .select()
       .from(clientAccounts)
-      .where(eq(clientAccounts.campaignId, campaignId))
-      .orderBy(desc(clientAccounts.timestamp))
+      .where(eq(clientAccounts.id, id))
       .limit(1);
     return account;
   }
@@ -444,20 +443,20 @@ export class DBStorage implements IStorage {
     return newAccount;
   }
 
-  async updateClientAccount(campaignId: number, account: Partial<InsertClientAccount>): Promise<ClientAccount | undefined> {
-    const existing = await this.getClientAccountByCampaignId(campaignId);
+  async updateClientAccount(id: number, account: Partial<InsertClientAccount>): Promise<ClientAccount | undefined> {
+    const existing = await this.getClientAccountById(id);
     if (!existing) return undefined;
 
     const [updated] = await db
       .update(clientAccounts)
-      .set({ ...account, timestamp: new Date() })
-      .where(eq(clientAccounts.id, existing.id))
+      .set({ ...account, updatedAt: new Date() })
+      .where(eq(clientAccounts.id, id))
       .returning();
     return updated;
   }
 
-  async deleteClientAccount(campaignId: number): Promise<boolean> {
-    const result = await db.delete(clientAccounts).where(eq(clientAccounts.campaignId, campaignId));
+  async deleteClientAccount(id: number): Promise<boolean> {
+    const result = await db.delete(clientAccounts).where(eq(clientAccounts.id, id));
     return (result as any).count > 0;
   }
 

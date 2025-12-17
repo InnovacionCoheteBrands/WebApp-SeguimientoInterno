@@ -110,8 +110,8 @@ export async function createClientAccount(account: InsertClientAccount): Promise
   return res.json();
 }
 
-export async function updateClientAccount(campaignId: number, account: Partial<InsertClientAccount>): Promise<ClientAccount> {
-  const res = await fetch(`/api/clients/${campaignId}`, {
+export async function updateClientAccount(id: number, account: Partial<InsertClientAccount>): Promise<ClientAccount> {
+  const res = await fetch(`/api/clients/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(account),
@@ -120,8 +120,8 @@ export async function updateClientAccount(campaignId: number, account: Partial<I
   return res.json();
 }
 
-export async function deleteClientAccount(campaignId: number): Promise<void> {
-  const res = await fetch(`/api/clients/${campaignId}`, {
+export async function deleteClientAccount(id: number): Promise<void> {
+  const res = await fetch(`/api/clients/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete client account");
