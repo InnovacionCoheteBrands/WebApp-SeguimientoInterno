@@ -36,7 +36,7 @@ function NavButton({ icon: Icon, label, active = false, href }: { icon: any, lab
   );
 
   const className = `w-full justify-start gap-3 px-4 py-2 h-11 rounded-sm transition-all duration-200 ${active
-    ? "bg-amber-500/10 text-amber-500 border-r-2 border-amber-500"
+    ? "bg-primary/10 text-primary border-r-2 border-primary"
     : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50"
     }`;
 
@@ -119,8 +119,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
             </Link>
             <Link href="/settings">
-              <Button variant="ghost" size="icon" className="rounded-sm shrink-0 h-11 w-11" data-testid="button-settings">
-                <Settings className="size-5" />
+              <Button variant="ghost" size="icon" className="rounded shrink-0 h-10 w-10 hover:bg-sidebar-accent" data-testid="button-settings">
+                <Settings className="size-5 text-muted-foreground" />
               </Button>
             </Link>
           </div>
@@ -163,8 +163,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </div>
               </Link>
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="rounded-sm shrink-0 h-11 w-11" data-testid="button-settings-mobile">
-                  <Settings className="size-5" />
+                <Button variant="ghost" size="icon" className="rounded shrink-0 h-10 w-10 hover:bg-sidebar-accent" data-testid="button-settings-mobile">
+                  <Settings className="size-5 text-muted-foreground" />
                 </Button>
               </Link>
             </div>

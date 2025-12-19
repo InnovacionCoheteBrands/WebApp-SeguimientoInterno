@@ -182,10 +182,10 @@ export default function Finanzas() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-display font-bold tracking-tight text-white mb-1">
+                    <h2 className="text-3xl font-display font-bold tracking-tight text-foreground mb-1">
                         Centro Financiero
                     </h2>
-                    <p className="text-zinc-400 font-mono text-sm leading-relaxed">
+                    <p className="text-muted-foreground font-mono text-sm leading-relaxed">
                         Sistema de control de flujos y obligaciones fiscales.
                     </p>
                 </div>
@@ -194,7 +194,7 @@ export default function Finanzas() {
                         type="month"
                         value={monthFilter}
                         onChange={(e) => setMonthFilter(e.target.value)}
-                        className="bg-zinc-950 border-zinc-800 w-[160px] font-mono text-xs"
+                        className="bg-background border-border w-[160px] font-mono text-xs"
                     />
                     <AutomationHub
                         trigger={
@@ -208,41 +208,41 @@ export default function Finanzas() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-zinc-950/50 border-zinc-800">
+                <Card className="bg-card/50 border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-400 uppercase tracking-widest font-mono">
+                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
                             Ingresos Netos
                         </CardTitle>
                         <TrendingUp className="h-4 w-4 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold font-mono text-white">
+                        <div className="text-2xl font-bold font-mono text-foreground">
                             {formatCurrency(Number(summary?.totalIncome || 0))}
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Facturado en el periodo total
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-zinc-950/50 border-zinc-800">
+                <Card className="bg-card/50 border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-400 uppercase tracking-widest font-mono">
+                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
                             Gastos Totales
                         </CardTitle>
                         <TrendingDown className="h-4 w-4 text-rose-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold font-mono text-white">
+                        <div className="text-2xl font-bold font-mono text-foreground">
                             {formatCurrency(Number(summary?.totalExpenses || 0))}
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Egreso operativo total
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-zinc-950/50 border-zinc-800">
+                <Card className="bg-card/50 border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-zinc-400 uppercase tracking-widest font-mono">
+                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
                             Balance Operativo
                         </CardTitle>
                         <DollarSign className="h-4 w-4 text-blue-500" />
@@ -251,7 +251,7 @@ export default function Finanzas() {
                         <div className={`text-2xl font-bold font-mono ${(summary?.netProfit || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                             {formatCurrency(Number(summary?.netProfit || 0))}
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Margen bruto antes de impuestos
                         </p>
                     </CardContent>
@@ -260,14 +260,14 @@ export default function Finanzas() {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="ingresos" value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-                <TabsList className="bg-zinc-950 border border-zinc-800 p-1 w-full md:w-auto h-12">
-                    <TabsTrigger value="ingresos" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-400 font-mono text-xs uppercase px-6 h-9">
+                <TabsList className="bg-background border border-border p-1 w-full md:w-auto h-12">
+                    <TabsTrigger value="ingresos" className="data-[state=active]:bg-muted data-[state=active]:text-emerald-400 font-mono text-xs uppercase px-6 h-9">
                         Ingresos
                     </TabsTrigger>
-                    <TabsTrigger value="egresos" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-rose-400 font-mono text-xs uppercase px-6 h-9">
+                    <TabsTrigger value="egresos" className="data-[state=active]:bg-muted data-[state=active]:text-rose-400 font-mono text-xs uppercase px-6 h-9">
                         Egresos
                     </TabsTrigger>
-                    <TabsTrigger value="resumen" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-blue-400 font-mono text-xs uppercase px-6 h-9">
+                    <TabsTrigger value="resumen" className="data-[state=active]:bg-muted data-[state=active]:text-blue-400 font-mono text-xs uppercase px-6 h-9">
                         Resumen & Reportes
                     </TabsTrigger>
                 </TabsList>
@@ -276,7 +276,7 @@ export default function Finanzas() {
                     {/* INGRESOS TAB */}
                     <TabsContent value="ingresos" className="space-y-6">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-display text-white">Registro de Ingresos</h3>
+                            <h3 className="text-lg font-display text-foreground">Registro de Ingresos</h3>
                             <Button
                                 onClick={() => handleOpenCreate("Ingreso")}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white border-none"
@@ -287,7 +287,7 @@ export default function Finanzas() {
 
                         {/* Monthly Receivables (Cuentas por Cobrar) */}
                         {monthlyReceivables.length > 0 && (
-                            <Card className="border-l-4 border-l-emerald-500 bg-zinc-900/40 border-y-zinc-800 border-r-zinc-800">
+                            <Card className="border-l-4 border-l-emerald-500 bg-card/40 border-y-border border-r-border">
                                 <CardHeader className="pb-2">
                                     <div className="flex items-center gap-2">
                                         <CalendarClock className="h-4 w-4 text-emerald-500" />
@@ -296,10 +296,10 @@ export default function Finanzas() {
                                 </CardHeader>
                                 <CardContent className="space-y-2">
                                     {monthlyReceivables.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center p-2 bg-zinc-950 border border-zinc-800 rounded-sm">
+                                        <div key={item.id} className="flex justify-between items-center p-2 bg-background border border-border rounded-sm">
                                             <div className="flex flex-col">
-                                                <span className="font-medium text-sm text-zinc-200">{item.name}</span>
-                                                <span className="text-[10px] text-zinc-500 uppercase">{item.category}</span>
+                                                <span className="font-medium text-sm text-foreground">{item.name}</span>
+                                                <span className="text-[10px] text-muted-foreground uppercase">{item.category}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className="font-mono font-bold text-emerald-400">{formatCurrency(Number(item.amount))}</span>
@@ -329,7 +329,7 @@ export default function Finanzas() {
                     {/* EGRESOS TAB */}
                     <TabsContent value="egresos" className="space-y-6">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-display text-white">Registro de Egresos</h3>
+                            <h3 className="text-lg font-display text-foreground">Registro de Egresos</h3>
                             <Button
                                 onClick={() => handleOpenCreate("Gasto")}
                                 className="bg-rose-600 hover:bg-rose-700 text-white border-none"
@@ -340,7 +340,7 @@ export default function Finanzas() {
 
                         {/* Monthly Payables (Obligaciones) */}
                         {monthlyPayables.length > 0 && (
-                            <Card className="border-l-4 border-l-rose-500 bg-zinc-900/40 border-y-zinc-800 border-r-zinc-800">
+                            <Card className="border-l-4 border-l-rose-500 bg-card/40 border-y-border border-r-border">
                                 <CardHeader className="pb-2">
                                     <div className="flex items-center gap-2">
                                         <CalendarClock className="h-4 w-4 text-rose-500" />
@@ -349,10 +349,10 @@ export default function Finanzas() {
                                 </CardHeader>
                                 <CardContent className="space-y-2">
                                     {monthlyPayables.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center p-2 bg-zinc-950 border border-zinc-800 rounded-sm">
+                                        <div key={item.id} className="flex justify-between items-center p-2 bg-background border border-border rounded-sm">
                                             <div className="flex flex-col">
-                                                <span className="font-medium text-sm text-zinc-200">{item.name}</span>
-                                                <span className="text-[10px] text-zinc-500 uppercase">{item.category}</span>
+                                                <span className="font-medium text-sm text-foreground">{item.name}</span>
+                                                <span className="text-[10px] text-muted-foreground uppercase">{item.category}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className="font-mono font-bold text-rose-400">{formatCurrency(Number(item.amount))}</span>
@@ -381,9 +381,9 @@ export default function Finanzas() {
 
                     {/* RESUMEN TAB */}
                     <TabsContent value="resumen" className="space-y-6">
-                        <Card className="bg-zinc-950 border-zinc-800">
+                        <Card className="bg-card border-border">
                             <CardHeader>
-                                <CardTitle className="text-lg font-mono uppercase tracking-wider text-zinc-300">Flujo Anual</CardTitle>
+                                <CardTitle className="text-lg font-mono uppercase tracking-wider text-foreground">Flujo Anual</CardTitle>
                                 <CardDescription>Comparativa de Ingresos vs Gastos</CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -393,28 +393,28 @@ export default function Finanzas() {
                                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
                                             <XAxis
                                                 dataKey="month"
-                                                stroke="#71717a"
+                                                stroke="hsl(var(--muted-foreground))"
                                                 fontSize={12}
                                                 tickLine={false}
                                                 axisLine={false}
-                                                tick={{ fill: '#71717a' }}
+                                                tick={{ fill: 'hsl(var(--muted-foreground))' }}
                                                 dy={10}
                                             />
                                             <YAxis
-                                                stroke="#71717a"
+                                                stroke="hsl(var(--muted-foreground))"
                                                 fontSize={12}
                                                 tickLine={false}
                                                 axisLine={false}
                                                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                                                tick={{ fill: '#71717a' }}
+                                                tick={{ fill: 'hsl(var(--muted-foreground))' }}
                                             />
                                             <Tooltip
                                                 cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                                 contentStyle={{
-                                                    backgroundColor: '#09090b',
-                                                    borderColor: '#27272a',
+                                                    backgroundColor: 'hsl(var(--card))',
+                                                    borderColor: 'hsl(var(--border))',
                                                     borderRadius: '4px',
-                                                    color: '#fff'
+                                                    color: 'hsl(var(--foreground))'
                                                 }}
                                                 formatter={(value: number) => [formatCurrency(value), ""]}
                                             />
@@ -439,7 +439,7 @@ export default function Finanzas() {
             />
 
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent className="bg-zinc-950 border-zinc-800">
+                <AlertDialogContent className="bg-card border-border">
                     <AlertDialogHeader>
                         <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -447,7 +447,7 @@ export default function Finanzas() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="border-zinc-800 bg-transparent hover:bg-zinc-900">Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel className="border-border bg-transparent hover:bg-muted">Cancelar</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">Eliminar</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

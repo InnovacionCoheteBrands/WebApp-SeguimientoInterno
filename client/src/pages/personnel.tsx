@@ -306,12 +306,12 @@ export default function Personnel() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="outline" size="icon" className="rounded-sm border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800">
+              <Button variant="outline" size="icon" className="rounded-sm border-border bg-card/50 hover:bg-muted">
                 <ArrowLeft className="size-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight text-white">Strategic Talent Hub</h1>
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Strategic Talent Hub</h1>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-mono tracking-wider">
                   RESOURCE INTELLIGENCE
@@ -323,7 +323,7 @@ export default function Personnel() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 hidden sm:flex"
+              className="border-border text-muted-foreground hover:text-foreground hover:bg-muted hidden sm:flex"
               onClick={() => setIsCatalogOpen(true)}
             >
               <Settings className="size-4 mr-2" />
@@ -331,7 +331,7 @@ export default function Personnel() {
             </Button>
             <Button
               onClick={() => handleOpenTeamDialog()}
-              className="bg-primary text-black font-medium hover:bg-primary/90 rounded-sm"
+              className="bg-primary text-primary-foreground font-medium hover:bg-primary/90 rounded-sm"
             >
               <Plus className="size-4 mr-2" />
               Add Talent
@@ -341,12 +341,12 @@ export default function Personnel() {
 
         {/* Top Stats - Financial Tickers */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Efficiency Rate</p>
-                <h3 className="text-2xl font-mono font-bold text-white mt-1">{stats.efficiencyRate}%</h3>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Efficiency Rate</p>
+                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.efficiencyRate}%</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Zap className="size-5 text-primary" />
@@ -354,12 +354,12 @@ export default function Personnel() {
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Saturated Resources</p>
-                <h3 className="text-2xl font-mono font-bold text-white mt-1">{stats.saturatedCount}</h3>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Saturated Resources</p>
+                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.saturatedCount}</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
                 <AlertCircle className="size-5 text-red-500" />
@@ -367,12 +367,12 @@ export default function Personnel() {
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Available Capacity</p>
-                <h3 className="text-2xl font-mono font-bold text-white mt-1">{stats.availableCount}</h3>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Available Capacity</p>
+                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.availableCount}</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
                 <CheckCircle2 className="size-5 text-green-500" />
@@ -380,12 +380,12 @@ export default function Personnel() {
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-900 border-zinc-800 rounded-sm relative overflow-hidden group hover:border-zinc-700 transition-colors">
+          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-zinc-500 uppercase tracking-wilder">Est. Revenue Potential</p>
-                <h3 className="text-2xl font-mono font-bold text-white mt-1">${(stats.potentialRevenue / 1000).toFixed(1)}k</h3>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Est. Revenue Potential</p>
+                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">${(stats.potentialRevenue / 1000).toFixed(1)}k</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
                 <DollarSign className="size-5 text-blue-500" />
@@ -395,19 +395,19 @@ export default function Personnel() {
         </div>
 
         {/* Smart Filters */}
-        <Card className="bg-zinc-900/50 border-zinc-800 rounded-sm">
+        <Card className="bg-card/50 border-border rounded-sm">
           <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder="Filter by Name, Skill (e.g. React, Copy)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-zinc-950 border-zinc-800 rounded-sm h-10 focus-visible:ring-primary/20"
+                className="pl-10 bg-background border-border rounded-sm h-10 focus-visible:ring-primary/20"
               />
             </div>
             <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-full md:w-[200px] h-10 bg-zinc-950 border-zinc-800 rounded-sm">
+              <SelectTrigger className="w-full md:w-[200px] h-10 bg-background border-border rounded-sm">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
@@ -421,7 +421,7 @@ export default function Personnel() {
             {/* Mobile Catalog Button */}
             <Button
               variant="outline"
-              className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 sm:hidden w-full"
+              className="border-border text-muted-foreground hover:text-foreground hover:bg-muted sm:hidden w-full"
               onClick={() => setIsCatalogOpen(true)}
             >
               <Settings className="size-4 mr-2" />
@@ -435,7 +435,7 @@ export default function Personnel() {
           {filteredTeam.map((member) => (
             <Card
               key={member.id}
-              className={`bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all group relative overflow-hidden rounded-sm
+              className={`bg-card border-border hover:border-muted-foreground/30 transition-all group relative overflow-hidden rounded-sm
                   ${member.utilizationRate >= 95 ? 'hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 'hover:shadow-[0_0_20px_rgba(34,197,94,0.1)]'}
                 `}
             >
@@ -450,16 +450,16 @@ export default function Personnel() {
                 {/* Header */}
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 rounded-sm border border-zinc-700">
-                      <AvatarFallback className="bg-zinc-800 text-zinc-400 font-mono">{getInitials(member.name)}</AvatarFallback>
+                    <Avatar className="h-10 w-10 rounded-sm border border-border">
+                      <AvatarFallback className="bg-muted text-muted-foreground font-mono">{getInitials(member.name)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <h4 className="font-bold text-white text-sm">{member.name}</h4>
-                      <p className="text-xs text-zinc-500">{member.role}</p>
+                      <h4 className="font-bold text-foreground text-sm">{member.name}</h4>
+                      <p className="text-xs text-muted-foreground">{member.role}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className={`rounded-sm text-[10px] font-mono
-                         ${member.department === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-zinc-700 text-zinc-500'}
+                         ${member.department === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
                       `}>
                     {member.department}
                   </Badge>
@@ -467,22 +467,22 @@ export default function Personnel() {
 
                 {/* Burnout Bar */}
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+                  <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
                     <span>UTILIZATION</span>
                     <span className={
                       member.utilizationRate >= 95 ? 'text-red-500 font-bold' :
-                        member.utilizationRate < 50 ? 'text-green-500' : 'text-white'
+                        member.utilizationRate < 50 ? 'text-green-500' : 'text-foreground'
                     }>{Math.round(member.utilizationRate)}%</span>
                   </div>
                   <Progress
                     value={member.utilizationRate}
-                    className="h-1.5 bg-zinc-800 rounded-sm"
+                    className="h-1.5 bg-muted rounded-sm"
                     indicatorClassName={
                       member.utilizationRate >= 95 ? 'bg-red-500' :
                         member.utilizationRate >= 75 ? 'bg-yellow-500' : 'bg-green-500'
                     }
                   />
-                  <p className="text-[10px] text-zinc-600 text-right">
+                  <p className="text-[10px] text-muted-foreground/60 text-right">
                     {member.totalHoursAllocated}h / {member.weeklyCapacity}h
                   </p>
                 </div>
@@ -491,7 +491,7 @@ export default function Personnel() {
                 {member.skills && (
                   <div className="flex flex-wrap gap-1">
                     {member.skills.split(',').slice(0, 3).map(skill => (
-                      <Badge key={skill} variant="secondary" className="text-[9px] h-4 rounded-sm bg-zinc-800 text-zinc-400 hover:text-white border-0">
+                      <Badge key={skill} variant="secondary" className="text-[9px] h-4 rounded-sm bg-muted text-muted-foreground hover:text-foreground border-0">
                         {skill.trim()}
                       </Badge>
                     ))}
@@ -499,13 +499,13 @@ export default function Personnel() {
                 )}
 
                 {/* Financial Stats (Director/Lead View) */}
-                <div className="pt-3 border-t border-zinc-800 grid grid-cols-2 gap-2">
-                  <div className="bg-zinc-950/50 p-2 rounded-sm border border-zinc-800/50">
-                    <p className="text-[9px] text-zinc-500 uppercase">Cost/Hr</p>
-                    <p className="text-xs font-mono text-zinc-300">${member.internalCostHour}</p>
+                <div className="pt-3 border-t border-border grid grid-cols-2 gap-2">
+                  <div className="bg-background/50 p-2 rounded-sm border border-border/50">
+                    <p className="text-[9px] text-muted-foreground uppercase">Cost/Hr</p>
+                    <p className="text-xs font-mono text-foreground/80">${member.internalCostHour}</p>
                   </div>
-                  <div className="bg-zinc-950/50 p-2 rounded-sm border border-zinc-800/50">
-                    <p className="text-[9px] text-zinc-500 uppercase">Billable</p>
+                  <div className="bg-background/50 p-2 rounded-sm border border-border/50">
+                    <p className="text-[9px] text-muted-foreground uppercase">Billable</p>
                     <p className="text-xs font-mono text-primary">${member.billableRate}</p>
                   </div>
                 </div>
@@ -515,7 +515,7 @@ export default function Personnel() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-7 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white rounded-sm"
+                    className="flex-1 h-7 text-xs border-border text-foreground/80 hover:bg-muted hover:text-foreground rounded-sm"
                     onClick={() => {
                       setAssigningToMember(member.id);
                       setIsAssignmentDialogOpen(true);
@@ -526,7 +526,7 @@ export default function Personnel() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-zinc-500 hover:text-primary"
+                    className="h-7 w-7 text-muted-foreground hover:text-primary"
                     onClick={() => handleOpenTeamDialog(member)}
                   >
                     <MoreVertical className="size-3" />
@@ -538,9 +538,9 @@ export default function Personnel() {
 
           {/* Empty State */}
           {filteredTeam.length === 0 && (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-sm">
-              <Users className="size-8 text-zinc-700 mb-2" />
-              <p className="text-zinc-500">No matching talent found</p>
+            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-border rounded-sm">
+              <Users className="size-8 text-muted-foreground/30 mb-2" />
+              <p className="text-muted-foreground">No matching talent found</p>
             </div>
           )}
         </div>
@@ -551,28 +551,28 @@ export default function Personnel() {
 
       {/* Team Member Dialog */}
       <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] border-zinc-800 bg-zinc-900 text-white rounded-sm">
+        <DialogContent className="sm:max-w-[600px] border-border bg-card text-foreground rounded-sm">
           <DialogHeader>
             <DialogTitle>{editingMember ? "Edit Strategic Asset" : "Onboard New Talent"}</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogDescription className="text-muted-foreground">
               Configure resource capacity, financial metrics, and skills.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitTeam} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
-                <Label className="text-zinc-400">Master Service Role</Label>
+                <Label className="text-muted-foreground">Master Service Role</Label>
                 <Select
                   value={formData.roleCatalogId?.toString()}
                   onValueChange={handleRoleSelect}
                 >
-                  <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-sm">
+                  <SelectTrigger className="bg-background border-border rounded-sm">
                     <SelectValue placeholder="Select from Catalog (Recommended)" />
                   </SelectTrigger>
                   <SelectContent>
                     {roles.map(role => (
                       <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.roleName} <span className="text-zinc-500 text-xs ml-2">(${role.defaultBillableRate}/hr)</span>
+                        {role.roleName} <span className="text-muted-foreground text-xs ml-2">(${role.defaultBillableRate}/hr)</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -580,29 +580,29 @@ export default function Personnel() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-zinc-400">Full Name</Label>
+                <Label className="text-muted-foreground">Full Name</Label>
                 <Input
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                  className="bg-background border-border rounded-sm"
                   placeholder="e.g. Alex Chen"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-400">Custom Role Title</Label>
+                <Label className="text-muted-foreground">Custom Role Title</Label>
                 <Input
                   value={formData.role}
                   onChange={e => setFormData({ ...formData, role: e.target.value })}
-                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                  className="bg-background border-border rounded-sm"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-zinc-400">Seniority</Label>
+                <Label className="text-muted-foreground">Seniority</Label>
                 <Select value={formData.department} onValueChange={v => setFormData({ ...formData, department: v })}>
-                  <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-sm">
+                  <SelectTrigger className="bg-background border-border rounded-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -615,26 +615,26 @@ export default function Personnel() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-400">Weekly Capacity (Hours)</Label>
+                <Label className="text-muted-foreground">Weekly Capacity (Hours)</Label>
                 <Input
                   type="number"
                   value={formData.weeklyCapacity || ""}
                   onChange={e => setFormData({ ...formData, weeklyCapacity: parseInt(e.target.value) })}
-                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                  className="bg-background border-border rounded-sm"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-zinc-950/50 border border-zinc-800 rounded-sm space-y-3">
+            <div className="p-3 bg-muted/30 border border-border rounded-sm space-y-3">
               <h4 className="text-xs font-mono uppercase text-primary tracking-wider">Financial Intelligence</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-zinc-500">Internal Cost / Hr</Label>
+                  <Label className="text-xs text-muted-foreground">Internal Cost / Hr</Label>
                   <Input
                     type="number"
                     value={formData.internalCostHour || ""}
                     onChange={e => setFormData({ ...formData, internalCostHour: e.target.value })}
-                    className="bg-zinc-900 border-zinc-800 rounded-sm h-8 text-xs font-mono"
+                    className="bg-background border-border rounded-sm h-8 text-xs font-mono"
                   />
                 </div>
                 <div className="space-y-2 text-green-500">
@@ -647,23 +647,23 @@ export default function Personnel() {
                         const margin = ((rate - cost) / rate * 100).toFixed(1);
                         return <span className={Number(margin) > 50 ? 'text-green-500' : 'text-yellow-500'}>{margin}%</span>
                       }
-                      return <span className="text-zinc-600">--</span>
+                      return <span className="text-muted-foreground">--</span>
                     })()}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-zinc-500">Billing Rate / Hr</Label>
+                  <Label className="text-xs text-muted-foreground">Billing Rate / Hr</Label>
                   <Input
                     type="number"
                     value={formData.billableRate || ""}
                     onChange={e => setFormData({ ...formData, billableRate: e.target.value })}
-                    className="bg-zinc-900 border-zinc-800 rounded-sm h-8 text-xs font-mono text-green-500"
+                    className="bg-background border-border rounded-sm h-8 text-xs font-mono text-green-500"
                   />
                 </div>
-                <div className="space-y-2 col-span-2 border-t border-zinc-800 pt-2 flex items-center justify-between">
+                <div className="space-y-2 col-span-2 border-t border-border pt-2 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="text-zinc-400">Add to Payroll</Label>
-                    <p className="text-[10px] text-zinc-500">Automatically create a monthly recurring expense.</p>
+                    <Label className="text-muted-foreground">Add to Payroll</Label>
+                    <p className="text-[10px] text-muted-foreground">Automatically create a monthly recurring expense.</p>
                   </div>
                   <Switch
                     checked={formData.addToPayroll}
@@ -675,45 +675,56 @@ export default function Personnel() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-zinc-400">Monthly Salary</Label>
+                <Label className="text-muted-foreground">Monthly Salary</Label>
                 <Input
                   type="number"
                   value={formData.monthlySalary || ""}
                   onChange={e => setFormData({ ...formData, monthlySalary: e.target.value })}
-                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                  className="bg-background border-border rounded-sm"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-500 text-xs mt-8">
-                  Calculated Internal Cost: <span className="text-zinc-300 font-mono">${formData.internalCostHour}</span>/hr
+                <Label className="text-muted-foreground text-xs mt-8">
+                  Calculated Internal Cost: <span className="text-foreground font-mono">${formData.internalCostHour}</span>/hr
                 </Label>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-400">Skills (Comma separated)</Label>
+              <Label className="text-muted-foreground">Skills (Comma separated)</Label>
               <Input
                 value={formData.skills || ""}
                 onChange={e => setFormData({ ...formData, skills: e.target.value })}
-                className="bg-zinc-950 border-zinc-800 rounded-sm"
+                className="bg-background border-border rounded-sm"
                 placeholder="React, TypeScript, SEO, Copywriting..."
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-zinc-400">Shift Start</Label>
-                <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-zinc-950 border-zinc-800 rounded-sm" />
+                <Label className="text-muted-foreground">Shift Start</Label>
+                <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-background border-border rounded-sm" />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-400">Shift End</Label>
-                <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-zinc-950 border-zinc-800 rounded-sm" />
+                <Label className="text-muted-foreground">Shift End</Label>
+                <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-background border-border rounded-sm" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Shift Start</Label>
+                <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-background border-border rounded-sm" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Shift End</Label>
+                <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-background border-border rounded-sm" />
               </div>
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setIsTeamDialogOpen(false)} className="hover:bg-zinc-800 rounded-sm">Cancel</Button>
-              <Button type="submit" className="bg-primary text-black hover:bg-primary/90 rounded-sm">
+              <Button type="button" variant="ghost" onClick={() => setIsTeamDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">
                 {editingMember ? "Save Changes" : "Create Asset"}
               </Button>
             </DialogFooter>
@@ -723,18 +734,18 @@ export default function Personnel() {
 
       {/* Assignment Dialog */}
       <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] border-zinc-800 bg-zinc-900 text-white rounded-sm">
+        <DialogContent className="sm:max-w-[400px] border-border bg-card text-foreground rounded-sm">
           <DialogHeader>
             <DialogTitle>Assign Capacity</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogDescription className="text-muted-foreground">
               Allocate hours to a specific project.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitAssignment} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-400">Project Strategy</Label>
+              <Label className="text-muted-foreground">Project Strategy</Label>
               <Select value={assignmentForm.projectId.toString()} onValueChange={v => setAssignmentForm({ ...assignmentForm, projectId: parseInt(v) })}>
-                <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-sm">
+                <SelectTrigger className="bg-background border-border rounded-sm">
                   <SelectValue placeholder="Select Project..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -746,21 +757,21 @@ export default function Personnel() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-400">Weekly Allocation (Hours)</Label>
+              <Label className="text-muted-foreground">Weekly Allocation (Hours)</Label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   value={assignmentForm.hoursAllocated}
                   onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: parseInt(e.target.value) })}
-                  className="bg-zinc-950 border-zinc-800 rounded-sm"
+                  className="bg-background border-border rounded-sm"
                 />
-                <span className="text-xs text-zinc-500 font-mono">HRS/WK</span>
+                <span className="text-xs text-muted-foreground font-mono">HRS/WK</span>
               </div>
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-zinc-800 rounded-sm">Cancel</Button>
-              <Button type="submit" className="bg-primary text-black hover:bg-primary/90 rounded-sm">Confirm Allocation</Button>
+              <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">Confirm Allocation</Button>
             </DialogFooter>
           </form>
         </DialogContent>

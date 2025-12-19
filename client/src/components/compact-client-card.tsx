@@ -39,7 +39,7 @@ export const CompactClientCard = memo(({
   const statusColors: Record<string, string> = {
     Active: "border-green-500/30 bg-green-500/20 text-green-400",
     Paused: "border-yellow-500/30 bg-yellow-500/20 text-yellow-400",
-    Planning: "border-gray-500/30 bg-gray-500/20 text-gray-400",
+    Planning: "border-muted-foreground/30 bg-muted text-muted-foreground",
   };
 
   return (

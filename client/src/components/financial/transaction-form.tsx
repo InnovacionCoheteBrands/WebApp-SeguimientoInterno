@@ -195,7 +195,7 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-white">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-border text-foreground">
                 <DialogHeader>
                     <DialogTitle>{initialData ? "Editar Transacción" : `Nuevo ${type === "Ingreso" ? "Ingreso" : "Egreso"}`}</DialogTitle>
                 </DialogHeader>
@@ -210,10 +210,10 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="type"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-400">Tipo</FormLabel>
+                                        <FormLabel className="text-muted-foreground">Tipo</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                                <SelectTrigger className="bg-background border-border">
                                                     <SelectValue placeholder="Select type" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -232,13 +232,13 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="date"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-400">Fecha</FormLabel>
+                                        <FormLabel className="text-muted-foreground">Fecha</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="date"
                                                 value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="bg-zinc-900 border-zinc-800"
+                                                className="bg-background border-border"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -254,10 +254,10 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="category"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-400">Categoría</FormLabel>
+                                        <FormLabel className="text-muted-foreground">Categoría</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                                <SelectTrigger className="bg-background border-border">
                                                     <SelectValue placeholder="Seleccionar Categoría" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -279,9 +279,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-400">Concepto / Descripción</FormLabel>
+                                        <FormLabel className="text-muted-foreground">Concepto / Descripción</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Ej. Pago servicio Junio" {...field} value={field.value || ""} className="bg-zinc-900 border-zinc-800" />
+                                            <Input placeholder="Ej. Pago servicio Junio" {...field} value={field.value || ""} className="bg-background border-border" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -297,12 +297,12 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                     name="clientId"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-zinc-400">Cliente (Relacionado)</FormLabel>
+                                            <FormLabel className="text-muted-foreground">Cliente (Relacionado)</FormLabel>
                                             <FormControl>
                                                 <ClientSelector
                                                     value={field.value}
                                                     onChange={field.onChange}
-                                                    className="bg-zinc-900 border-zinc-800"
+                                                    className="bg-background border-border"
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -317,9 +317,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                     name="provider"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-zinc-400">Proveedor</FormLabel>
+                                            <FormLabel className="text-muted-foreground">Proveedor</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Ej. AWS, Totalplay" {...field} value={field.value || ""} className="bg-zinc-900 border-zinc-800" />
+                                                <Input placeholder="Ej. AWS, Totalplay" {...field} value={field.value || ""} className="bg-background border-border" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -332,9 +332,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="rfc"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-400">RFC (Opcional)</FormLabel>
+                                        <FormLabel className="text-muted-foreground">RFC (Opcional)</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="XEXX010101000" {...field} value={field.value || ""} className="bg-zinc-900 border-zinc-800 uppercase" />
+                                            <Input placeholder="XEXX010101000" {...field} value={field.value || ""} className="bg-background border-border uppercase" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -343,13 +343,13 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                         </div>
 
                         {/* Fiscal Data Row */}
-                        <div className="grid grid-cols-3 gap-4 p-4 bg-zinc-900/50 rounded-sm border border-zinc-800/50">
+                        <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-sm border border-border">
                             <FormField
                                 control={form.control}
                                 name="subtotal"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs text-zinc-500 uppercase font-mono">Subtotal</FormLabel>
+                                        <FormLabel className="text-xs text-muted-foreground uppercase font-mono">Subtotal</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number" step="0.01"
@@ -367,7 +367,7 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                                         form.setValue("iva", "");
                                                     }
                                                 }}
-                                                className="bg-zinc-950 border-zinc-800 text-right font-mono"
+                                                className="bg-background border-border text-right font-mono"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -380,13 +380,13 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="iva"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs text-zinc-500 uppercase font-mono">IVA (16%)</FormLabel>
+                                        <FormLabel className="text-xs text-muted-foreground uppercase font-mono">IVA (16%)</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number" step="0.01"
                                                 placeholder="0.00"
                                                 {...field}
-                                                className="bg-zinc-950 border-zinc-800 text-right font-mono"
+                                                className="bg-background border-border text-right font-mono"
                                                 readOnly
                                             />
                                         </FormControl>
@@ -415,7 +415,7 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                             <Input
                                                 type="number" step="0.01"
                                                 {...field}
-                                                className="bg-zinc-950 border-zinc-800 text-right font-mono font-bold text-white"
+                                                className="bg-background border-border text-right font-mono font-bold text-foreground"
                                                 readOnly // Make read-only to enforce calc? Or allow override?
                                             // Let's allow override but visually distinct
                                             />
@@ -433,9 +433,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 name="invoiceNumber"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-400">Folio Factura</FormLabel>
+                                        <FormLabel className="text-muted-foreground">Folio Factura</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="A-1234" {...field} value={field.value || ""} className="bg-zinc-900 border-zinc-800" />
+                                            <Input placeholder="A-1234" {...field} value={field.value || ""} className="bg-background border-border" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -446,9 +446,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 control={form.control}
                                 name="isPaid"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-sm border border-zinc-800 bg-zinc-900 p-3 shadow-sm mt-8">
+                                    <FormItem className="flex flex-row items-center justify-between rounded-sm border border-border bg-card p-3 shadow-sm mt-8">
                                         <div className="space-y-0.5">
-                                            <FormLabel className="text-white">Pagado</FormLabel>
+                                            <FormLabel className="text-foreground">Pagado</FormLabel>
                                         </div>
                                         <FormControl>
                                             <Switch
@@ -466,16 +466,16 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                             name="notes"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-zinc-400">Notas Adicionales</FormLabel>
+                                    <FormLabel className="text-muted-foreground">Notas Adicionales</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="" {...field} value={field.value || ""} className="bg-zinc-900 border-zinc-800" />
+                                        <Textarea placeholder="" {...field} value={field.value || ""} className="bg-background border-border" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        <Button type="submit" className="w-full bg-primary text-black hover:bg-primary/90">
+                        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                             {initialData ? "Guardar Cambios" : "Crear Transacción"}
                         </Button>
                     </form>

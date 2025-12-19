@@ -166,22 +166,21 @@ const FleetTracking = memo(function FleetTracking() {
             <Card
               key={account.id}
               status={account.status === "Active" ? "success" : account.status === "Paused" ? "warning" : "default"}
-              className="bg-zinc-900 border-zinc-800 rounded-sm"
+              className="bg-card border-border rounded-sm"
             >
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-2">
                   <Badge
                     variant="outline"
-                    className={`rounded-sm text-[9px] h-4 px-1 font-normal border-transparent bg-zinc-950 ${
-                      account.status === "Active" ? "text-green-500" :
-                      account.status === "Paused" ? "text-yellow-500" : "text-zinc-500"
-                    }`}
+                    className={`rounded-sm text-[9px] h-4 px-1 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
+                        account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
+                      }`}
                   >
                     {account.status}
                   </Badge>
                 </div>
                 <h3 className="font-semibold text-sm truncate mb-2">{account.companyName}</h3>
-                <div className="space-y-1 text-[10px] text-zinc-500">
+                <div className="space-y-1 text-[10px] text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Building2 className="size-3" />
                     <span>{account.industry}</span>
@@ -204,7 +203,7 @@ const FleetTracking = memo(function FleetTracking() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteClientId(account.id)}
-                    className="h-7 w-7 p-0 text-zinc-500 hover:text-red-500"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500"
                   >
                     <Trash2 className="size-3" />
                   </Button>
@@ -220,59 +219,58 @@ const FleetTracking = memo(function FleetTracking() {
             <Card
               key={account.id}
               status={account.status === "Active" ? "success" : account.status === "Paused" ? "warning" : "default"}
-              className="bg-zinc-900 border-zinc-800 rounded-sm hover:border-zinc-700 transition-all group relative overflow-hidden"
+              className="bg-card border-border rounded-sm hover:border-muted-foreground/30 transition-all group relative overflow-hidden"
               data-testid={`client-card-${account.id}`}
             >
               <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Briefcase className="size-4 text-zinc-500" />
-                    <CardTitle className="text-base font-display font-bold tracking-tight">
+                    <Briefcase className="size-4 text-muted-foreground" />
+                    <CardTitle className="text-base font-display font-bold tracking-tight text-foreground">
                       {account.companyName}
                     </CardTitle>
                   </div>
                   <Badge
                     variant="outline"
-                    className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-zinc-950 ${
-                      account.status === "Active" ? "text-green-500" :
-                      account.status === "Paused" ? "text-yellow-500" : "text-zinc-500"
-                    }`}
+                    className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
+                        account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
+                      }`}
                     data-testid={`client-status-${account.id}`}
                   >
                     {account.status}
                   </Badge>
                 </div>
-                <CardDescription className="font-mono text-xs uppercase tracking-wider text-zinc-500 mt-1 truncate">
+                <CardDescription className="font-mono text-xs uppercase tracking-wider text-muted-foreground mt-1 truncate">
                   {account.industry}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-5 pt-2">
                 <div className="grid grid-cols-2 gap-y-2 gap-x-4">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase text-zinc-600 font-mono">Industria</span>
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
-                      <Building2 className="size-3 text-amber-500/70" />
+                    <span className="text-[10px] uppercase text-muted-foreground font-mono">Industria</span>
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                      <Building2 className="size-3 text-primary/70" />
                       <span>{account.industry}</span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase text-zinc-600 font-mono">Presupuesto</span>
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
-                      <DollarSign className="size-3 text-amber-500/70" />
+                    <span className="text-[10px] uppercase text-muted-foreground font-mono">Presupuesto</span>
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                      <DollarSign className="size-3 text-primary/70" />
                       <span>${account.monthlyBudget.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase text-zinc-600 font-mono">Gasto</span>
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
-                      <TrendingUp className="size-3 text-amber-500/70" />
+                    <span className="text-[10px] uppercase text-muted-foreground font-mono">Gasto</span>
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                      <TrendingUp className="size-3 text-primary/70" />
                       <span>${account.currentSpend.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase text-zinc-600 font-mono">Actividad</span>
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-300">
-                      <Clock className="size-3 text-amber-500/70" />
+                    <span className="text-[10px] uppercase text-muted-foreground font-mono">Actividad</span>
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                      <Clock className="size-3 text-primary/70" />
                       <span className="truncate">
                         {formatDistanceToNow(new Date(account.lastContact), { addSuffix: true })}
                       </span>
@@ -280,30 +278,29 @@ const FleetTracking = memo(function FleetTracking() {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-zinc-800">
-                  <div className="flex justify-between text-[10px] mb-1.5 font-mono text-zinc-500">
+                <div className="pt-2 border-t border-border">
+                  <div className="flex justify-between text-[10px] mb-1.5 font-mono text-muted-foreground">
                     <span>HEALTH SCORE</span>
                     <span className={account.healthScore >= 80 ? 'text-green-500' : account.healthScore < 50 ? 'text-red-500' : 'text-yellow-500'}>
                       {account.healthScore}%
                     </span>
                   </div>
-                  <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={`h-full transition-all duration-500 ${
-                        account.healthScore >= 80 ? "bg-green-500" :
-                        account.healthScore >= 50 ? "bg-yellow-500" :
-                        "bg-red-500"
-                      }`}
+                      className={`h-full transition-all duration-500 ${account.healthScore >= 80 ? "bg-green-500" :
+                          account.healthScore >= 50 ? "bg-yellow-500" :
+                            "bg-red-500"
+                        }`}
                       style={{ width: `${account.healthScore}%` }}
                     />
                   </div>
                 </div>
 
                 {account.nextMilestone && (
-                  <div className="px-3 py-2 bg-zinc-950/50 rounded-sm border border-zinc-800">
+                  <div className="px-3 py-2 bg-background/50 rounded-sm border border-border">
                     <div className="flex items-center gap-2 text-xs">
-                      <Target className="size-3 text-amber-500" />
-                      <span className="font-mono text-zinc-400 truncate">
+                      <Target className="size-3 text-primary" />
+                      <span className="font-mono text-muted-foreground truncate">
                         {account.nextMilestone}
                       </span>
                     </div>
@@ -315,7 +312,7 @@ const FleetTracking = memo(function FleetTracking() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleOpenDialog(account)}
-                    className="flex-1 rounded-sm h-8 text-xs border-dashed border-zinc-700 hover:border-amber-500/50 hover:bg-zinc-800 hover:text-amber-500"
+                    className="flex-1 rounded-sm h-8 text-xs border-dashed border-border hover:border-primary/50 hover:bg-muted hover:text-primary"
                     data-testid={`button-edit-client-${account.id}`}
                   >
                     <Pencil className="size-3 mr-1.5" />
@@ -325,7 +322,7 @@ const FleetTracking = memo(function FleetTracking() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteClientId(account.id)}
-                    className="rounded-sm h-8 w-8 p-0 text-zinc-500 hover:text-red-500 hover:bg-red-500/10"
+                    className="rounded-sm h-8 w-8 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
                     data-testid={`button-delete-client-${account.id}`}
                   >
                     <Trash2 className="size-3.5" />
@@ -339,7 +336,7 @@ const FleetTracking = memo(function FleetTracking() {
         {clientAccounts.length === 0 && (
           <Card className="border-border bg-card/50 rounded-sm">
             <CardContent className="p-12 text-center">
-              <Building2 className="size-12 text-zinc-600 mx-auto mb-4" />
+              <Building2 className="size-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">No hay clientes registrados actualmente</p>
               <Button onClick={() => handleOpenDialog()} className="rounded-sm">
                 <Plus className="size-4 mr-2" />

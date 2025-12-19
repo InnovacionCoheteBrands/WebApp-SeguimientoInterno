@@ -144,34 +144,34 @@ export default function AdsCommandCenter() {
             {/* Metrics Cards - Siguiendo el patrón de Dashboard */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Blended ROAS - Green Status */}
-                <Card status="success" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+                <Card status="success" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Blended ROAS</span>
-                            <TrendingUp className="size-4 text-zinc-500 group-hover:text-green-500 transition-colors" />
+                            <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Blended ROAS</span>
+                            <TrendingUp className="size-4 text-muted-foreground group-hover:text-green-500 transition-colors" />
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-2xl font-display font-medium tracking-tight text-foreground">
                                 {overview?.blendedROAS.roas.toFixed(2) || "0.00"}x
                             </h3>
-                            <p className="text-xs text-zinc-500">Retorno Combinado</p>
+                            <p className="text-xs text-muted-foreground">Retorno Combinado</p>
                             <p className="text-xs text-green-500">+{overview?.blendedROAS.totalRevenue.toFixed(0) || "0"} ingresos</p>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Total Spend - Orange Status */}
-                <Card status="warning" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+                <Card status="warning" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Gasto Total</span>
-                            <DollarSign className="size-4 text-zinc-500 group-hover:text-amber-500 transition-colors" />
+                            <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Gasto Total</span>
+                            <DollarSign className="size-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-2xl font-display font-medium tracking-tight text-foreground">
                                 ${overview?.blendedROAS.totalSpend.toFixed(0) || "0"}
                             </h3>
-                            <p className="text-xs text-zinc-500">Inversión Publicitaria</p>
+                            <p className="text-xs text-muted-foreground">Inversión Publicitaria</p>
                             <p className="text-xs text-amber-500">{overview?.spendPacing.percentSpent.toFixed(0) || "0"}% del presupuesto</p>
                         </div>
                     </CardContent>
@@ -180,35 +180,35 @@ export default function AdsCommandCenter() {
                 {/* Ritmo de Gasto - Dynamic Status */}
                 <Card
                     status={overview?.spendPacing.status === 'healthy' ? 'success' : overview?.spendPacing.status === 'warning' ? 'warning' : 'error'}
-                    className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group"
+                    className="bg-card border-border shadow-sm hover:shadow-md transition-all group"
                 >
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Ritmo de Gasto</span>
-                            <PacingIcon className={`size-4 text-zinc-500 group-hover:${pacingConfig.color.replace('text-', 'text-')} transition-colors`} />
+                            <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Ritmo de Gasto</span>
+                            <PacingIcon className={`size-4 text-muted-foreground group-hover:${pacingConfig.color.replace('text-', 'text-')} transition-colors`} />
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-2xl font-display font-medium tracking-tight text-foreground">
                                 {overview?.spendPacing.percentElapsed.toFixed(0) || "0"}%
                             </h3>
-                            <p className="text-xs text-zinc-500">Mes Transcurrido</p>
+                            <p className="text-xs text-muted-foreground">Mes Transcurrido</p>
                             <p className={`text-xs ${pacingConfig.color}`}>{pacingConfig.label}</p>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Plataformas Activas - Blue/Info Status */}
-                <Card status="info" className="bg-zinc-900 border-zinc-800 shadow-sm hover:shadow-md transition-all group">
+                <Card status="info" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">Plataformas</span>
-                            <BarChart3 className="size-4 text-zinc-500 group-hover:text-blue-500 transition-colors" />
+                            <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Plataformas</span>
+                            <BarChart3 className="size-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-2xl font-display font-medium tracking-tight text-foreground">
                                 {activePlatforms}/{totalPlatforms}
                             </h3>
-                            <p className="text-xs text-zinc-500">Activas</p>
+                            <p className="text-xs text-muted-foreground">Activas</p>
                             <p className="text-xs text-blue-500">{overview?.platformBreakdown.reduce((sum, p) => sum + p.activeCreatives, 0) || 0} anuncios</p>
                         </div>
                     </CardContent>
@@ -216,7 +216,7 @@ export default function AdsCommandCenter() {
             </div>
 
             {/* Platform Breakdown */}
-            <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
+            <Card className="border-border bg-card/50 rounded-sm">
                 <CardContent className="p-3 sm:p-6">
                     <div className="mb-4">
                         <h2 className="text-base sm:text-lg font-display uppercase text-foreground">Desglose por Plataforma</h2>
@@ -225,9 +225,9 @@ export default function AdsCommandCenter() {
                         {overview?.platformBreakdown.map((platform) => (
                             <div
                                 key={platform.platformId}
-                                className="p-4 rounded-sm border border-zinc-800 bg-zinc-900 hover:border-amber-500/50 transition-all shadow-sm relative overflow-hidden group"
+                                className="p-4 rounded-sm border border-border bg-card hover:border-amber-500/50 transition-all shadow-sm relative overflow-hidden group"
                             >
-                                <div className={`absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b ${platform.isActive ? 'from-transparent via-green-500 to-transparent' : 'from-transparent via-zinc-700 to-transparent'} opacity-70 group-hover:opacity-100 transition-opacity`} />
+                                <div className={`absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b ${platform.isActive ? 'from-transparent via-green-500 to-transparent' : 'from-transparent via-muted-foreground/30 to-transparent'} opacity-70 group-hover:opacity-100 transition-opacity`} />
                                 <div className="flex items-center justify-between mb-3 pl-2">
                                     <h3 className="font-semibold text-sm text-foreground">{platform.displayName}</h3>
                                     {platform.isActive ? (
@@ -235,28 +235,28 @@ export default function AdsCommandCenter() {
                                             Activo
                                         </Badge>
                                     ) : (
-                                        <Badge variant="outline" className="text-zinc-500 border-zinc-800 bg-zinc-950 text-[10px] rounded-sm h-5 font-normal">
+                                        <Badge variant="outline" className="text-muted-foreground border-border bg-background text-[10px] rounded-sm h-5 font-normal">
                                             Inactivo
                                         </Badge>
                                     )}
                                 </div>
                                 <div className="space-y-2 text-sm pl-2">
                                     <div className="flex justify-between">
-                                        <span className="text-zinc-500 text-xs text-muted-foreground">ROAS</span>
+                                        <span className="text-muted-foreground text-xs">ROAS</span>
                                         <span className="font-mono font-medium text-amber-500 text-xs">
                                             {platform.roas.toFixed(2)}x
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-zinc-500 text-xs text-muted-foreground">Gastado</span>
+                                        <span className="text-muted-foreground text-xs">Gastado</span>
                                         <span className="font-mono text-xs text-foreground">${platform.totalSpend.toFixed(0)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-zinc-500 text-xs text-muted-foreground">Generado</span>
+                                        <span className="text-muted-foreground text-xs">Generado</span>
                                         <span className="font-mono text-xs text-foreground">${platform.totalRevenue.toFixed(0)}</span>
                                     </div>
-                                    <div className="flex justify-between pt-2 border-t border-zinc-800 mt-2">
-                                        <span className="text-zinc-500 text-xs text-muted-foreground">Ads Activos</span>
+                                    <div className="flex justify-between pt-2 border-t border-border mt-2">
+                                        <span className="text-muted-foreground text-xs">Ads Activos</span>
                                         <span className="font-mono text-xs text-foreground">{platform.activeCreatives}</span>
                                     </div>
                                 </div>
@@ -269,22 +269,22 @@ export default function AdsCommandCenter() {
             {/* Top Performers & Underperformers */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Top Performers */}
-                <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
+                <Card className="border-border bg-card/50 rounded-sm">
                     <CardContent className="p-3 sm:p-6">
                         <h2 className="text-base sm:text-lg font-display uppercase mb-4 flex items-center gap-2">
                             <span className="text-green-500">🏆</span> Top Performers
                         </h2>
                         <div className="space-y-3">
                             {topLoading ? (
-                                <p className="text-zinc-500 text-sm text-center py-8">Cargando...</p>
+                                <p className="text-muted-foreground text-sm text-center py-8">Cargando...</p>
                             ) : topCreatives && topCreatives.length > 0 ? (
                                 topCreatives.map((creative, index) => (
                                     <div
                                         key={creative.id}
-                                        className="p-3 rounded-sm border border-green-500/20 bg-zinc-900 hover:border-green-500/40 transition-all"
+                                        className="p-3 rounded-sm border border-green-500/20 bg-card hover:border-green-500/40 transition-all"
                                     >
                                         <div className="flex gap-3">
-                                            <div className="relative size-16 rounded-sm overflow-hidden flex-shrink-0 bg-zinc-950 border border-zinc-800">
+                                            <div className="relative size-16 rounded-sm overflow-hidden flex-shrink-0 bg-background border border-border">
                                                 {creative.thumbnailUrl || creative.imageUrl ? (
                                                     <img
                                                         src={creative.thumbnailUrl || creative.imageUrl || ""}
@@ -292,7 +292,7 @@ export default function AdsCommandCenter() {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
                                                         <Target className="size-6" />
                                                     </div>
                                                 )}
@@ -304,15 +304,15 @@ export default function AdsCommandCenter() {
                                                 <h3 className="font-semibold text-sm mb-1 truncate text-foreground">{creative.headline || "Sin título"}</h3>
                                                 <div className="grid grid-cols-3 gap-2 text-xs">
                                                     <div>
-                                                        <p className="text-zinc-500 font-mono">CTR</p>
+                                                        <p className="text-muted-foreground font-mono">CTR</p>
                                                         <p className="font-mono font-semibold text-foreground">{creative.metrics.ctr}%</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-zinc-500 font-mono">CPA</p>
+                                                        <p className="text-muted-foreground font-mono">CPA</p>
                                                         <p className="font-mono font-semibold text-foreground">${creative.metrics.cpa}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-zinc-500 font-mono">ROAS</p>
+                                                        <p className="text-muted-foreground font-mono">ROAS</p>
                                                         <p className="font-mono font-semibold text-green-500">{creative.metrics.roas}x</p>
                                                     </div>
                                                 </div>
@@ -322,7 +322,7 @@ export default function AdsCommandCenter() {
                                 ))
                             ) : (
                                 <div className="text-center py-8">
-                                    <p className="text-zinc-500 text-sm">No hay datos de anuncios top disponibles</p>
+                                    <p className="text-muted-foreground text-sm">No hay datos de anuncios top disponibles</p>
                                 </div>
                             )}
                         </div>
@@ -330,22 +330,22 @@ export default function AdsCommandCenter() {
                 </Card>
 
                 {/* Necesitan Atención */}
-                <Card className="border-zinc-800 bg-zinc-900/50 rounded-sm">
+                <Card className="border-border bg-card/50 rounded-sm">
                     <CardContent className="p-3 sm:p-6">
                         <h2 className="text-base sm:text-lg font-display uppercase mb-4 flex items-center gap-2">
                             <span className="text-red-500">⚠️</span> Necesitan Atención
                         </h2>
                         <div className="space-y-3">
                             {bottomLoading ? (
-                                <p className="text-zinc-500 text-sm text-center py-8">Cargando...</p>
+                                <p className="text-muted-foreground text-sm text-center py-8">Cargando...</p>
                             ) : bottomCreatives && bottomCreatives.length > 0 ? (
                                 bottomCreatives.map((creative, index) => (
                                     <div
                                         key={creative.id}
-                                        className="p-3 rounded-sm border border-red-500/20 bg-zinc-900 hover:border-red-500/40 transition-all"
+                                        className="p-3 rounded-sm border border-red-500/20 bg-card hover:border-red-500/40 transition-all"
                                     >
                                         <div className="flex gap-3">
-                                            <div className="relative size-16 rounded-sm overflow-hidden flex-shrink-0 bg-zinc-950 border border-zinc-800">
+                                            <div className="relative size-16 rounded-sm overflow-hidden flex-shrink-0 bg-background border border-border">
                                                 {creative.thumbnailUrl || creative.imageUrl ? (
                                                     <img
                                                         src={creative.thumbnailUrl || creative.imageUrl || ""}
@@ -353,7 +353,7 @@ export default function AdsCommandCenter() {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
                                                         <AlertTriangle className="size-6" />
                                                     </div>
                                                 )}
@@ -365,15 +365,15 @@ export default function AdsCommandCenter() {
                                                 <h3 className="font-semibold text-sm mb-1 truncate text-foreground">{creative.headline || "Sin título"}</h3>
                                                 <div className="grid grid-cols-3 gap-2 text-xs mb-2">
                                                     <div>
-                                                        <p className="text-zinc-500 font-mono">CTR</p>
+                                                        <p className="text-muted-foreground font-mono">CTR</p>
                                                         <p className="font-mono font-semibold text-foreground">{creative.metrics.ctr}%</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-zinc-500 font-mono">CPA</p>
+                                                        <p className="text-muted-foreground font-mono">CPA</p>
                                                         <p className="font-mono font-semibold text-foreground">${creative.metrics.cpa}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-zinc-500 font-mono">ROAS</p>
+                                                        <p className="text-muted-foreground font-mono">ROAS</p>
                                                         <p className="font-mono font-semibold text-red-500">{creative.metrics.roas}x</p>
                                                     </div>
                                                 </div>
@@ -399,7 +399,7 @@ export default function AdsCommandCenter() {
                                 ))
                             ) : (
                                 <div className="text-center py-8">
-                                    <p className="text-zinc-500 text-sm">No hay datos de anuncios con bajo rendimiento</p>
+                                    <p className="text-muted-foreground text-sm">No hay datos de anuncios con bajo rendimiento</p>
                                 </div>
                             )}
                         </div>

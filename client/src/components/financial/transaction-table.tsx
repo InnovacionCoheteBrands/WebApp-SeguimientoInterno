@@ -32,7 +32,7 @@ interface TransactionTableProps {
 export function TransactionTable({ data, onEdit, onDelete, showProvider, showClient }: TransactionTableProps) {
     if (data.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-zinc-500 border border-dashed border-zinc-800 rounded-lg">
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
                 <FileText className="h-10 w-10 mb-2 opacity-50" />
                 <p>No hay transacciones registradas.</p>
             </div>
@@ -40,10 +40,10 @@ export function TransactionTable({ data, onEdit, onDelete, showProvider, showCli
     }
 
     return (
-        <div className="rounded-md border border-zinc-800">
+        <div className="rounded-md border border-border">
             <Table>
                 <TableHeader>
-                    <TableRow className="border-zinc-800 hover:bg-transparent">
+                    <TableRow className="border-border hover:bg-transparent">
                         <TableHead className="w-[120px]">Fecha</TableHead>
                         <TableHead>Concepto</TableHead>
                         <TableHead>Categoría</TableHead>
@@ -57,24 +57,24 @@ export function TransactionTable({ data, onEdit, onDelete, showProvider, showCli
                 </TableHeader>
                 <TableBody>
                     {data.map((transaction) => (
-                        <TableRow key={transaction.id} className="border-zinc-800 hover:bg-zinc-900/50">
-                            <TableCell className="font-mono text-xs text-zinc-400">
+                        <TableRow key={transaction.id} className="border-border hover:bg-muted/50">
+                            <TableCell className="font-mono text-xs text-muted-foreground">
                                 {format(new Date(transaction.date), "dd/MM/yyyy")}
                             </TableCell>
-                            <TableCell className="font-medium text-white">
+                            <TableCell className="font-medium text-foreground">
                                 {transaction.description || "—"}
                                 {transaction.notes && (
-                                    <span className="block text-[10px] text-zinc-500 truncate max-w-[200px]">{transaction.notes}</span>
+                                    <span className="block text-[10px] text-muted-foreground truncate max-w-[200px]">{transaction.notes}</span>
                                 )}
                             </TableCell>
                             <TableCell>
-                                <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400 font-normal">
+                                <Badge variant="outline" className="text-xs border-border text-muted-foreground font-normal">
                                     {transaction.category}
                                 </Badge>
                             </TableCell>
 
                             {showClient && (
-                                <TableCell className="text-zinc-300">
+                                <TableCell className="text-foreground/80">
                                     {/* Note: In a real app we might need to join/fetch client name if relatedClient/clientId is just ID. 
                           Currently transactions has clientId but we might need to rely on what logic? 
                           If finanzas.tsx fetches transactions with client relation, we can display it. 
@@ -93,12 +93,12 @@ export function TransactionTable({ data, onEdit, onDelete, showProvider, showCli
                             )}
 
                             {showProvider && (
-                                <TableCell className="text-zinc-300">{transaction.provider || "—"}</TableCell>
+                                <TableCell className="text-foreground/80">{transaction.provider || "—"}</TableCell>
                             )}
 
-                            <TableCell className="text-right text-xs font-mono text-zinc-500">
+                            <TableCell className="text-right text-xs font-mono text-muted-foreground">
                                 {transaction.rfc && <span className="block">{transaction.rfc}</span>}
-                                {transaction.invoiceNumber && <span className="text-zinc-600">#{transaction.invoiceNumber}</span>}
+                                {transaction.invoiceNumber && <span className="text-muted-foreground/60">#{transaction.invoiceNumber}</span>}
                             </TableCell>
 
                             <TableCell>
@@ -120,15 +120,15 @@ export function TransactionTable({ data, onEdit, onDelete, showProvider, showCli
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                             <MoreVertical className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                                    <DropdownMenuContent align="end" className="bg-card border-border">
                                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                                         <DropdownMenuItem
                                             onClick={() => onEdit(transaction)}
-                                            className="text-zinc-300 focus:text-white focus:bg-zinc-800 cursor-pointer"
+                                            className="text-foreground/80 focus:text-foreground focus:bg-muted cursor-pointer"
                                         >
                                             <Edit className="mr-2 h-4 w-4" /> Editar
                                         </DropdownMenuItem>
