@@ -48,6 +48,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // register routes
+  // force restart
   const server = await registerRoutes(app);
 
   app.use((err: Error & { status?: number; statusCode?: number }, _req: Request, res: Response, _next: NextFunction) => {
@@ -87,4 +89,4 @@ app.use((req, res, next) => {
     log(`serving on ${host}:${port}`);
   });
 })();
-// Force reload
+// Force reload - Schema fix applied: deadline now uses z.coerce.date() in createInsertSchema second parameter

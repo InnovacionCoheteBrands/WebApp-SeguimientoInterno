@@ -2,9 +2,9 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     FolderKanban, ArrowLeft, Plus, Search, Filter, Calendar,
-    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play, MoreVertical
+    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play, MoreVertical, Eye
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,11 +26,11 @@ import type { InsertProject, UpdateProject } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 const STATUS_COLUMNS = [
-    { id: "Planificación", label: "Planificación", icon: Calendar, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
-    { id: "En Curso", label: "En Curso", icon: Play, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
-    { id: "En Revisión", label: "En Revisión", icon: CheckCircle2, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
-    { id: "Bloqueado", label: "Bloqueado", icon: XCircle, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
-    { id: "Completado", label: "Completado", icon: CheckCircle2, color: "bg-zinc-900/50 border-zinc-800 text-zinc-400" },
+    { id: "Planificación", label: "Planificación", icon: Calendar, color: "bg-muted/50 border-border text-muted-foreground" },
+    { id: "En Curso", label: "En Curso", icon: Play, color: "bg-muted/50 border-border text-muted-foreground" },
+    { id: "En Revisión", label: "En Revisión", icon: CheckCircle2, color: "bg-muted/50 border-border text-muted-foreground" },
+    { id: "Bloqueado", label: "Bloqueado", icon: XCircle, color: "bg-muted/50 border-border text-muted-foreground" },
+    { id: "Completado", label: "Completado", icon: CheckCircle2, color: "bg-muted/50 border-border text-muted-foreground" },
 ];
 
 const SERVICE_TYPES = ["SEO", "Web", "Ads", "General"];
@@ -50,6 +50,7 @@ export default function Proyectos() {
 
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const [, navigate] = useLocation();
 
     const { data: projects = [] } = useQuery({
         queryKey: ["projects"],
@@ -78,6 +79,13 @@ export default function Proyectos() {
             setIsDialogOpen(false);
             resetForm();
             toast({ title: "Éxito", description: "Proyecto creado exitosamente" });
+        },
+        onError: (error) => {
+            toast({
+                title: "Error al crear proyecto",
+                description: error.message,
+                variant: "destructive"
+            });
         },
     });
 
@@ -251,9 +259,9 @@ export default function Proyectos() {
                         return (
                             <div key={column.id} className="flex flex-col gap-3">
                                 <div className={`flex items-center gap-2 p-3 rounded-sm border ${column.color}`}>
-                                    <Icon className="size-4 text-zinc-500" />
+                                    <Icon className="size-4 text-muted-foreground" />
                                     <span className="font-bold text-xs uppercase tracking-wider">{column.label}</span>
-                                    <Badge variant="outline" className="ml-auto rounded-sm text-xs border-zinc-700 bg-black/40 text-zinc-500">
+                                    <Badge variant="outline" className="ml-auto rounded-sm text-xs border-border bg-background/40 text-muted-foreground">
                                         {projectsInColumn.length}
                                     </Badge>
                                 </div>
@@ -312,22 +320,38 @@ export default function Proyectos() {
                                                             </div>
                                                         ) : <div />}
 
-                                                        {/* Status Change Mini-Dropdown */}
-                                                        <Select
-                                                            value={project.status}
-                                                            onValueChange={(newStatus) => {
-                                                                handleStatusChange(project.id, newStatus);
-                                                            }}
-                                                        >
-                                                            <SelectTrigger className="h-6 w-[24px] p-0 border-0 rounded-sm hover:bg-muted focus:ring-0" onClick={(e) => e.stopPropagation()}>
-                                                                <MoreVertical className="size-3 text-muted-foreground" />
-                                                            </SelectTrigger>
-                                                            <SelectContent align="end">
-                                                                {STATUS_COLUMNS.map((col) => (
-                                                                    <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="flex items-center gap-1">
+                                                            {/* View Details Button */}
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6 p-0 rounded-sm hover:bg-primary/10 hover:text-primary"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate(`/proyectos/${project.id}`);
+                                                                }}
+                                                                title="Ver detalles"
+                                                            >
+                                                                <Eye className="size-3" />
+                                                            </Button>
+
+                                                            {/* Status Change Mini-Dropdown */}
+                                                            <Select
+                                                                value={project.status}
+                                                                onValueChange={(newStatus) => {
+                                                                    handleStatusChange(project.id, newStatus);
+                                                                }}
+                                                            >
+                                                                <SelectTrigger className="h-6 w-[24px] p-0 border-0 rounded-sm hover:bg-muted focus:ring-0" onClick={(e) => e.stopPropagation()}>
+                                                                    <MoreVertical className="size-3 text-muted-foreground" />
+                                                                </SelectTrigger>
+                                                                <SelectContent align="end">
+                                                                    {STATUS_COLUMNS.map((col) => (
+                                                                        <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
                                                     </div>
                                                 </CardContent>
                                             </Card>

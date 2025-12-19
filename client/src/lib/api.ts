@@ -485,13 +485,55 @@ export async function fetchProjectById(id: number): Promise<Project> {
   return res.json();
 }
 
+// Project Details (Command Center)
+export interface ProjectFinancials {
+  budget: number;
+  totalExpenses: number;
+  laborCosts: number;
+  actualCost: number;
+  margin: number;
+  marginPercentage: number;
+}
+
+export interface TeamAssignmentWithMember {
+  id: number;
+  teamId: number;
+  campaignId: number | null;
+  projectId: number | null;
+  hoursAllocated: number;
+  assignedAt: string;
+  member: Team;
+}
+
+export interface ProjectDetails {
+  project: Project;
+  deliverables: ProjectDeliverable[];
+  teamAssignments: TeamAssignmentWithMember[];
+  financial: ProjectFinancials;
+}
+
+export async function fetchProjectDetails(id: number): Promise<ProjectDetails> {
+  const res = await fetch(`/api/projects/${id}/details`);
+  if (!res.ok) throw new Error("Failed to fetch project details");
+  return res.json();
+}
+
 export async function createProject(project: InsertProject): Promise<DBProject> {
   const res = await fetch("/api/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(project),
   });
-  if (!res.ok) throw new Error("Failed to create project");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    let errorMessage = errorData.message || errorData.error || "Failed to create project";
+    if (Array.isArray(errorMessage)) {
+      errorMessage = errorMessage.map((e: any) => e.message || JSON.stringify(e)).join(", ");
+    } else if (typeof errorMessage === 'object') {
+      errorMessage = JSON.stringify(errorMessage);
+    }
+    throw new Error(errorMessage);
+  }
   return res.json();
 }
 
@@ -577,6 +619,49 @@ export async function deleteProjectAttachment(id: number): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete attachment");
+}
+
+// Link attachment to deliverable (for file-required deliverables)
+export async function linkAttachmentToDeliverable(
+  deliverableId: number,
+  attachmentId: number
+): Promise<ProjectDeliverable> {
+  const res = await fetch(`/api/deliverables/${deliverableId}/link-attachment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ attachmentId }),
+  });
+  if (!res.ok) throw new Error("Failed to link attachment to deliverable");
+  return res.json();
+}
+
+// Upload file and link to deliverable in one operation
+export interface UploadAndLinkResult {
+  deliverable: ProjectDeliverable;
+  attachment: ProjectAttachment;
+}
+
+export async function uploadAndLinkToDeliverable(
+  deliverableId: number,
+  projectId: number,
+  file: { name: string; url: string; fileType?: string; fileSize?: number }
+): Promise<UploadAndLinkResult> {
+  const res = await fetch(`/api/deliverables/${deliverableId}/upload-and-link`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      projectId,
+      name: file.name,
+      url: file.url,
+      fileType: file.fileType,
+      fileSize: file.fileSize
+    }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to upload and link attachment");
+  }
+  return res.json();
 }
 
 // Agency Role Catalog

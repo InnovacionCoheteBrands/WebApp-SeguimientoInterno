@@ -498,6 +498,7 @@ export const projects = pgTable("projects", {
   health: text("health").notNull().default("green"), // "green", "yellow", "red"
   deadline: timestamp("deadline"),
   progress: integer("progress").notNull().default(0), // Calculated from deliverables
+  budget: numeric("budget").default("0"), // Project budget for profitability calculations
   serviceSpecificFields: text("service_specific_fields"), // JSON string for dynamic fields
   customFields: text("custom_fields"), // JSON string for user-defined fields
   description: text("description"),
@@ -505,7 +506,9 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertProjectSchema = createInsertSchema(projects).omit({
+export const insertProjectSchema = createInsertSchema(projects, {
+  deadline: z.coerce.date().optional().nullable(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -517,32 +520,7 @@ export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
 
-// Project Deliverables (Tasks/Milestones)
-export const projectDeliverables = pgTable("project_deliverables", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  completed: boolean("completed").notNull().default(false),
-  order: integer("order").notNull().default(0),
-  dueDate: timestamp("due_date"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertProjectDeliverableSchema = createInsertSchema(projectDeliverables).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateProjectDeliverableSchema = insertProjectDeliverableSchema.partial();
-
-export type ProjectDeliverable = typeof projectDeliverables.$inferSelect;
-export type InsertProjectDeliverable = z.infer<typeof insertProjectDeliverableSchema>;
-export type UpdateProjectDeliverable = z.infer<typeof updateProjectDeliverableSchema>;
-
-// Project Attachments
+// Project Attachments (defined before deliverables due to foreign key reference)
 export const projectAttachments = pgTable("project_attachments", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
@@ -560,5 +538,33 @@ export const insertProjectAttachmentSchema = createInsertSchema(projectAttachmen
 
 export type ProjectAttachment = typeof projectAttachments.$inferSelect;
 export type InsertProjectAttachment = z.infer<typeof insertProjectAttachmentSchema>;
+
+// Project Deliverables (Tasks/Milestones)
+export const projectDeliverables = pgTable("project_deliverables", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  completed: boolean("completed").notNull().default(false),
+  order: integer("order").notNull().default(0),
+  dueDate: timestamp("due_date"),
+  // File requirement fields for blocking workflow
+  requiresFile: boolean("requires_file").notNull().default(false),
+  linkedAttachmentId: integer("linked_attachment_id").references(() => projectAttachments.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertProjectDeliverableSchema = createInsertSchema(projectDeliverables).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateProjectDeliverableSchema = insertProjectDeliverableSchema.partial();
+
+export type ProjectDeliverable = typeof projectDeliverables.$inferSelect;
+export type InsertProjectDeliverable = z.infer<typeof insertProjectDeliverableSchema>;
+export type UpdateProjectDeliverable = z.infer<typeof updateProjectDeliverableSchema>;
 
 

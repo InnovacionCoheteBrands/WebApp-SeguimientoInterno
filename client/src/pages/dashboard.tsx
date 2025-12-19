@@ -99,7 +99,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { isConnected, lastMessage } = useWebSocket("/ws");
   const { data: settings } = useSystemSettings();
-  
+
   // Enable in-app notifications based on settings
   useNotifications(lastMessage);
 
@@ -327,13 +327,13 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <Card className="lg:col-span-2 border-zinc-800 bg-zinc-900 rounded-sm">
+          <Card className="lg:col-span-2 border-border bg-card rounded-sm">
             <CardHeader className="p-3 sm:p-4 pb-2">
               <CardTitle className="text-base sm:text-lg font-display flex items-center justify-between text-foreground">
                 <span>Análisis de Rendimiento</span>
                 <Badge variant="outline" className="rounded-sm font-mono font-normal text-amber-500 border-amber-500/30 bg-amber-500/10 text-xs">EN VIVO</Badge>
               </CardTitle>
-              <CardDescription className="font-mono text-xs uppercase tracking-wider text-zinc-500">Datos en tiempo real</CardDescription>
+              <CardDescription className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Datos en tiempo real</CardDescription>
             </CardHeader>
             <CardContent className="p-3 sm:p-4 pt-0">
               <div className="h-[320px] sm:h-[380px] w-full">
@@ -345,17 +345,17 @@ export default function Dashboard() {
                         <stop offset="95%" stopColor="hsl(43 100% 50%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" opacity={0.5} vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} vertical={false} />
                     <XAxis
                       dataKey="name"
-                      stroke="#71717a"
+                      stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
                       fontFamily="var(--font-mono)"
                     />
                     <YAxis
-                      stroke="#71717a"
+                      stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
@@ -364,11 +364,11 @@ export default function Dashboard() {
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#18181b',
-                        borderColor: '#27272a',
+                        backgroundColor: 'hsl(var(--card))',
+                        borderColor: 'hsl(var(--border))',
                         borderRadius: '2px',
                         fontFamily: 'var(--font-mono)',
-                        color: '#fafafa'
+                        color: 'hsl(var(--foreground))'
                       }}
                     />
                     <Area
@@ -386,7 +386,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-zinc-800 bg-zinc-900 rounded-sm flex flex-col">
+          <Card className="border-border bg-card rounded-sm flex flex-col">
             <CardHeader className="p-4 sm:p-6">
               <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
                 <div>
@@ -454,57 +454,57 @@ export default function Dashboard() {
                       const statusGradient =
                         campaign.status === "Active" ? "from-transparent via-green-500 to-transparent" :
                           campaign.status === "In Progress" ? "from-transparent via-blue-500 to-transparent" :
-                            campaign.status === "Planning" ? "from-transparent via-amber-500 to-transparent" : "from-transparent via-zinc-500 to-transparent";
+                            campaign.status === "Planning" ? "from-transparent via-amber-500 to-transparent" : "from-transparent via-muted-foreground/30 to-transparent";
 
                       const statusTextColor =
                         campaign.status === "Active" ? "text-green-500" :
                           campaign.status === "In Progress" ? "text-blue-500" :
-                            campaign.status === "Planning" ? "text-amber-500" : "text-zinc-500";
+                            campaign.status === "Planning" ? "text-amber-500" : "text-muted-foreground";
 
                       return (
-                        <div key={campaign.id} className={`group flex flex-row items-center justify-between p-3 rounded-sm border border-zinc-800 bg-zinc-900 hover:border-amber-500/50 transition-all gap-3 relative overflow-hidden`} data-testid={`campaign-card-${campaign.id}`}>
+                        <div key={campaign.id} className={`group flex flex-row items-center justify-between p-3 rounded-sm border border-border bg-card hover:border-amber-500/50 transition-all gap-3 relative overflow-hidden`} data-testid={`campaign-card-${campaign.id}`}>
                           {/* Status Accent Line */}
                           <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${statusGradient} opacity-70`} />
 
                           <div className="space-y-1 flex-1 w-full sm:w-auto pl-2">
                             <div className="flex items-center gap-3">
-                              <span className="font-mono text-[10px] text-zinc-500 uppercase tracking-wider" data-testid={`campaign-code-${campaign.id}`}>{campaign.campaignCode}</span>
-                              <Badge variant="outline" className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-zinc-950/50 ${statusTextColor}`}>
+                              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider" data-testid={`campaign-code-${campaign.id}`}>{campaign.campaignCode}</span>
+                              <Badge variant="outline" className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-background/50 ${statusTextColor}`}>
                                 {campaign.status}
                               </Badge>
                             </div>
-                            <p className="font-medium text-sm text-foreground" data-testid={`campaign-name-${campaign.id}`}>{campaign.name}</p>
+                            <p className="font-medium text-sm text-primary" data-testid={`campaign-name-${campaign.id}`}>{campaign.name}</p>
                           </div>
 
                           <div className="flex items-center gap-4 w-full sm:w-auto">
                             <div className="hidden lg:block text-right">
                               <span className={`text-[10px] uppercase font-mono ${campaign.priority === "High" ? "text-red-400" :
-                                campaign.priority === "Medium" ? "text-amber-400" : "text-blue-400"
+                                campaign.priority === "Medium" ? "text-primary" : "text-blue-400"
                                 }`}>
                                 {campaign.priority} Priority
                               </span>
                             </div>
 
                             <div className="flex-1 sm:w-24">
-                              <div className="flex justify-between text-[10px] mb-1 font-mono text-zinc-500">
+                              <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
                                 <span>PROG</span>
                                 <span data-testid={`campaign-progress-${campaign.id}`}>{campaign.progress}%</span>
                               </div>
-                              <Progress value={campaign.progress} className="h-1 bg-zinc-800" indicatorClassName={campaign.progress === 100 ? "bg-green-500" : "bg-amber-500"} />
+                              <Progress value={campaign.progress} className="h-1 bg-muted" indicatorClassName={campaign.progress === 100 ? "bg-green-500" : "bg-primary"} />
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-foreground" data-testid={`button-menu-${campaign.id}`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" data-testid={`button-menu-${campaign.id}`}>
                                   <MoreVertical className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                              <DropdownMenuContent align="end" className="bg-card border-border">
                                 <DropdownMenuItem onClick={() => openEditDialog(campaign)} data-testid={`menu-edit-${campaign.id}`}>
                                   <Edit className="size-3 mr-2" />
                                   Editar Campaña
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => openProgressDialog(campaign)} data-testid={`menu-progress-${campaign.id}`}>
-                                  <TrendingUp className="size-3 mr-2" />
+                                  <TrendingUp className="size-3 mr-2 text-primary" />
                                   Actualizar Progreso
                                 </DropdownMenuItem>
                                 {campaign.status !== "Completed" && (
@@ -513,7 +513,7 @@ export default function Dashboard() {
                                     Marcar Completada
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuSeparator className="bg-zinc-800" />
+                                <DropdownMenuSeparator className="bg-border" />
                                 <DropdownMenuItem
                                   onClick={() => openDeleteDialog(campaign)}
                                   className="text-destructive focus:text-destructive"
@@ -909,20 +909,20 @@ function StatusCard({ title, value, label, icon: Icon, trend, trendLabel, succes
           color === "red" ? "text-red-500" : "text-amber-500";
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+    <Card className="border-border bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
       <div className={`absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r ${gradientColor} opacity-50 group-hover:opacity-100 transition-opacity`} />
       <CardContent className="p-3 sm:p-6">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <span className="text-[10px] sm:text-xs font-mono uppercase text-zinc-500 tracking-wider">{title}</span>
+          <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">{title}</span>
           <Icon className={`size-4 ${iconColor} opacity-70 group-hover:opacity-100 transition-opacity`} />
         </div>
         <div className="space-y-1">
           <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground">{value}</h3>
-          <p className="text-[10px] sm:text-xs text-zinc-500">{label}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
         </div>
         <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
           <span className={`${success || trend.startsWith("+") ? "text-green-400" : "text-amber-500"}`}>{trend}</span>
-          <span className="text-zinc-500 ml-2">{trendLabel}</span>
+          <span className="text-muted-foreground ml-2">{trendLabel}</span>
         </div>
       </CardContent>
     </Card>
@@ -931,18 +931,18 @@ function StatusCard({ title, value, label, icon: Icon, trend, trendLabel, succes
 
 function InfoWidget({ title, value, subtitle }: any) {
   return (
-    <div className="border border-zinc-800 bg-zinc-900 p-4 rounded-sm flex items-center justify-between shadow-sm relative overflow-hidden">
+    <div className="border border-border bg-card p-4 rounded-sm flex items-center justify-between shadow-sm relative overflow-hidden">
       {/* Small left accent */}
       <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[2px] bg-gradient-to-b from-transparent via-amber-500/50 to-transparent" />
       <div>
-        <p className="text-[10px] font-mono uppercase text-zinc-500 mb-1">{title}</p>
+        <p className="text-[10px] font-mono uppercase text-muted-foreground mb-1">{title}</p>
         <p className="font-display font-medium text-lg text-foreground">{value}</p>
       </div>
       <div className="text-right">
-        <div className="h-1.5 w-16 bg-zinc-800 rounded-full overflow-hidden mb-1">
+        <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden mb-1">
           <div className="h-full bg-amber-500 w-[70%] animate-pulse"></div>
         </div>
-        <p className="text-[10px] text-zinc-500">{subtitle}</p>
+        <p className="text-[10px] text-muted-foreground">{subtitle}</p>
       </div>
     </div>
   );

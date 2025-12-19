@@ -58,7 +58,7 @@ const ProfilePage = memo(function ProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -69,7 +69,7 @@ const ProfilePage = memo(function ProfilePage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-display font-bold tracking-wide">USER PROFILE</h1>
-                <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
+                <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
                   Personal information and security
                 </p>
               </div>
@@ -92,7 +92,7 @@ const ProfilePage = memo(function ProfilePage() {
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* Profile Information */}
-          <Card className="border-zinc-800 bg-zinc-900 shadow-sm relative overflow-hidden group">
+          <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ const ProfilePage = memo(function ProfilePage() {
                 </div>
                 <div>
                   <CardTitle className="text-lg font-display uppercase tracking-tight">Personal Information</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
                     Your platform credentials
                   </CardDescription>
                 </div>
@@ -110,67 +110,67 @@ const ProfilePage = memo(function ProfilePage() {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="size-20 border-2 border-primary/20">
-                  <AvatarFallback className="bg-zinc-800 text-2xl font-display font-bold text-zinc-400">
+                  <AvatarFallback className="bg-muted text-2xl font-display font-bold text-muted-foreground">
                     {profile.initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <Label htmlFor="initials" className="text-xs font-mono uppercase text-zinc-400">Avatar Initials</Label>
+                  <Label htmlFor="initials" className="text-xs font-mono uppercase text-muted-foreground">Avatar Initials</Label>
                   <Input
                     id="initials"
                     value={profile.initials}
                     onChange={(e) => updateProfile("initials", e.target.value.toUpperCase().slice(0, 2))}
-                    className="rounded-sm border-zinc-800 bg-zinc-950 mt-1 max-w-[100px]"
+                    className="rounded-sm border-border bg-background mt-1 max-w-[100px]"
                     maxLength={2}
                     data-testid="input-initials"
                   />
                 </div>
               </div>
 
-              <Separator className="bg-zinc-800" />
+              <Separator />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-xs font-mono uppercase text-zinc-400">Full Name</Label>
+                  <Label htmlFor="name" className="text-xs font-mono uppercase text-muted-foreground">Full Name</Label>
                   <Input
                     id="name"
                     value={profile.name}
                     onChange={(e) => updateProfile("name", e.target.value)}
-                    className="rounded-sm border-zinc-800 bg-zinc-950"
+                    className="rounded-sm border-border bg-background"
                     data-testid="input-name"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs font-mono uppercase text-zinc-400">Email Address</Label>
+                  <Label htmlFor="email" className="text-xs font-mono uppercase text-muted-foreground">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
                     value={profile.email}
                     onChange={(e) => updateProfile("email", e.target.value)}
-                    className="rounded-sm border-zinc-800 bg-zinc-950"
+                    className="rounded-sm border-border bg-background"
                     data-testid="input-email"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role" className="text-xs font-mono uppercase text-zinc-400">Role / Position</Label>
+                  <Label htmlFor="role" className="text-xs font-mono uppercase text-muted-foreground">Role / Position</Label>
                   <Input
                     id="role"
                     value={profile.role}
                     onChange={(e) => updateProfile("role", e.target.value)}
-                    className="rounded-sm border-zinc-800 bg-zinc-950"
+                    className="rounded-sm border-border bg-background"
                     data-testid="input-role"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="clearance" className="text-xs font-mono uppercase text-zinc-400">Clearance Level</Label>
+                  <Label htmlFor="clearance" className="text-xs font-mono uppercase text-muted-foreground">Clearance Level</Label>
                   <Select
                     value={profile.clearance}
                     onValueChange={(value) => updateProfile("clearance", value)}
                   >
-                    <SelectTrigger className="rounded-sm border-zinc-800 bg-zinc-950" data-testid="select-clearance">
+                    <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-clearance">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -187,7 +187,7 @@ const ProfilePage = memo(function ProfilePage() {
           </Card>
 
           {/* Security */}
-          <Card className="border-zinc-800 bg-zinc-900 shadow-sm relative overflow-hidden group">
+          <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500/0 via-red-500 to-red-500/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
@@ -196,20 +196,20 @@ const ProfilePage = memo(function ProfilePage() {
                 </div>
                 <div>
                   <CardTitle className="text-lg font-display uppercase tracking-tight">Security</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
                     Authentication and password management
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 rounded-sm bg-zinc-950/50 border border-zinc-800">
-                <p className="text-sm text-zinc-500 mb-3">
+              <div className="p-4 rounded-sm bg-background/50 border border-border">
+                <p className="text-sm text-muted-foreground mb-3">
                   Authentication system is not yet configured. Password management will be available once user authentication is implemented.
                 </p>
                 <Button
                   variant="outline"
-                  className="rounded-sm w-full border-zinc-800 hover:bg-zinc-800"
+                  className="rounded-sm w-full border-border hover:bg-muted"
                   disabled
                   data-testid="button-change-password"
                 >

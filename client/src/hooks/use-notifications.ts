@@ -70,25 +70,25 @@ export function useNotifications(lastMessage: WebSocketMessage | null) {
       }
     }
 
-    // Analytics Alerts (telemetry threshold)
-    if (type === "telemetry" && settings.analyticsAlerts) {
-      const value = data?.value;
-      if (typeof value === "number") {
-        if (value > 85) {
-          sendNotification(
-            "⚠️ Alerta de Rendimiento",
-            `El rendimiento del sistema ha alcanzado ${value}% (Alto)`,
-            false
-          );
-        } else if (value < 30) {
-          sendNotification(
-            "📉 Alerta de Rendimiento",
-            `El rendimiento del sistema ha bajado a ${value}% (Bajo)`,
-            false
-          );
-        }
-      }
-    }
+    // Analytics Alerts (telemetry threshold) - DISABLED during dev
+    // if (type === "telemetry" && settings.analyticsAlerts) {
+    //   const value = data?.value;
+    //   if (typeof value === "number") {
+    //     if (value > 85) {
+    //       sendNotification(
+    //         "⚠️ Alerta de Rendimiento",
+    //         `El rendimiento del sistema ha alcanzado ${value}% (Alto)`,
+    //         false
+    //       );
+    //     } else if (value < 30) {
+    //       sendNotification(
+    //         "📉 Alerta de Rendimiento",
+    //         `El rendimiento del sistema ha bajado a ${value}% (Bajo)`,
+    //         false
+    //       );
+    //     }
+    //   }
+    // }
 
     // System Alerts (metrics with high urgency)
     if (type === "metrics_update" && settings.systemAlerts) {

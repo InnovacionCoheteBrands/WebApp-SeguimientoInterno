@@ -12,6 +12,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Clients = lazy(() => import("@/pages/fleet-tracking"));
 const Projects = lazy(() => import("@/pages/proyectos"));
+const ProjectDetail = lazy(() => import("@/pages/project-detail"));
 const Resources = lazy(() => import("@/pages/data-center"));
 const Team = lazy(() => import("@/pages/personnel"));
 const KPIs = lazy(() => import("@/pages/analytics"));
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/clientes" component={Clients} />
           <Route path="/proyectos" component={Projects} />
+          <Route path="/proyectos/:id" component={ProjectDetail} />
           <Route path="/recursos" component={Resources} />
           <Route path="/equipo" component={Team} />
           <Route path="/kpis" component={KPIs} />

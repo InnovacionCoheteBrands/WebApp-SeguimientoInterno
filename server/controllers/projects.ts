@@ -37,6 +37,21 @@ router.get("/projects/:id", async (req, res) => {
     }
 });
 
+// Project Details (Command Center view with financials and team)
+router.get("/projects/:id/details", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const details = await storage.getProjectDetails(id);
+        if (!details) {
+            return res.status(404).json({ error: "Project not found" });
+        }
+        res.json(details);
+    } catch (error) {
+        console.error("Failed to fetch project details:", error);
+        res.status(500).json({ error: "Failed to fetch project details" });
+    }
+});
+
 router.post("/projects", async (req, res) => {
     try {
         const validatedData = insertProjectSchema.parse(req.body);
@@ -208,6 +223,72 @@ router.delete("/attachments/:id", async (req, res) => {
     } catch (error) {
         console.error("Failed to delete attachment:", error);
         res.status(500).json({ error: "Failed to delete attachment" });
+    }
+});
+
+// Link attachment to deliverable (for file-required deliverables)
+router.post("/deliverables/:id/link-attachment", async (req, res) => {
+    try {
+        const deliverableId = parseInt(req.params.id);
+        const { attachmentId } = req.body;
+        
+        if (!attachmentId) {
+            return res.status(400).json({ error: "attachmentId is required" });
+        }
+        
+        const deliverable = await storage.linkAttachmentToDeliverable(deliverableId, attachmentId);
+        if (!deliverable) {
+            return res.status(404).json({ error: "Deliverable not found" });
+        }
+        res.json(deliverable);
+    } catch (error: any) {
+        console.error("Failed to link attachment:", error);
+        res.status(500).json({ error: error.message || "Failed to link attachment" });
+    }
+});
+
+// Upload file and link to deliverable in one operation
+router.post("/deliverables/:id/upload-and-link", async (req, res) => {
+    try {
+        const deliverableId = parseInt(req.params.id);
+        const { projectId, name, url, fileType, fileSize } = req.body;
+        
+        if (!projectId || !name || !url) {
+            return res.status(400).json({ error: "projectId, name, and url are required" });
+        }
+        
+        // 1. Create the attachment
+        const attachment = await storage.createProjectAttachment({
+            projectId,
+            name,
+            url,
+            fileType,
+            fileSize
+        });
+        
+        // 2. Link it to the deliverable (this also marks it as completed)
+        const deliverable = await storage.linkAttachmentToDeliverable(deliverableId, attachment.id);
+        
+        if (!deliverable) {
+            return res.status(404).json({ error: "Deliverable not found" });
+        }
+        
+        res.json({ deliverable, attachment });
+    } catch (error: any) {
+        console.error("Failed to upload and link:", error);
+        res.status(500).json({ error: error.message || "Failed to upload and link attachment" });
+    }
+});
+
+// Recalculate project health manually (useful for cron or on-demand)
+router.post("/projects/:id/recalculate-health", async (req, res) => {
+    try {
+        const projectId = parseInt(req.params.id);
+        const health = await storage.calculateProjectHealth(projectId);
+        res.json({ health });
+    } catch (error) {
+        console.error("Failed to recalculate project health:", error);
+        res.status(500).json({ error: "Failed to recalculate project health" });
     }
 });
 

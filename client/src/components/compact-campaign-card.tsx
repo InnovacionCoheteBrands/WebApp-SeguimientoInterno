@@ -40,7 +40,7 @@ export const CompactCampaignCard = memo(({
     };
 
     const priorityColors: Record<string, string> = {
-        Low: "bg-gray-500/20 text-gray-400",
+        Low: "bg-muted text-muted-foreground",
         Medium: "bg-yellow-500/20 text-yellow-400",
         High: "bg-orange-500/20 text-orange-400",
         Critical: "bg-red-500/20 text-red-400",

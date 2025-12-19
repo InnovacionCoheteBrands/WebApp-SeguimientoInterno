@@ -217,7 +217,7 @@ export default function AdsSettings() {
                                     key={platform.id}
                                     className="p-4 rounded-sm border border-border bg-card hover:border-primary/50 transition-all shadow-sm relative overflow-hidden group/item"
                                 >
-                                    <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${isConnected ? 'bg-green-500' : 'bg-gray-500'} opacity-70 group-hover/item:opacity-100 transition-opacity`} />
+                                    <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${isConnected ? 'bg-green-500' : 'bg-muted-foreground'} opacity-70 group-hover/item:opacity-100 transition-opacity`} />
                                     <div className="flex items-center gap-3 mb-3">
                                         <span className="text-2xl">{platform.icon}</span>
                                         <div className="flex-1">

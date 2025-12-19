@@ -217,6 +217,7 @@ export interface IStorage {
   updateProject(id: number, project: UpdateProject): Promise<Project | undefined>;
   deleteProject(id: number): Promise<boolean>;
   calculateProjectProgress(projectId: number): Promise<number>;
+  calculateProjectHealth(projectId: number): Promise<string>;
 
   // Project Deliverables
   getProjectDeliverables(projectId: number): Promise<ProjectDeliverable[]>;
@@ -226,8 +227,28 @@ export interface IStorage {
 
   // Project Attachments
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
+  getProjectAttachmentById(id: number): Promise<ProjectAttachment | undefined>;
   createProjectAttachment(attachment: InsertProjectAttachment): Promise<ProjectAttachment>;
   deleteProjectAttachment(id: number): Promise<boolean>;
+  linkAttachmentToDeliverable(deliverableId: number, attachmentId: number): Promise<ProjectDeliverable | undefined>;
+
+  // Project Details (Command Center)
+  getProjectDetails(id: number): Promise<ProjectDetails | undefined>;
+}
+
+// Project Details for Command Center view
+export interface ProjectDetails {
+  project: Project & { client: ClientAccount };
+  deliverables: ProjectDeliverable[];
+  teamAssignments: Array<TeamAssignment & { member: Team }>;
+  financial: {
+    budget: number;
+    totalExpenses: number;
+    laborCosts: number;
+    actualCost: number;
+    margin: number;
+    marginPercentage: number;
+  };
 }
 
 // Type definitions for SQL query results
@@ -1286,7 +1307,6 @@ export class DBStorage implements IStorage {
         p.*,
         json_build_object(
           'id', c.id,
-          'campaignId', c.campaign_id,
           'companyName', c.company_name,
           'industry', c.industry,
           'monthlyBudget', c.monthly_budget,
@@ -1295,7 +1315,7 @@ export class DBStorage implements IStorage {
           'nextMilestone', c.next_milestone,
           'lastContact', c.last_contact,
           'status', c.status,
-          'timestamp', c.timestamp
+          'createdAt', c.created_at
         ) as client
       FROM ${projects} p
       INNER JOIN ${clientAccounts} c ON p.client_id = c.id
@@ -1310,7 +1330,6 @@ export class DBStorage implements IStorage {
         p.*,
         json_build_object(
           'id', c.id,
-          'campaignId', c.campaign_id,
           'companyName', c.company_name,
           'industry', c.industry,
           'monthlyBudget', c.monthly_budget,
@@ -1319,7 +1338,7 @@ export class DBStorage implements IStorage {
           'nextMilestone', c.next_milestone,
           'lastContact', c.last_contact,
           'status', c.status,
-          'timestamp', c.timestamp
+          'createdAt', c.created_at
         ) as client,
         COALESCE(
           (
@@ -1332,6 +1351,8 @@ export class DBStorage implements IStorage {
                 'completed', d.completed,
                 'order', d.order,
                 'dueDate', d.due_date,
+                'requiresFile', d.requires_file,
+                'linkedAttachmentId', d.linked_attachment_id,
                 'createdAt', d.created_at,
                 'updatedAt', d.updated_at
               )
@@ -1383,6 +1404,66 @@ export class DBStorage implements IStorage {
     return progress;
   }
 
+  /**
+   * Calculate project health based on overdue deliverables that require files.
+   * Rule: If any deliverable has requiresFile=true, linkedAttachmentId=NULL, and dueDate < NOW(),
+   * the project health becomes 'red'.
+   */
+  async calculateProjectHealth(projectId: number): Promise<string> {
+    const now = new Date();
+    
+    // Check for critical blocking conditions:
+    // - requiresFile is true
+    // - linkedAttachmentId is null (no file attached)
+    // - dueDate < now (overdue)
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM ${projectDeliverables}
+      WHERE project_id = ${projectId}
+        AND requires_file = true
+        AND linked_attachment_id IS NULL
+        AND due_date IS NOT NULL
+        AND due_date < ${now}
+    `);
+    
+    const overdueWithoutFile = parseInt((result[0] as any)?.count || '0');
+    
+    let newHealth = 'green';
+    
+    if (overdueWithoutFile > 0) {
+      // Critical: Overdue deliverables without required evidence
+      newHealth = 'red';
+    } else {
+      // Check for warning conditions (approaching deadline without file)
+      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      
+      const warningResult = await db.execute(sql`
+        SELECT COUNT(*) as count
+        FROM ${projectDeliverables}
+        WHERE project_id = ${projectId}
+          AND requires_file = true
+          AND linked_attachment_id IS NULL
+          AND due_date IS NOT NULL
+          AND due_date > ${now}
+          AND due_date <= ${threeDaysFromNow}
+      `);
+      
+      const approachingDeadline = parseInt((warningResult[0] as any)?.count || '0');
+      
+      if (approachingDeadline > 0) {
+        newHealth = 'yellow';
+      }
+    }
+    
+    // Update project health if changed
+    await db
+      .update(projects)
+      .set({ health: newHealth, updatedAt: new Date() })
+      .where(eq(projects.id, projectId));
+    
+    return newHealth;
+  }
+
   // Project Deliverables implementation
   async getProjectDeliverables(projectId: number): Promise<ProjectDeliverable[]> {
     return await db
@@ -1402,35 +1483,55 @@ export class DBStorage implements IStorage {
   }
 
   async updateProjectDeliverable(id: number, deliverable: UpdateProjectDeliverable): Promise<ProjectDeliverable | undefined> {
+    // If trying to mark as completed and requiresFile is true, check for linked attachment
+    if (deliverable.completed === true) {
+      const [existing] = await db
+        .select()
+        .from(projectDeliverables)
+        .where(eq(projectDeliverables.id, id));
+      
+      if (existing && existing.requiresFile && !existing.linkedAttachmentId) {
+        throw new Error("No se puede completar: se requiere evidencia de archivo");
+      }
+    }
+
     const [updated] = await db
       .update(projectDeliverables)
       .set({ ...deliverable, updatedAt: new Date() })
       .where(eq(projectDeliverables.id, id))
       .returning();
 
-    // Recalculate project progress if this deliverable was updated
+    // Recalculate project progress and health if this deliverable was updated
     if (updated) {
       await this.calculateProjectProgress(updated.projectId);
+      await this.calculateProjectHealth(updated.projectId);
     }
 
     return updated;
   }
 
   async deleteProjectDeliverable(id: number): Promise<boolean> {
-    // Get the deliverable to know which project to update
+    // Get the deliverable BEFORE deletion to know which project to update
     const [deliverable] = await db
       .select()
       .from(projectDeliverables)
       .where(eq(projectDeliverables.id, id));
 
-    const result = await db.delete(projectDeliverables).where(eq(projectDeliverables.id, id));
-
-    // Recalculate project progress after deletion
-    if ((result as unknown as PostgresResult).count && (result as unknown as PostgresResult).count > 0 && deliverable) {
-      await this.calculateProjectProgress(deliverable.projectId);
+    if (!deliverable) {
+      return false; // Deliverable doesn't exist
     }
 
-    return (result as unknown as PostgresResult).count > 0;
+    // Store projectId before deletion
+    const projectIdToUpdate = deliverable.projectId;
+
+    // Execute deletion
+    await db.delete(projectDeliverables).where(eq(projectDeliverables.id, id));
+
+    // ALWAYS recalculate project progress after successful deletion
+    // This ensures the parent project's progress bar stays synchronized
+    await this.calculateProjectProgress(projectIdToUpdate);
+
+    return true;
   }
 
   // Project Attachments implementation
@@ -1442,14 +1543,172 @@ export class DBStorage implements IStorage {
       .orderBy(desc(projectAttachments.createdAt));
   }
 
+  async getProjectAttachmentById(id: number): Promise<ProjectAttachment | undefined> {
+    const [attachment] = await db
+      .select()
+      .from(projectAttachments)
+      .where(eq(projectAttachments.id, id));
+    return attachment;
+  }
+
   async createProjectAttachment(attachment: InsertProjectAttachment): Promise<ProjectAttachment> {
     const [newAttachment] = await db.insert(projectAttachments).values(attachment).returning();
     return newAttachment;
   }
 
   async deleteProjectAttachment(id: number): Promise<boolean> {
+    // First, unlink any deliverables that reference this attachment
+    await db
+      .update(projectDeliverables)
+      .set({ linkedAttachmentId: null, updatedAt: new Date() })
+      .where(eq(projectDeliverables.linkedAttachmentId, id));
+
     const result = await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
     return (result as unknown as PostgresResult).count > 0;
+  }
+
+  /**
+   * Link an attachment to a deliverable and mark it as completed.
+   * This is the only way to complete a deliverable that requires a file.
+   */
+  async linkAttachmentToDeliverable(deliverableId: number, attachmentId: number): Promise<ProjectDeliverable | undefined> {
+    // Verify attachment exists
+    const attachment = await this.getProjectAttachmentById(attachmentId);
+    if (!attachment) {
+      throw new Error("Attachment not found");
+    }
+
+    // Update the deliverable with the linked attachment and mark as completed
+    const [updated] = await db
+      .update(projectDeliverables)
+      .set({
+        linkedAttachmentId: attachmentId,
+        completed: true,
+        updatedAt: new Date()
+      })
+      .where(eq(projectDeliverables.id, deliverableId))
+      .returning();
+
+    // Recalculate project progress and health
+    if (updated) {
+      await this.calculateProjectProgress(updated.projectId);
+      await this.calculateProjectHealth(updated.projectId);
+    }
+
+    return updated;
+  }
+
+  // Project Details (Command Center) implementation
+  async getProjectDetails(id: number): Promise<ProjectDetails | undefined> {
+    // 1. Get project with client
+    const projectResult = await db.execute(sql`
+      SELECT 
+        p.*,
+        json_build_object(
+          'id', c.id,
+          'companyName', c.company_name,
+          'industry', c.industry,
+          'monthlyBudget', c.monthly_budget,
+          'currentSpend', c.current_spend,
+          'healthScore', c.health_score,
+          'nextMilestone', c.next_milestone,
+          'lastContact', c.last_contact,
+          'status', c.status,
+          'createdAt', c.created_at,
+          'updatedAt', c.updated_at
+        ) as client
+      FROM ${projects} p
+      INNER JOIN ${clientAccounts} c ON p.client_id = c.id
+      WHERE p.id = ${id}
+    `);
+
+    if (!projectResult || projectResult.length === 0) {
+      return undefined;
+    }
+
+    const projectData = projectResult[0] as any;
+
+    // 2. Get deliverables
+    const deliverables = await this.getProjectDeliverables(id);
+
+    // 3. Get team assignments with member details
+    const teamResult = await db.execute(sql`
+      SELECT 
+        ta.*,
+        json_build_object(
+          'id', t.id,
+          'name', t.name,
+          'role', t.role,
+          'department', t.department,
+          'status', t.status,
+          'avatarUrl', t.avatar_url,
+          'workHoursStart', t.work_hours_start,
+          'workHoursEnd', t.work_hours_end,
+          'internalCostHour', t.internal_cost_hour,
+          'billableRate', t.billable_rate,
+          'monthlySalary', t.monthly_salary,
+          'weeklyCapacity', t.weekly_capacity,
+          'skills', t.skills,
+          'createdAt', t.created_at
+        ) as member
+      FROM ${teamAssignments} ta
+      INNER JOIN ${team} t ON ta.team_id = t.id
+      WHERE ta.project_id = ${id}
+    `);
+
+    const teamAssignmentsData = teamResult as unknown as Array<TeamAssignment & { member: Team }>;
+
+    // 4. Calculate financial metrics
+    // Get total expenses from transactions where source='project' AND sourceId=project.id
+    const expensesResult = await db.execute(sql`
+      SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total_expenses
+      FROM ${transactions}
+      WHERE source = 'project' AND source_id = ${id} AND type = 'Gasto'
+    `);
+    const totalExpenses = parseFloat((expensesResult[0] as any)?.total_expenses || '0');
+
+    // Calculate labor costs: sum of (hours_allocated * team.internal_cost_hour)
+    let laborCosts = 0;
+    for (const assignment of teamAssignmentsData) {
+      const hours = assignment.hoursAllocated || 0;
+      const costPerHour = parseFloat((assignment.member as any)?.internalCostHour || '0');
+      laborCosts += hours * costPerHour;
+    }
+
+    const budget = parseFloat(projectData.budget || '0');
+    const actualCost = totalExpenses + laborCosts;
+    const margin = budget - actualCost;
+    const marginPercentage = budget > 0 ? (margin / budget) * 100 : 0;
+
+    return {
+      project: {
+        id: projectData.id,
+        clientId: projectData.client_id,
+        name: projectData.name,
+        serviceType: projectData.service_type,
+        status: projectData.status,
+        health: projectData.health,
+        deadline: projectData.deadline,
+        progress: projectData.progress,
+        budget: projectData.budget,
+        serviceSpecificFields: projectData.service_specific_fields,
+        customFields: projectData.custom_fields,
+        description: projectData.description,
+        createdAt: projectData.created_at,
+        updatedAt: projectData.updated_at,
+        client: projectData.client,
+      },
+      deliverables,
+      teamAssignments: teamAssignmentsData,
+      financial: {
+        budget,
+        totalExpenses,
+        laborCosts,
+        actualCost,
+        margin,
+        marginPercentage,
+      },
+    };
   }
 }
 
