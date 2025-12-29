@@ -16,14 +16,29 @@ router.get("/team", async (req, res) => {
 
 router.post("/team", async (req, res) => {
     try {
+        console.log("📥 POST /team - Body received:", JSON.stringify(req.body, null, 2));
+        
         const validatedData = insertTeamSchema.parse(req.body);
+        console.log("✅ Team validation passed:", JSON.stringify(validatedData, null, 2));
+        
         const person = await storage.createTeam(validatedData);
         res.status(201).json(person);
     } catch (error) {
+        console.error("❌ Error creating team member:");
         if (error instanceof z.ZodError) {
+            console.error("   Zod validation errors:", JSON.stringify(error.errors, null, 2));
             return res.status(400).json({ error: error.errors });
         }
-        res.status(500).json({ error: "Failed to create team member" });
+        // Log the actual database/ORM error
+        if (error instanceof Error) {
+            console.error("   Error message:", error.message);
+            console.error("   Error stack:", error.stack);
+        }
+        console.error("   Full error:", error);
+        res.status(500).json({ 
+            error: "Failed to create team member",
+            details: error instanceof Error ? error.message : "Unknown error"
+        });
     }
 });
 

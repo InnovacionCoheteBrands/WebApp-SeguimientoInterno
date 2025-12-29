@@ -6,6 +6,8 @@ import {
     Dialog,
     DialogContent,
     DialogHeader,
+    DialogBody,
+    DialogFooter,
     DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -47,18 +49,12 @@ interface TransactionFormProps {
     defaultType?: "Ingreso" | "Gasto";
 }
 
-// Extend the schema to handle string parsing for numbers if needed, 
-// though react-hook-form + zod usually handles this well with coerce.
-// We'll use the insert schema but refine it safely.
-// Note: insertTransactionSchema expects numeric strings for amount/subtotal/etc in strict Drizzle Zod,
-// but we might want to handle them as numbers in the form for better UX.
-
-const formSchema = insertTransactionSchema.extend({
-    // Override numeric fields to accept strings or numbers, ensuring they parse to numeric strings for API
-    amount: z.string().or(z.number()).transform(v => v.toString()),
-    subtotal: z.string().or(z.number()).optional().transform(v => v ? v.toString() : undefined),
-    iva: z.string().or(z.number()).optional().transform(v => v ? v.toString() : undefined),
-});
+// 🛡️ Use the shared insert schema directly - it already has:
+// - XSS protection via safeString/safeOptionalString
+// - Positive number coercion via positiveNumericString
+// - Proper type transformations
+// The insertTransactionSchema handles all security validations.
+const formSchema = insertTransactionSchema;
 
 export function TransactionForm({ open, onOpenChange, initialData, defaultType = "Ingreso" }: TransactionFormProps) {
     const { toast } = useToast();
@@ -95,6 +91,7 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
             if (initialData) {
                 form.reset({
                     ...initialData,
+                    type: initialData.type as "Ingreso" | "Gasto",
                     date: new Date(initialData.date),
                     amount: initialData.amount.toString(),
                     subtotal: initialData.subtotal?.toString(),
@@ -195,113 +192,49 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-border text-foreground">
+            <DialogContent className="sm:max-w-[700px] bg-card border-border text-foreground">
                 <DialogHeader>
                     <DialogTitle>{initialData ? "Editar Transacción" : `Nuevo ${type === "Ingreso" ? "Ingreso" : "Egreso"}`}</DialogTitle>
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
-                        {/* Essential Info Row */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="type"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-muted-foreground">Tipo</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger className="bg-background border-border">
-                                                    <SelectValue placeholder="Select type" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Ingreso">Ingreso (Income)</SelectItem>
-                                                <SelectItem value="Gasto">Egreso (Expense)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="date"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-muted-foreground">Fecha</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="date"
-                                                value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
-                                                onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="bg-background border-border"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        {/* Category & Concept */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="category"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-muted-foreground">Categoría</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger className="bg-background border-border">
-                                                    <SelectValue placeholder="Seleccionar Categoría" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {categories.map((cat) => (
-                                                    <SelectItem key={cat} value={cat}>
-                                                        {cat}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-muted-foreground">Concepto / Descripción</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Ej. Pago servicio Junio" {...field} value={field.value || ""} className="bg-background border-border" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        {/* Client (for Income) or Provider (for Expense) */}
-                        <div className="grid grid-cols-2 gap-4">
-                            {type === "Ingreso" && (
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                        <DialogBody className="space-y-6">
+                            {/* Essential Info Row */}
+                            <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
-                                    name="clientId"
+                                    name="type"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-muted-foreground">Cliente (Relacionado)</FormLabel>
+                                            <FormLabel className="text-muted-foreground">Tipo</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger className="bg-background border-border">
+                                                        <SelectValue placeholder="Select type" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="Ingreso">Ingreso (Income)</SelectItem>
+                                                    <SelectItem value="Gasto">Egreso (Expense)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="date"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-muted-foreground">Fecha</FormLabel>
                                             <FormControl>
-                                                <ClientSelector
-                                                    value={field.value}
-                                                    onChange={field.onChange}
+                                                <Input
+                                                    type="date"
+                                                    value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
+                                                    onChange={(e) => field.onChange(new Date(e.target.value))}
                                                     className="bg-background border-border"
                                                 />
                                             </FormControl>
@@ -309,175 +242,241 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                         </FormItem>
                                     )}
                                 />
-                            )}
+                            </div>
 
-                            {type === "Gasto" && (
+                            {/* Category & Concept */}
+                            <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
-                                    name="provider"
+                                    name="category"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-muted-foreground">Proveedor</FormLabel>
+                                            <FormLabel className="text-muted-foreground">Categoría</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger className="bg-background border-border">
+                                                        <SelectValue placeholder="Seleccionar Categoría" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {categories.map((cat) => (
+                                                        <SelectItem key={cat} value={cat}>
+                                                            {cat}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="description"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-muted-foreground">Concepto / Descripción</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Ej. AWS, Totalplay" {...field} value={field.value || ""} className="bg-background border-border" />
+                                                <Input placeholder="Ej. Pago servicio Junio" {...field} value={field.value || ""} className="bg-background border-border" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                            )}
+                            </div>
 
-                            <FormField
-                                control={form.control}
-                                name="rfc"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-muted-foreground">RFC (Opcional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="XEXX010101000" {...field} value={field.value || ""} className="bg-background border-border uppercase" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
+                            {/* Client (for Income) or Provider (for Expense) */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {type === "Ingreso" && (
+                                    <FormField
+                                        control={form.control}
+                                        name="clientId"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-muted-foreground">Cliente (Relacionado)</FormLabel>
+                                                <FormControl>
+                                                    <ClientSelector
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        className="bg-background border-border"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 )}
-                            />
-                        </div>
 
-                        {/* Fiscal Data Row */}
-                        <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-sm border border-border">
-                            <FormField
-                                control={form.control}
-                                name="subtotal"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-xs text-muted-foreground uppercase font-mono">Subtotal</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="number" step="0.01"
-                                                placeholder="0.00"
-                                                {...field}
-                                                onChange={(e) => {
-                                                    field.onChange(e);
-                                                    // Auto calc IVA 16% on subtotal change
-                                                    if (e.target.value) {
-                                                        const sub = parseFloat(e.target.value);
-                                                        // Automatically adding 16% IVA
-                                                        const calculatedIva = (sub * 0.16).toFixed(2);
-                                                        form.setValue("iva", calculatedIva);
-                                                    } else {
-                                                        form.setValue("iva", "");
-                                                    }
+                                {type === "Gasto" && (
+                                    <FormField
+                                        control={form.control}
+                                        name="provider"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-muted-foreground">Proveedor</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Ej. AWS, Totalplay" {...field} value={field.value || ""} className="bg-background border-border" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+
+                                <FormField
+                                    control={form.control}
+                                    name="rfc"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-muted-foreground">RFC (Opcional)</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="XEXX010101000" {...field} value={field.value || ""} className="bg-background border-border uppercase" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Fiscal Data Row */}
+                            <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-sm border border-border">
+                                <FormField
+                                    control={form.control}
+                                    name="subtotal"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs text-muted-foreground uppercase font-mono">Subtotal</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="number" step="0.01" min="0"
+                                                    placeholder="0.00"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        // Auto calc IVA 16% on subtotal change
+                                                        if (e.target.value) {
+                                                            const sub = Math.abs(parseFloat(e.target.value));
+                                                            // Automatically adding 16% IVA
+                                                            const calculatedIva = (sub * 0.16).toFixed(2);
+                                                            form.setValue("iva", calculatedIva);
+                                                        } else {
+                                                            form.setValue("iva", "");
+                                                        }
+                                                    }}
+                                                    className="bg-background border-border text-right font-mono"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="iva"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs text-muted-foreground uppercase font-mono">IVA (16%)</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="number" step="0.01" min="0"
+                                                    placeholder="0.00"
+                                                    {...field}
+                                                    className="bg-background border-border text-right font-mono"
+                                                    readOnly
+                                                />
+                                            </FormControl>
+                                            {/* Helper to set 16% */}
+                                            <span
+                                                className="text-[10px] text-blue-500 cursor-pointer hover:underline text-right block"
+                                                onClick={() => {
+                                                    const sub = Math.abs(parseFloat(form.getValues("subtotal") || "0"));
+                                                    if (sub) form.setValue("iva", (sub * 0.16).toFixed(2));
                                                 }}
-                                                className="bg-background border-border text-right font-mono"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                                            >
+                                                Calc 16%
+                                            </span>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="amount"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs text-primary uppercase font-mono font-bold">TOTAL</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="number" step="0.01" min="0"
+                                                    {...field}
+                                                    className="bg-background border-border text-right font-mono font-bold text-foreground"
+                                                    readOnly
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Invoice & Status */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="invoiceNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-muted-foreground">Folio Factura</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="A-1234" {...field} value={field.value || ""} className="bg-background border-border" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="isPaid"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-sm border border-border bg-card p-3 shadow-sm mt-8">
+                                            <div className="space-y-0.5">
+                                                <FormLabel className="text-foreground">Pagado</FormLabel>
+                                            </div>
+                                            <FormControl>
+                                                <Switch
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
                             <FormField
                                 control={form.control}
-                                name="iva"
+                                name="notes"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs text-muted-foreground uppercase font-mono">IVA (16%)</FormLabel>
+                                        <FormLabel className="text-muted-foreground">Notas Adicionales</FormLabel>
                                         <FormControl>
-                                            <Input
-                                                type="number" step="0.01"
-                                                placeholder="0.00"
-                                                {...field}
-                                                className="bg-background border-border text-right font-mono"
-                                                readOnly
-                                            />
-                                        </FormControl>
-                                        {/* Helper to set 16% */}
-                                        <span
-                                            className="text-[10px] text-blue-500 cursor-pointer hover:underline text-right block"
-                                            onClick={() => {
-                                                const sub = parseFloat(form.getValues("subtotal") || "0");
-                                                if (sub) form.setValue("iva", (sub * 0.16).toFixed(2));
-                                            }}
-                                        >
-                                            Calc 16%
-                                        </span>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="amount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-xs text-primary uppercase font-mono font-bold">TOTAL</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="number" step="0.01"
-                                                {...field}
-                                                className="bg-background border-border text-right font-mono font-bold text-foreground"
-                                                readOnly // Make read-only to enforce calc? Or allow override?
-                                            // Let's allow override but visually distinct
-                                            />
+                                            <Textarea placeholder="" {...field} value={field.value || ""} className="bg-background border-border" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        </div>
+                        </DialogBody>
 
-                        {/* Invoice & Status */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="invoiceNumber"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-muted-foreground">Folio Factura</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="A-1234" {...field} value={field.value || ""} className="bg-background border-border" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="isPaid"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-sm border border-border bg-card p-3 shadow-sm mt-8">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-foreground">Pagado</FormLabel>
-                                        </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <FormField
-                            control={form.control}
-                            name="notes"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-muted-foreground">Notas Adicionales</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="" {...field} value={field.value || ""} className="bg-background border-border" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                            {initialData ? "Guardar Cambios" : "Crear Transacción"}
-                        </Button>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                                {initialData ? "Guardar Cambios" : "Crear Transacción"}
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </Form>
             </DialogContent>

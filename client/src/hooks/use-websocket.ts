@@ -12,7 +12,7 @@ export function useWebSocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateTimeRef = useRef<Record<string, number>>({});
-  const { settings } = useSystemSettings();
+  const { data: settings } = useSystemSettings();
 
   const connect = () => {
     try {

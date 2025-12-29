@@ -41,8 +41,11 @@ export function AutomationHub({ trigger }: { trigger?: React.ReactNode }) {
     const queryClient = useQueryClient();
 
     const { data: recurringTransactions, isLoading } = useQuery<RecurringTransaction[]>({
-        queryKey: ["/api/recurring-transactions"],
-        queryFn: () => apiRequest("GET", "/api/recurring-transactions"),
+        queryKey: ["recurring-transactions"],
+        queryFn: async () => {
+            const res = await apiRequest("GET", "/api/recurring-transactions");
+            return res.json();
+        },
     });
 
     const deleteMutation = useMutation({

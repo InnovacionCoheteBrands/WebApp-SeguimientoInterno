@@ -99,6 +99,8 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
             if (initialData) {
                 reset({
                     ...initialData,
+                    type: initialData.type as "Ingreso" | "Gasto",
+                    frequency: initialData.frequency as "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly",
                     amount: initialData.amount.toString(),
                     subtotal: initialData.subtotal?.toString(),
                     iva: initialData.iva?.toString(),

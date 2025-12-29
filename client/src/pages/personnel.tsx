@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ import {
   fetchAgencyRoles,
   createRecurringTransaction
 } from "@/lib/api";
-import type { InsertTeam, UpdateTeam, Team, InsertTeamAssignment, AgencyRole, InsertRecurringTransaction } from "@shared/schema";
+import { insertTeamSchema, type InsertTeam, type UpdateTeam, type Team, type InsertTeamAssignment, type AgencyRole, type InsertRecurringTransaction } from "@shared/schema";
 
 export default function Personnel() {
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
@@ -277,10 +277,22 @@ export default function Personnel() {
     // Exclude addToPayroll before sending to API
     const { addToPayroll, ...dataToSend } = formData;
 
+    // 🛡️ Validate with shared schema (XSS protection + positive numbers)
+    const result = insertTeamSchema.safeParse(dataToSend);
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast({
+        title: "Error de validación",
+        description: firstError.message || "Por favor verifique los datos ingresados",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (editingMember) {
-      updateTeamMutation.mutate({ id: editingMember.id, data: dataToSend as UpdateTeam });
+      updateTeamMutation.mutate({ id: editingMember.id, data: result.data as UpdateTeam });
     } else {
-      createTeamMutation.mutate(dataToSend as InsertTeam);
+      createTeamMutation.mutate(result.data as InsertTeam);
     }
   };
 
@@ -558,169 +570,160 @@ export default function Personnel() {
               Configure resource capacity, financial metrics, and skills.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitTeam} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label className="text-muted-foreground">Master Service Role</Label>
-                <Select
-                  value={formData.roleCatalogId?.toString()}
-                  onValueChange={handleRoleSelect}
-                >
-                  <SelectTrigger className="bg-background border-border rounded-sm">
-                    <SelectValue placeholder="Select from Catalog (Recommended)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map(role => (
-                      <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.roleName} <span className="text-muted-foreground text-xs ml-2">(${role.defaultBillableRate}/hr)</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <form onSubmit={handleSubmitTeam} className="flex flex-col flex-1 min-h-0">
+            <DialogBody className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label className="text-muted-foreground">Master Service Role</Label>
+                  <Select
+                    value={formData.roleCatalogId?.toString()}
+                    onValueChange={handleRoleSelect}
+                  >
+                    <SelectTrigger className="bg-background border-border rounded-sm">
+                      <SelectValue placeholder="Select from Catalog (Recommended)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map(role => (
+                        <SelectItem key={role.id} value={role.id.toString()}>
+                          {role.roleName} <span className="text-muted-foreground text-xs ml-2">(${role.defaultBillableRate}/hr)</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Full Name</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    className="bg-background border-border rounded-sm"
+                    placeholder="e.g. Alex Chen"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Custom Role Title</Label>
+                  <Input
+                    value={formData.role}
+                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                    className="bg-background border-border rounded-sm"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Full Name</Label>
-                <Input
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-background border-border rounded-sm"
-                  placeholder="e.g. Alex Chen"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Custom Role Title</Label>
-                <Input
-                  value={formData.role}
-                  onChange={e => setFormData({ ...formData, role: e.target.value })}
-                  className="bg-background border-border rounded-sm"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Seniority</Label>
-                <Select value={formData.department} onValueChange={v => setFormData({ ...formData, department: v })}>
-                  <SelectTrigger className="bg-background border-border rounded-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Junior">Junior</SelectItem>
-                    <SelectItem value="Mid-Level">Mid-Level</SelectItem>
-                    <SelectItem value="Senior">Senior</SelectItem>
-                    <SelectItem value="Lead">Lead</SelectItem>
-                    <SelectItem value="Director">Director</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Weekly Capacity (Hours)</Label>
-                <Input
-                  type="number"
-                  value={formData.weeklyCapacity || ""}
-                  onChange={e => setFormData({ ...formData, weeklyCapacity: parseInt(e.target.value) })}
-                  className="bg-background border-border rounded-sm"
-                />
-              </div>
-            </div>
-
-            <div className="p-3 bg-muted/30 border border-border rounded-sm space-y-3">
-              <h4 className="text-xs font-mono uppercase text-primary tracking-wider">Financial Intelligence</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Internal Cost / Hr</Label>
-                  <Input
-                    type="number"
-                    value={formData.internalCostHour || ""}
-                    onChange={e => setFormData({ ...formData, internalCostHour: e.target.value })}
-                    className="bg-background border-border rounded-sm h-8 text-xs font-mono"
-                  />
-                </div>
-                <div className="space-y-2 text-green-500">
-                  <Label className="text-xs text-green-700/70">Theoretical Margin</Label>
-                  <div className="h-8 flex items-center gap-2 font-mono text-sm">
-                    {(() => {
-                      const cost = parseFloat(formData.internalCostHour as string || "0");
-                      const rate = parseFloat(formData.billableRate as string || "0");
-                      if (rate > 0 && cost > 0) {
-                        const margin = ((rate - cost) / rate * 100).toFixed(1);
-                        return <span className={Number(margin) > 50 ? 'text-green-500' : 'text-yellow-500'}>{margin}%</span>
-                      }
-                      return <span className="text-muted-foreground">--</span>
-                    })()}
-                  </div>
+                  <Label className="text-muted-foreground">Seniority</Label>
+                  <Select value={formData.department} onValueChange={v => setFormData({ ...formData, department: v })}>
+                    <SelectTrigger className="bg-background border-border rounded-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Junior">Junior</SelectItem>
+                      <SelectItem value="Mid-Level">Mid-Level</SelectItem>
+                      <SelectItem value="Senior">Senior</SelectItem>
+                      <SelectItem value="Lead">Lead</SelectItem>
+                      <SelectItem value="Director">Director</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Billing Rate / Hr</Label>
+                  <Label className="text-muted-foreground">Weekly Capacity (Hours)</Label>
                   <Input
-                    type="number"
-                    value={formData.billableRate || ""}
-                    onChange={e => setFormData({ ...formData, billableRate: e.target.value })}
-                    className="bg-background border-border rounded-sm h-8 text-xs font-mono text-green-500"
-                  />
-                </div>
-                <div className="space-y-2 col-span-2 border-t border-border pt-2 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-muted-foreground">Add to Payroll</Label>
-                    <p className="text-[10px] text-muted-foreground">Automatically create a monthly recurring expense.</p>
-                  </div>
-                  <Switch
-                    checked={formData.addToPayroll}
-                    onCheckedChange={(c) => setFormData({ ...formData, addToPayroll: c })}
+                    type="number" min="0" max="168"
+                    value={formData.weeklyCapacity || ""}
+                    onChange={e => setFormData({ ...formData, weeklyCapacity: parseInt(e.target.value) })}
+                    className="bg-background border-border rounded-sm"
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-muted/30 border border-border rounded-sm space-y-3">
+                <h4 className="text-xs font-mono uppercase text-primary tracking-wider">Financial Intelligence</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Internal Cost / Hr</Label>
+                    <Input
+                      type="number" min="0" step="0.01"
+                      value={formData.internalCostHour || ""}
+                      onChange={e => setFormData({ ...formData, internalCostHour: e.target.value })}
+                      className="bg-background border-border rounded-sm h-8 text-xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2 text-green-500">
+                    <Label className="text-xs text-green-700/70">Theoretical Margin</Label>
+                    <div className="h-8 flex items-center gap-2 font-mono text-sm">
+                      {(() => {
+                        const cost = parseFloat(formData.internalCostHour as string || "0");
+                        const rate = parseFloat(formData.billableRate as string || "0");
+                        if (rate > 0 && cost > 0) {
+                          const margin = ((rate - cost) / rate * 100).toFixed(1);
+                          return <span className={Number(margin) > 50 ? 'text-green-500' : 'text-yellow-500'}>{margin}%</span>
+                        }
+                        return <span className="text-muted-foreground">--</span>
+                      })()}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Billing Rate / Hr</Label>
+                    <Input
+                      type="number" min="0" step="0.01"
+                      value={formData.billableRate || ""}
+                      onChange={e => setFormData({ ...formData, billableRate: e.target.value })}
+                      className="bg-background border-border rounded-sm h-8 text-xs font-mono text-green-500"
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2 border-t border-border pt-2 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-muted-foreground">Add to Payroll</Label>
+                      <p className="text-[10px] text-muted-foreground">Automatically create a monthly recurring expense.</p>
+                    </div>
+                    <Switch
+                      checked={formData.addToPayroll}
+                      onCheckedChange={(c) => setFormData({ ...formData, addToPayroll: c })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Monthly Salary</Label>
+                  <Input
+                    type="number" min="0" step="0.01"
+                    value={formData.monthlySalary || ""}
+                    onChange={e => setFormData({ ...formData, monthlySalary: e.target.value })}
+                    className="bg-background border-border rounded-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-xs mt-8">
+                    Calculated Internal Cost: <span className="text-foreground font-mono">${formData.internalCostHour}</span>/hr
+                  </Label>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Monthly Salary</Label>
+                <Label className="text-muted-foreground">Skills (Comma separated)</Label>
                 <Input
-                  type="number"
-                  value={formData.monthlySalary || ""}
-                  onChange={e => setFormData({ ...formData, monthlySalary: e.target.value })}
+                  value={formData.skills || ""}
+                  onChange={e => setFormData({ ...formData, skills: e.target.value })}
                   className="bg-background border-border rounded-sm"
+                  placeholder="React, TypeScript, SEO, Copywriting..."
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs mt-8">
-                  Calculated Internal Cost: <span className="text-foreground font-mono">${formData.internalCostHour}</span>/hr
-                </Label>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Skills (Comma separated)</Label>
-              <Input
-                value={formData.skills || ""}
-                onChange={e => setFormData({ ...formData, skills: e.target.value })}
-                className="bg-background border-border rounded-sm"
-                placeholder="React, TypeScript, SEO, Copywriting..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Shift Start</Label>
-                <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-background border-border rounded-sm" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Shift Start</Label>
+                  <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-background border-border rounded-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Shift End</Label>
+                  <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-background border-border rounded-sm" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Shift End</Label>
-                <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-background border-border rounded-sm" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Shift Start</Label>
-                <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-background border-border rounded-sm" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Shift End</Label>
-                <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-background border-border rounded-sm" />
-              </div>
-            </div>
+            </DialogBody>
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setIsTeamDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
@@ -741,33 +744,35 @@ export default function Personnel() {
               Allocate hours to a specific project.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitAssignment} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Project Strategy</Label>
-              <Select value={assignmentForm.projectId.toString()} onValueChange={v => setAssignmentForm({ ...assignmentForm, projectId: parseInt(v) })}>
-                <SelectTrigger className="bg-background border-border rounded-sm">
-                  <SelectValue placeholder="Select Project..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>{p.name} ({p.client?.companyName})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Weekly Allocation (Hours)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={assignmentForm.hoursAllocated}
-                  onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: parseInt(e.target.value) })}
-                  className="bg-background border-border rounded-sm"
-                />
-                <span className="text-xs text-muted-foreground font-mono">HRS/WK</span>
+          <form onSubmit={handleSubmitAssignment} className="flex flex-col flex-1 min-h-0">
+            <DialogBody className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Project Strategy</Label>
+                <Select value={assignmentForm.projectId.toString()} onValueChange={v => setAssignmentForm({ ...assignmentForm, projectId: parseInt(v) })}>
+                  <SelectTrigger className="bg-background border-border rounded-sm">
+                    <SelectValue placeholder="Select Project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id.toString()}>{p.name} ({p.client?.companyName})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Weekly Allocation (Hours)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number" min="0" max="168"
+                    value={assignmentForm.hoursAllocated}
+                    onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: parseInt(e.target.value) })}
+                    className="bg-background border-border rounded-sm"
+                  />
+                  <span className="text-xs text-muted-foreground font-mono">HRS/WK</span>
+                </div>
+              </div>
+            </DialogBody>
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
