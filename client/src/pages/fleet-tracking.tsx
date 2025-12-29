@@ -14,7 +14,7 @@ import { fetchClientAccounts, createClientAccount, updateClientAccount, deleteCl
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertClientAccount } from "@shared/schema";
+import { insertClientAccountSchema, type InsertClientAccount } from "@shared/schema";
 
 const FleetTracking = memo(function FleetTracking() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -112,18 +112,25 @@ const FleetTracking = memo(function FleetTracking() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.companyName || !formData.industry) {
-      toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
+    // 🛡️ Validate with shared schema (XSS protection + positive numbers)
+    const result = insertClientAccountSchema.safeParse(formData);
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast({
+        title: "Error de validación",
+        description: firstError.message || "Por favor verifique los datos ingresados",
+        variant: "destructive",
+      });
       return;
     }
 
     if (editingAccount) {
       updateMutation.mutate({
         id: editingAccount.id,
-        data: formData
+        data: result.data
       });
     } else {
-      createMutation.mutate(formData as InsertClientAccount);
+      createMutation.mutate(result.data as InsertClientAccount);
     }
   };
 

@@ -329,17 +329,35 @@ export class DBStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    try {
+      const [user] = await db.insert(users).values(insertUser).returning();
+      return user;
+    } catch (error) {
+      console.error(`❌ [createUser] Error al insertar usuario:`, {
+        input: { username: insertUser.username },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el usuario en la base de datos");
+    }
   }
 
   async updateUserSettings(userId: string, settings: any): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ settings: JSON.stringify(settings) })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ settings: JSON.stringify(settings) })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`❌ [updateUserSettings] Error al actualizar configuración:`, {
+        userId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la configuración del usuario");
+    }
   }
 
   /**
@@ -347,21 +365,39 @@ export class DBStorage implements IStorage {
    * TODO: Either implement webhook sender functionality or remove this method entirely.
    */
   async updateUserWebhook(userId: string, webhookUrl: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ webhookUrl })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ webhookUrl })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`❌ [updateUserWebhook] Error al actualizar webhook:`, {
+        userId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el webhook del usuario");
+    }
   }
 
   async regenerateApiKey(userId: string): Promise<string> {
-    const newKey = "sk_live_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    await db
-      .update(users)
-      .set({ apiKey: newKey })
-      .where(eq(users.id, userId));
-    return newKey;
+    try {
+      const newKey = "sk_live_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      await db
+        .update(users)
+        .set({ apiKey: newKey })
+        .where(eq(users.id, userId));
+      return newKey;
+    } catch (error) {
+      console.error(`❌ [regenerateApiKey] Error al regenerar API key:`, {
+        userId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al regenerar la API key");
+    }
   }
 
   async getCampaigns(): Promise<Campaign[]> {
@@ -374,22 +410,50 @@ export class DBStorage implements IStorage {
   }
 
   async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
-    const [newCampaign] = await db.insert(campaigns).values(campaign).returning();
-    return newCampaign;
+    try {
+      const [newCampaign] = await db.insert(campaigns).values(campaign).returning();
+      return newCampaign;
+    } catch (error) {
+      console.error(`❌ [createCampaign] Error al insertar campaña:`, {
+        input: { name: campaign.name, campaignCode: campaign.campaignCode },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la campaña en la base de datos");
+    }
   }
 
   async updateCampaign(id: number, campaign: UpdateCampaign): Promise<Campaign | undefined> {
-    const [updatedCampaign] = await db
-      .update(campaigns)
-      .set({ ...campaign, updatedAt: new Date() })
-      .where(eq(campaigns.id, id))
-      .returning();
-    return updatedCampaign;
+    try {
+      const [updatedCampaign] = await db
+        .update(campaigns)
+        .set({ ...campaign, updatedAt: new Date() })
+        .where(eq(campaigns.id, id))
+        .returning();
+      return updatedCampaign;
+    } catch (error) {
+      console.error(`❌ [updateCampaign] Error al actualizar campaña:`, {
+        id,
+        input: campaign,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la campaña en la base de datos");
+    }
   }
 
   async deleteCampaign(id: number): Promise<boolean> {
-    const result = await db.delete(campaigns).where(eq(campaigns.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(campaigns).where(eq(campaigns.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteCampaign] Error al eliminar campaña:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la campaña de la base de datos");
+    }
   }
 
   async getSystemMetrics(): Promise<SystemMetric[]> {
@@ -402,8 +466,17 @@ export class DBStorage implements IStorage {
   }
 
   async createSystemMetric(metric: InsertSystemMetric): Promise<SystemMetric> {
-    const [newMetric] = await db.insert(systemMetrics).values(metric).returning();
-    return newMetric;
+    try {
+      const [newMetric] = await db.insert(systemMetrics).values(metric).returning();
+      return newMetric;
+    } catch (error) {
+      console.error(`❌ [createSystemMetric] Error al insertar métrica:`, {
+        input: metric,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la métrica del sistema");
+    }
   }
 
   async getTelemetryData(limit: number = 24): Promise<TelemetryData[]> {
@@ -415,32 +488,59 @@ export class DBStorage implements IStorage {
   }
 
   async createTelemetryData(data: InsertTelemetryData): Promise<TelemetryData> {
-    const [newData] = await db.insert(telemetryData).values(data).returning();
-    return newData;
+    try {
+      const [newData] = await db.insert(telemetryData).values(data).returning();
+      return newData;
+    } catch (error) {
+      console.error(`❌ [createTelemetryData] Error al insertar telemetría:`, {
+        input: data,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar los datos de telemetría");
+    }
   }
 
   async cleanupOldTelemetry(keepLast: number): Promise<void> {
-    await db.execute(sql`
-      WITH keep AS (
-        SELECT id FROM ${telemetryData}
-        ORDER BY timestamp DESC, id DESC
-        LIMIT ${keepLast}
-      )
-      DELETE FROM ${telemetryData}
-      WHERE id NOT IN (SELECT id FROM keep)
-    `);
+    try {
+      await db.execute(sql`
+        WITH keep AS (
+          SELECT id FROM ${telemetryData}
+          ORDER BY timestamp DESC, id DESC
+          LIMIT ${keepLast}
+        )
+        DELETE FROM ${telemetryData}
+        WHERE id NOT IN (SELECT id FROM keep)
+      `);
+    } catch (error) {
+      console.error(`❌ [cleanupOldTelemetry] Error al limpiar telemetría antigua:`, {
+        keepLast,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al limpiar datos de telemetría antiguos");
+    }
   }
 
   async cleanupOldMetrics(keepLast: number): Promise<void> {
-    await db.execute(sql`
-      WITH keep AS (
-        SELECT id FROM ${systemMetrics}
-        ORDER BY timestamp DESC, id DESC
-        LIMIT ${keepLast}
-      )
-      DELETE FROM ${systemMetrics}
-      WHERE id NOT IN (SELECT id FROM keep)
-    `);
+    try {
+      await db.execute(sql`
+        WITH keep AS (
+          SELECT id FROM ${systemMetrics}
+          ORDER BY timestamp DESC, id DESC
+          LIMIT ${keepLast}
+        )
+        DELETE FROM ${systemMetrics}
+        WHERE id NOT IN (SELECT id FROM keep)
+      `);
+    } catch (error) {
+      console.error(`❌ [cleanupOldMetrics] Error al limpiar métricas antiguas:`, {
+        keepLast,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al limpiar métricas del sistema antiguas");
+    }
   }
 
   async getClientAccounts(): Promise<ClientAccount[]> {
@@ -460,25 +560,53 @@ export class DBStorage implements IStorage {
   }
 
   async createClientAccount(account: InsertClientAccount): Promise<ClientAccount> {
-    const [newAccount] = await db.insert(clientAccounts).values(account).returning();
-    return newAccount;
+    try {
+      const [newAccount] = await db.insert(clientAccounts).values(account).returning();
+      return newAccount;
+    } catch (error) {
+      console.error(`❌ [createClientAccount] Error al insertar cliente:`, {
+        input: { companyName: account.companyName, industry: account.industry },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el cliente en la base de datos");
+    }
   }
 
   async updateClientAccount(id: number, account: Partial<InsertClientAccount>): Promise<ClientAccount | undefined> {
-    const existing = await this.getClientAccountById(id);
-    if (!existing) return undefined;
+    try {
+      const existing = await this.getClientAccountById(id);
+      if (!existing) return undefined;
 
-    const [updated] = await db
-      .update(clientAccounts)
-      .set({ ...account, updatedAt: new Date() })
-      .where(eq(clientAccounts.id, id))
-      .returning();
-    return updated;
+      const [updated] = await db
+        .update(clientAccounts)
+        .set({ ...account, updatedAt: new Date() })
+        .where(eq(clientAccounts.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateClientAccount] Error al actualizar cliente:`, {
+        id,
+        input: account,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el cliente en la base de datos");
+    }
   }
 
   async deleteClientAccount(id: number): Promise<boolean> {
-    const result = await db.delete(clientAccounts).where(eq(clientAccounts.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(clientAccounts).where(eq(clientAccounts.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteClientAccount] Error al eliminar cliente:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el cliente de la base de datos");
+    }
   }
 
   async getTeam(): Promise<Team[]> {
@@ -491,22 +619,50 @@ export class DBStorage implements IStorage {
   }
 
   async createTeam(person: InsertTeam): Promise<Team> {
-    const [newPerson] = await db.insert(team).values(person).returning();
-    return newPerson;
+    try {
+      const [newPerson] = await db.insert(team).values(person).returning();
+      return newPerson;
+    } catch (error) {
+      console.error(`❌ [createTeam] Error al insertar miembro del equipo:`, {
+        input: person,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el miembro del equipo en la base de datos");
+    }
   }
 
   async updateTeam(id: number, person: UpdateTeam): Promise<Team | undefined> {
-    const [updated] = await db
-      .update(team)
-      .set(person)
-      .where(eq(team.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(team)
+        .set(person)
+        .where(eq(team.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateTeam] Error al actualizar miembro del equipo:`, {
+        id,
+        input: person,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el miembro del equipo");
+    }
   }
 
   async deleteTeam(id: number): Promise<boolean> {
-    const result = await db.delete(team).where(eq(team.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(team).where(eq(team.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteTeam] Error al eliminar miembro del equipo:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el miembro del equipo");
+    }
   }
 
   async getTeamAssignments(): Promise<TeamAssignment[]> {
@@ -528,13 +684,31 @@ export class DBStorage implements IStorage {
   }
 
   async createTeamAssignment(assignment: InsertTeamAssignment): Promise<TeamAssignment> {
-    const [newAssignment] = await db.insert(teamAssignments).values(assignment).returning();
-    return newAssignment;
+    try {
+      const [newAssignment] = await db.insert(teamAssignments).values(assignment).returning();
+      return newAssignment;
+    } catch (error) {
+      console.error(`❌ [createTeamAssignment] Error al insertar asignación:`, {
+        input: assignment,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la asignación del equipo");
+    }
   }
 
   async deleteTeamAssignment(id: number): Promise<boolean> {
-    const result = await db.delete(teamAssignments).where(eq(teamAssignments.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(teamAssignments).where(eq(teamAssignments.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteTeamAssignment] Error al eliminar asignación:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la asignación del equipo");
+    }
   }
 
   async getResources(): Promise<Resource[]> {
@@ -545,34 +719,71 @@ export class DBStorage implements IStorage {
   }
 
   async createResource(resource: InsertResource): Promise<Resource> {
-    const [newResource] = await db.insert(resources).values(resource).returning();
-    return newResource;
+    try {
+      const [newResource] = await db.insert(resources).values(resource).returning();
+      return newResource;
+    } catch (error) {
+      console.error(`❌ [createResource] Error al insertar recurso:`, {
+        input: resource,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el recurso en la base de datos");
+    }
   }
 
   async updateResource(id: number, resource: Partial<InsertResource>): Promise<Resource | undefined> {
-    const [updatedResource] = await db
-      .update(resources)
-      .set(resource)
-      .where(eq(resources.id, id))
-      .returning();
-    return updatedResource;
+    try {
+      const [updatedResource] = await db
+        .update(resources)
+        .set(resource)
+        .where(eq(resources.id, id))
+        .returning();
+      return updatedResource;
+    } catch (error) {
+      console.error(`❌ [updateResource] Error al actualizar recurso:`, {
+        id,
+        input: resource,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el recurso");
+    }
   }
 
   async deleteResource(id: number): Promise<boolean> {
-    const result = await db.delete(resources).where(eq(resources.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(resources).where(eq(resources.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteResource] Error al eliminar recurso:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el recurso");
+    }
   }
 
   async cleanupOldResources(keepLast: number): Promise<void> {
-    await db.execute(sql`
-      WITH keep AS (
-        SELECT id FROM ${resources}
-        ORDER BY created_at DESC, id DESC
-        LIMIT ${keepLast}
-      )
-      DELETE FROM ${resources}
-      WHERE id NOT IN (SELECT id FROM keep)
-    `);
+    try {
+      await db.execute(sql`
+        WITH keep AS (
+          SELECT id FROM ${resources}
+          ORDER BY created_at DESC, id DESC
+          LIMIT ${keepLast}
+        )
+        DELETE FROM ${resources}
+        WHERE id NOT IN (SELECT id FROM keep)
+      `);
+    } catch (error) {
+      console.error(`❌ [cleanupOldResources] Error al limpiar recursos antiguos:`, {
+        keepLast,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al limpiar recursos antiguos");
+    }
   }
 
   // Agency Role Catalog implementation
@@ -586,22 +797,50 @@ export class DBStorage implements IStorage {
   }
 
   async createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole> {
-    const [newRole] = await db.insert(agencyRoleCatalog).values(role).returning();
-    return newRole;
+    try {
+      const [newRole] = await db.insert(agencyRoleCatalog).values(role).returning();
+      return newRole;
+    } catch (error) {
+      console.error(`❌ [createAgencyRole] Error al insertar rol de agencia:`, {
+        input: role,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el rol de agencia");
+    }
   }
 
   async updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole | undefined> {
-    const [updated] = await db
-      .update(agencyRoleCatalog)
-      .set(role)
-      .where(eq(agencyRoleCatalog.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(agencyRoleCatalog)
+        .set(role)
+        .where(eq(agencyRoleCatalog.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateAgencyRole] Error al actualizar rol de agencia:`, {
+        id,
+        input: role,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el rol de agencia");
+    }
   }
 
   async deleteAgencyRole(id: number): Promise<boolean> {
-    const result = await db.delete(agencyRoleCatalog).where(eq(agencyRoleCatalog.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(agencyRoleCatalog).where(eq(agencyRoleCatalog.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteAgencyRole] Error al eliminar rol de agencia:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el rol de agencia");
+    }
   }
 
   // Ads Command Center implementation
@@ -620,22 +859,50 @@ export class DBStorage implements IStorage {
   }
 
   async createAdPlatform(platform: InsertAdPlatform): Promise<AdPlatform> {
-    const [newPlatform] = await db.insert(adPlatforms).values(platform).returning();
-    return newPlatform;
+    try {
+      const [newPlatform] = await db.insert(adPlatforms).values(platform).returning();
+      return newPlatform;
+    } catch (error) {
+      console.error(`❌ [createAdPlatform] Error al insertar plataforma:`, {
+        input: platform,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la plataforma de ads");
+    }
   }
 
   async updateAdPlatform(id: number, platform: Partial<InsertAdPlatform>): Promise<AdPlatform | undefined> {
-    const [updated] = await db
-      .update(adPlatforms)
-      .set(platform)
-      .where(eq(adPlatforms.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(adPlatforms)
+        .set(platform)
+        .where(eq(adPlatforms.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateAdPlatform] Error al actualizar plataforma:`, {
+        id,
+        input: platform,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la plataforma de ads");
+    }
   }
 
   async deleteAdPlatform(id: number): Promise<boolean> {
-    const result = await db.delete(adPlatforms).where(eq(adPlatforms.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(adPlatforms).where(eq(adPlatforms.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteAdPlatform] Error al eliminar plataforma:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la plataforma de ads");
+    }
   }
 
   async getAllAdCreatives(): Promise<AdCreative[]> {
@@ -718,22 +985,50 @@ export class DBStorage implements IStorage {
   }
 
   async createAdCreative(creative: InsertAdCreative): Promise<AdCreative> {
-    const [newCreative] = await db.insert(adCreatives).values(creative).returning();
-    return newCreative;
+    try {
+      const [newCreative] = await db.insert(adCreatives).values(creative).returning();
+      return newCreative;
+    } catch (error) {
+      console.error(`❌ [createAdCreative] Error al insertar creativo:`, {
+        input: creative,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el creativo de ads");
+    }
   }
 
   async updateAdCreative(id: number, creative: UpdateAdCreative): Promise<AdCreative | undefined> {
-    const [updated] = await db
-      .update(adCreatives)
-      .set({ ...creative, updatedAt: new Date() })
-      .where(eq(adCreatives.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(adCreatives)
+        .set({ ...creative, updatedAt: new Date() })
+        .where(eq(adCreatives.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateAdCreative] Error al actualizar creativo:`, {
+        id,
+        input: creative,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el creativo de ads");
+    }
   }
 
   async deleteAdCreative(id: number): Promise<boolean> {
-    const result = await db.delete(adCreatives).where(eq(adCreatives.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(adCreatives).where(eq(adCreatives.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteAdCreative] Error al eliminar creativo:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el creativo de ads");
+    }
   }
 
   async getAdMetrics(): Promise<AdMetric[]> {
@@ -759,8 +1054,17 @@ export class DBStorage implements IStorage {
   }
 
   async createAdMetric(metric: InsertAdMetric): Promise<AdMetric> {
-    const [newMetric] = await db.insert(adMetrics).values(metric).returning();
-    return newMetric;
+    try {
+      const [newMetric] = await db.insert(adMetrics).values(metric).returning();
+      return newMetric;
+    } catch (error) {
+      console.error(`❌ [createAdMetric] Error al insertar métrica de ads:`, {
+        input: metric,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la métrica de ads");
+    }
   }
 
   async getBlendedROAS(): Promise<{ roas: number; totalSpend: number; totalRevenue: number }> {
@@ -799,22 +1103,50 @@ export class DBStorage implements IStorage {
   }
 
   async createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection> {
-    const [newConnection] = await db.insert(platformConnections).values(connection).returning();
-    return newConnection;
+    try {
+      const [newConnection] = await db.insert(platformConnections).values(connection).returning();
+      return newConnection;
+    } catch (error) {
+      console.error(`❌ [createPlatformConnection] Error al insertar conexión:`, {
+        input: { platformId: connection.platformId, connectionName: connection.connectionName },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la conexión de plataforma");
+    }
   }
 
   async updatePlatformConnection(id: number, connection: UpdatePlatformConnection): Promise<PlatformConnection | undefined> {
-    const [updated] = await db
-      .update(platformConnections)
-      .set({ ...connection, updatedAt: new Date() })
-      .where(eq(platformConnections.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(platformConnections)
+        .set({ ...connection, updatedAt: new Date() })
+        .where(eq(platformConnections.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updatePlatformConnection] Error al actualizar conexión:`, {
+        id,
+        input: connection,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la conexión de plataforma");
+    }
   }
 
   async deletePlatformConnection(id: number): Promise<boolean> {
-    const result = await db.delete(platformConnections).where(eq(platformConnections.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(platformConnections).where(eq(platformConnections.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deletePlatformConnection] Error al eliminar conexión:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la conexión de plataforma");
+    }
   }
 
   // Account Mappings implementation
@@ -832,22 +1164,50 @@ export class DBStorage implements IStorage {
   }
 
   async createAccountMapping(mapping: InsertAccountMapping): Promise<AccountMapping> {
-    const [newMapping] = await db.insert(accountMappings).values(mapping).returning();
-    return newMapping;
+    try {
+      const [newMapping] = await db.insert(accountMappings).values(mapping).returning();
+      return newMapping;
+    } catch (error) {
+      console.error(`❌ [createAccountMapping] Error al insertar mapeo de cuenta:`, {
+        input: mapping,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el mapeo de cuenta");
+    }
   }
 
   async updateAccountMapping(id: number, mapping: UpdateAccountMapping): Promise<AccountMapping | undefined> {
-    const [updated] = await db
-      .update(accountMappings)
-      .set({ ...mapping, updatedAt: new Date() })
-      .where(eq(accountMappings.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(accountMappings)
+        .set({ ...mapping, updatedAt: new Date() })
+        .where(eq(accountMappings.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateAccountMapping] Error al actualizar mapeo de cuenta:`, {
+        id,
+        input: mapping,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el mapeo de cuenta");
+    }
   }
 
   async deleteAccountMapping(id: number): Promise<boolean> {
-    const result = await db.delete(accountMappings).where(eq(accountMappings.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(accountMappings).where(eq(accountMappings.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteAccountMapping] Error al eliminar mapeo de cuenta:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el mapeo de cuenta");
+    }
   }
 
   // Client KPI Config implementation
@@ -861,22 +1221,50 @@ export class DBStorage implements IStorage {
   }
 
   async createClientKpiConfig(config: InsertClientKpiConfig): Promise<ClientKpiConfig> {
-    const [newConfig] = await db.insert(clientKpiConfig).values(config).returning();
-    return newConfig;
+    try {
+      const [newConfig] = await db.insert(clientKpiConfig).values(config).returning();
+      return newConfig;
+    } catch (error) {
+      console.error(`❌ [createClientKpiConfig] Error al insertar config KPI:`, {
+        input: config,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la configuración KPI del cliente");
+    }
   }
 
   async updateClientKpiConfig(clientName: string, config: UpdateClientKpiConfig): Promise<ClientKpiConfig | undefined> {
-    const [updated] = await db
-      .update(clientKpiConfig)
-      .set({ ...config, updatedAt: new Date() })
-      .where(eq(clientKpiConfig.clientName, clientName))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(clientKpiConfig)
+        .set({ ...config, updatedAt: new Date() })
+        .where(eq(clientKpiConfig.clientName, clientName))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateClientKpiConfig] Error al actualizar config KPI:`, {
+        clientName,
+        input: config,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la configuración KPI del cliente");
+    }
   }
 
   async deleteClientKpiConfig(clientName: string): Promise<boolean> {
-    const result = await db.delete(clientKpiConfig).where(eq(clientKpiConfig.clientName, clientName));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(clientKpiConfig).where(eq(clientKpiConfig.clientName, clientName));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteClientKpiConfig] Error al eliminar config KPI:`, {
+        clientName,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la configuración KPI del cliente");
+    }
   }
 
   // Financial Hub - Transactions implementation
@@ -890,78 +1278,106 @@ export class DBStorage implements IStorage {
   }
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    // 🛡️ SYNC LOGIC: Enforce legacy 'status' field matches modern 'isPaid' field
-    const syncedTransaction: any = {
-      ...transaction,
-      // If isPaid is true, status MUST be 'Pagado', otherwise 'Pendiente'
-      status: transaction.isPaid ? "Pagado" : "Pendiente",
-      // If isPaid is true but no paidDate provided, default to now
-      paidDate: transaction.isPaid && !transaction.paidDate ? new Date() : transaction.paidDate,
-    };
+    try {
+      // 🛡️ SYNC LOGIC: Enforce legacy 'status' field matches modern 'isPaid' field
+      const syncedTransaction: any = {
+        ...transaction,
+        // If isPaid is true, status MUST be 'Pagado', otherwise 'Pendiente'
+        status: transaction.isPaid ? "Pagado" : "Pendiente",
+        // If isPaid is true but no paidDate provided, default to now
+        paidDate: transaction.isPaid && !transaction.paidDate ? new Date() : transaction.paidDate,
+      };
 
-    // 🛡️ TAX LOGIC: Auto-calculate Total if Subtotal is present
-    // Ensure numeric fields are strings for Drizzle/Postgres
-    if (transaction.subtotal) {
-      const sub = parseFloat(transaction.subtotal.toString());
-      // Use provided IVA or default to 16%
-      const tax = transaction.iva ? parseFloat(transaction.iva.toString()) : sub * 0.16;
-
-      syncedTransaction.subtotal = sub.toFixed(2);
-      syncedTransaction.iva = tax.toFixed(2);
-      syncedTransaction.amount = (sub + tax).toFixed(2);
-    }
-
-    const [newTransaction] = await db.insert(transactions).values(syncedTransaction).returning();
-    return newTransaction;
-  }
-
-  async updateTransaction(id: number, transaction: UpdateTransaction): Promise<Transaction | undefined> {
-    // 🛡️ SYNC LOGIC: Enforce synchronization during updates
-    let syncedTransaction: any = { ...transaction };
-
-    // If 'isPaid' is being updated, we must update 'status' too
-    if (transaction.isPaid !== undefined) {
-      syncedTransaction.status = transaction.isPaid ? "Pagado" : "Pendiente";
-      // If marking as paid and no date provided, set it
-      if (transaction.isPaid && !transaction.paidDate) {
-        syncedTransaction.paidDate = new Date();
-      }
-    }
-    // Fallback: If 'status' is updated via legacy API but 'isPaid' is missing, sync 'isPaid'
-    else if (transaction.status !== undefined) {
-      syncedTransaction.isPaid = transaction.status === "Pagado";
-      if (syncedTransaction.isPaid && !transaction.paidDate) {
-        syncedTransaction.paidDate = new Date();
-      }
-    }
-
-    // 🛡️ TAX LOGIC: Recalculate if Subtotal is being updated
-    if (transaction.subtotal !== undefined) {
-      // If null/empty, do nothing or handle clearing? Assumption: if passed, it's a value.
+      // 🛡️ TAX LOGIC: Auto-calculate Total if Subtotal is present
+      // Ensure numeric fields are strings for Drizzle/Postgres
       if (transaction.subtotal) {
         const sub = parseFloat(transaction.subtotal.toString());
-        // If IVA is also updated, use it. If not, we might need to fetch current IVA?
-        // For now, if Subtotal changes, we enforce 16% unless IVA is strictly provided in this update.
-        // This is a safe simplification: changing subtotal usually resets tax calc.
+        // Use provided IVA or default to 16%
         const tax = transaction.iva ? parseFloat(transaction.iva.toString()) : sub * 0.16;
 
         syncedTransaction.subtotal = sub.toFixed(2);
         syncedTransaction.iva = tax.toFixed(2);
         syncedTransaction.amount = (sub + tax).toFixed(2);
       }
-    }
 
-    const [updated] = await db
-      .update(transactions)
-      .set({ ...syncedTransaction, updatedAt: new Date() })
-      .where(eq(transactions.id, id))
-      .returning();
-    return updated;
+      const [newTransaction] = await db.insert(transactions).values(syncedTransaction).returning();
+      return newTransaction;
+    } catch (error) {
+      console.error(`❌ [createTransaction] Error al insertar transacción:`, {
+        input: { type: transaction.type, category: transaction.category, amount: transaction.amount },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la transacción en la base de datos");
+    }
+  }
+
+  async updateTransaction(id: number, transaction: UpdateTransaction): Promise<Transaction | undefined> {
+    try {
+      // 🛡️ SYNC LOGIC: Enforce synchronization during updates
+      let syncedTransaction: any = { ...transaction };
+
+      // If 'isPaid' is being updated, we must update 'status' too
+      if (transaction.isPaid !== undefined) {
+        syncedTransaction.status = transaction.isPaid ? "Pagado" : "Pendiente";
+        // If marking as paid and no date provided, set it
+        if (transaction.isPaid && !transaction.paidDate) {
+          syncedTransaction.paidDate = new Date();
+        }
+      }
+      // Fallback: If 'status' is updated via legacy API but 'isPaid' is missing, sync 'isPaid'
+      else if (transaction.status !== undefined) {
+        syncedTransaction.isPaid = transaction.status === "Pagado";
+        if (syncedTransaction.isPaid && !transaction.paidDate) {
+          syncedTransaction.paidDate = new Date();
+        }
+      }
+
+      // 🛡️ TAX LOGIC: Recalculate if Subtotal is being updated
+      if (transaction.subtotal !== undefined) {
+        // If null/empty, do nothing or handle clearing? Assumption: if passed, it's a value.
+        if (transaction.subtotal) {
+          const sub = parseFloat(transaction.subtotal.toString());
+          // If IVA is also updated, use it. If not, we might need to fetch current IVA?
+          // For now, if Subtotal changes, we enforce 16% unless IVA is strictly provided in this update.
+          // This is a safe simplification: changing subtotal usually resets tax calc.
+          const tax = transaction.iva ? parseFloat(transaction.iva.toString()) : sub * 0.16;
+
+          syncedTransaction.subtotal = sub.toFixed(2);
+          syncedTransaction.iva = tax.toFixed(2);
+          syncedTransaction.amount = (sub + tax).toFixed(2);
+        }
+      }
+
+      const [updated] = await db
+        .update(transactions)
+        .set({ ...syncedTransaction, updatedAt: new Date() })
+        .where(eq(transactions.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateTransaction] Error al actualizar transacción:`, {
+        id,
+        input: { type: transaction.type, category: transaction.category },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la transacción");
+    }
   }
 
   async deleteTransaction(id: number): Promise<boolean> {
-    const result = await db.delete(transactions).where(eq(transactions.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(transactions).where(eq(transactions.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteTransaction] Error al eliminar transacción:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la transacción");
+    }
   }
 
   async getFinancialSummary(startDate?: Date, endDate?: Date): Promise<{
@@ -1051,65 +1467,106 @@ export class DBStorage implements IStorage {
   }
 
   async createRecurringTransaction(recurring: InsertRecurringTransaction): Promise<RecurringTransaction> {
-    const [newRecurring] = await db.insert(recurringTransactions).values(recurring).returning();
-    return newRecurring;
+    try {
+      const [newRecurring] = await db.insert(recurringTransactions).values(recurring).returning();
+      return newRecurring;
+    } catch (error) {
+      console.error(`❌ [createRecurringTransaction] Error al insertar transacción recurrente:`, {
+        input: { name: recurring.name, type: recurring.type, frequency: recurring.frequency },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar la transacción recurrente");
+    }
   }
 
   async updateRecurringTransaction(id: number, recurring: UpdateRecurringTransaction): Promise<RecurringTransaction | undefined> {
-    const [updated] = await db
-      .update(recurringTransactions)
-      .set({ ...recurring, updatedAt: new Date() })
-      .where(eq(recurringTransactions.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(recurringTransactions)
+        .set({ ...recurring, updatedAt: new Date() })
+        .where(eq(recurringTransactions.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateRecurringTransaction] Error al actualizar transacción recurrente:`, {
+        id,
+        input: recurring,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la transacción recurrente");
+    }
   }
 
   async deleteRecurringTransaction(id: number): Promise<boolean> {
-    const result = await db.delete(recurringTransactions).where(eq(recurringTransactions.id, id));
-    return (result as any).count > 0;
+    try {
+      const result = await db.delete(recurringTransactions).where(eq(recurringTransactions.id, id));
+      return (result as any).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteRecurringTransaction] Error al eliminar transacción recurrente:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar la transacción recurrente");
+    }
   }
 
   // Execute a single recurring transaction manually
   async executeRecurringTransaction(id: number): Promise<Transaction> {
-    const recurring = await this.getRecurringTransactionById(id);
-    if (!recurring) throw new Error("Recurring transaction not found");
+    try {
+      const recurring = await this.getRecurringTransactionById(id);
+      if (!recurring) throw new Error("Recurring transaction not found");
 
-    // Create transaction from template using new schema fields
-    const executionDate = new Date();
-    const transaction = await this.createTransaction({
-      type: recurring.type,
-      category: recurring.category,
-      amount: recurring.amount,
-      date: executionDate,
-      isPaid: true,  // ✅ Mark as paid immediately when executed
-      // paidDate: executionDate, // createTransaction sets this if isPaid=true
-      clientId: recurring.clientId || undefined,
-      isRecurringInstance: true,
-      recurringTemplateId: id,
-      source: 'recurring_template',
-      sourceId: id,
-      status: 'Pagado',
-      description: recurring.description || recurring.name, // Use concept if available
-      relatedClient: null,
+      // Create transaction from template using new schema fields
+      const executionDate = new Date();
+      const transaction = await this.createTransaction({
+        type: recurring.type as "Ingreso" | "Gasto",
+        category: recurring.category,
+        amount: recurring.amount,
+        date: executionDate,
+        isPaid: true,  // ✅ Mark as paid immediately when executed
+        // paidDate: executionDate, // createTransaction sets this if isPaid=true
+        clientId: recurring.clientId || undefined,
+        isRecurringInstance: true,
+        recurringTemplateId: id,
+        source: 'recurring_template',
+        sourceId: id,
+        status: 'Pagado',
+        description: recurring.description || recurring.name, // Use concept if available
+        relatedClient: null,
 
-      // ✅ Fiscal Data
-      provider: recurring.provider || undefined,
-      rfc: recurring.rfc || undefined,
-      subtotal: recurring.subtotal ? recurring.subtotal.toString() : undefined,
-      iva: recurring.iva ? recurring.iva.toString() : undefined,
-      notes: recurring.notes || undefined,
-    });
+        // ✅ Fiscal Data
+        provider: recurring.provider || undefined,
+        rfc: recurring.rfc || undefined,
+        subtotal: recurring.subtotal ? recurring.subtotal.toString() : undefined,
+        iva: recurring.iva ? recurring.iva.toString() : undefined,
+        notes: recurring.notes || undefined,
+      });
 
-    // Calculate next execution date
-    const nextDate = this.calculateNextExecutionDate(recurring.frequency, recurring.dayOfMonth, recurring.dayOfWeek);
+      // Calculate next execution date
+      const nextDate = this.calculateNextExecutionDate(recurring.frequency, recurring.dayOfMonth, recurring.dayOfWeek);
 
-    // Update recurring transaction
-    await this.updateRecurringTransaction(id, {
-      lastExecutionDate: executionDate,
-      nextExecutionDate: nextDate,
-    });
+      // Update recurring transaction
+      await this.updateRecurringTransaction(id, {
+        lastExecutionDate: executionDate,
+        nextExecutionDate: nextDate,
+      });
 
-    return transaction;
+      return transaction;
+    } catch (error) {
+      // Re-throw "not found" errors as-is
+      if (error instanceof Error && error.message === "Recurring transaction not found") {
+        throw error;
+      }
+      console.error(`❌ [executeRecurringTransaction] Error al ejecutar transacción recurrente:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al ejecutar la transacción recurrente");
+    }
   }
 
   // Execute all pending recurring transactions (called by cron job)
@@ -1264,40 +1721,54 @@ export class DBStorage implements IStorage {
 
   // Mark an obligation as paid (create actual transaction from template)
   async markObligationAsPaid(templateId: number, paidDate: Date): Promise<Transaction> {
-    const template = await this.getRecurringTransactionById(templateId);
-    if (!template) throw new Error("Recurring template not found");
+    try {
+      const template = await this.getRecurringTransactionById(templateId);
+      if (!template) throw new Error("Recurring template not found");
 
-    // Create actual transaction linked to template
-    const transaction = await this.createTransaction({
-      type: template.type,
-      category: template.category,
-      amount: template.amount,
-      date: paidDate,
-      isPaid: true,  // ✅ Mark as paid immediately
-      paidDate: paidDate,
-      clientId: template.clientId || undefined,
-      isRecurringInstance: true,  // ✅ Link to template
-      recurringTemplateId: templateId,
-      source: 'recurring_template',
-      sourceId: templateId,
-      status: 'Pagado',  // Legacy field
-      description: template.description || undefined,
-      relatedClient: null,  // Using clientId instead
-    });
+      // Create actual transaction linked to template
+      const transaction = await this.createTransaction({
+        type: template.type as "Ingreso" | "Gasto",
+        category: template.category,
+        amount: template.amount,
+        date: paidDate,
+        isPaid: true,  // ✅ Mark as paid immediately
+        paidDate: paidDate,
+        clientId: template.clientId || undefined,
+        isRecurringInstance: true,  // ✅ Link to template
+        recurringTemplateId: templateId,
+        source: 'recurring_template',
+        sourceId: templateId,
+        status: 'Pagado',  // Legacy field
+        description: template.description || undefined,
+        relatedClient: null,  // Using clientId instead
+      });
 
-    // Update template's execution dates
-    const nextDate = this.calculateNextExecutionDate(
-      template.frequency,
-      template.dayOfMonth,
-      template.dayOfWeek
-    );
+      // Update template's execution dates
+      const nextDate = this.calculateNextExecutionDate(
+        template.frequency,
+        template.dayOfMonth,
+        template.dayOfWeek
+      );
 
-    await this.updateRecurringTransaction(templateId, {
-      lastExecutionDate: paidDate,
-      nextExecutionDate: nextDate,
-    });
+      await this.updateRecurringTransaction(templateId, {
+        lastExecutionDate: paidDate,
+        nextExecutionDate: nextDate,
+      });
 
-    return transaction;
+      return transaction;
+    } catch (error) {
+      // Re-throw "not found" errors as-is
+      if (error instanceof Error && error.message === "Recurring template not found") {
+        throw error;
+      }
+      console.error(`❌ [markObligationAsPaid] Error al marcar obligación como pagada:`, {
+        templateId,
+        paidDate,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al marcar la obligación como pagada");
+    }
   }
 
   // Projects Management implementation
@@ -1372,22 +1843,50 @@ export class DBStorage implements IStorage {
   }
 
   async createProject(project: InsertProject): Promise<Project> {
-    const [newProject] = await db.insert(projects).values(project).returning();
-    return newProject;
+    try {
+      const [newProject] = await db.insert(projects).values(project).returning();
+      return newProject;
+    } catch (error) {
+      console.error(`❌ [createProject] Error al insertar proyecto:`, {
+        input: { name: project.name, clientId: project.clientId, serviceType: project.serviceType },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el proyecto en la base de datos");
+    }
   }
 
   async updateProject(id: number, project: UpdateProject): Promise<Project | undefined> {
-    const [updated] = await db
-      .update(projects)
-      .set({ ...project, updatedAt: new Date() })
-      .where(eq(projects.id, id))
-      .returning();
-    return updated;
+    try {
+      const [updated] = await db
+        .update(projects)
+        .set({ ...project, updatedAt: new Date() })
+        .where(eq(projects.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateProject] Error al actualizar proyecto:`, {
+        id,
+        input: project,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el proyecto");
+    }
   }
 
   async deleteProject(id: number): Promise<boolean> {
-    const result = await db.delete(projects).where(eq(projects.id, id));
-    return (result as unknown as PostgresResult).count > 0;
+    try {
+      const result = await db.delete(projects).where(eq(projects.id, id));
+      return (result as unknown as PostgresResult).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteProject] Error al eliminar proyecto:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el proyecto");
+    }
   }
 
   async calculateProjectProgress(projectId: number): Promise<number> {
@@ -1474,64 +1973,96 @@ export class DBStorage implements IStorage {
   }
 
   async createProjectDeliverable(deliverable: InsertProjectDeliverable): Promise<ProjectDeliverable> {
-    const [newDeliverable] = await db.insert(projectDeliverables).values(deliverable).returning();
+    try {
+      const [newDeliverable] = await db.insert(projectDeliverables).values(deliverable).returning();
 
-    // Recalculate project progress
-    await this.calculateProjectProgress(deliverable.projectId);
+      // Recalculate project progress
+      await this.calculateProjectProgress(deliverable.projectId);
 
-    return newDeliverable;
+      return newDeliverable;
+    } catch (error) {
+      console.error(`❌ [createProjectDeliverable] Error al insertar entregable:`, {
+        input: { projectId: deliverable.projectId, title: deliverable.title },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el entregable del proyecto");
+    }
   }
 
   async updateProjectDeliverable(id: number, deliverable: UpdateProjectDeliverable): Promise<ProjectDeliverable | undefined> {
-    // If trying to mark as completed and requiresFile is true, check for linked attachment
-    if (deliverable.completed === true) {
-      const [existing] = await db
-        .select()
-        .from(projectDeliverables)
-        .where(eq(projectDeliverables.id, id));
-      
-      if (existing && existing.requiresFile && !existing.linkedAttachmentId) {
-        throw new Error("No se puede completar: se requiere evidencia de archivo");
+    try {
+      // If trying to mark as completed and requiresFile is true, check for linked attachment
+      if (deliverable.completed === true) {
+        const [existing] = await db
+          .select()
+          .from(projectDeliverables)
+          .where(eq(projectDeliverables.id, id));
+        
+        if (existing && existing.requiresFile && !existing.linkedAttachmentId) {
+          throw new Error("No se puede completar: se requiere evidencia de archivo");
+        }
       }
+
+      const [updated] = await db
+        .update(projectDeliverables)
+        .set({ ...deliverable, updatedAt: new Date() })
+        .where(eq(projectDeliverables.id, id))
+        .returning();
+
+      // Recalculate project progress and health if this deliverable was updated
+      if (updated) {
+        await this.calculateProjectProgress(updated.projectId);
+        await this.calculateProjectHealth(updated.projectId);
+      }
+
+      return updated;
+    } catch (error) {
+      // Re-throw validation errors as-is
+      if (error instanceof Error && error.message.includes("se requiere evidencia")) {
+        throw error;
+      }
+      console.error(`❌ [updateProjectDeliverable] Error al actualizar entregable:`, {
+        id,
+        input: deliverable,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar el entregable del proyecto");
     }
-
-    const [updated] = await db
-      .update(projectDeliverables)
-      .set({ ...deliverable, updatedAt: new Date() })
-      .where(eq(projectDeliverables.id, id))
-      .returning();
-
-    // Recalculate project progress and health if this deliverable was updated
-    if (updated) {
-      await this.calculateProjectProgress(updated.projectId);
-      await this.calculateProjectHealth(updated.projectId);
-    }
-
-    return updated;
   }
 
   async deleteProjectDeliverable(id: number): Promise<boolean> {
-    // Get the deliverable BEFORE deletion to know which project to update
-    const [deliverable] = await db
-      .select()
-      .from(projectDeliverables)
-      .where(eq(projectDeliverables.id, id));
+    try {
+      // Get the deliverable BEFORE deletion to know which project to update
+      const [deliverable] = await db
+        .select()
+        .from(projectDeliverables)
+        .where(eq(projectDeliverables.id, id));
 
-    if (!deliverable) {
-      return false; // Deliverable doesn't exist
+      if (!deliverable) {
+        return false; // Deliverable doesn't exist
+      }
+
+      // Store projectId before deletion
+      const projectIdToUpdate = deliverable.projectId;
+
+      // Execute deletion
+      await db.delete(projectDeliverables).where(eq(projectDeliverables.id, id));
+
+      // ALWAYS recalculate project progress after successful deletion
+      // This ensures the parent project's progress bar stays synchronized
+      await this.calculateProjectProgress(projectIdToUpdate);
+
+      return true;
+    } catch (error) {
+      console.error(`❌ [deleteProjectDeliverable] Error al eliminar entregable:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el entregable del proyecto");
     }
-
-    // Store projectId before deletion
-    const projectIdToUpdate = deliverable.projectId;
-
-    // Execute deletion
-    await db.delete(projectDeliverables).where(eq(projectDeliverables.id, id));
-
-    // ALWAYS recalculate project progress after successful deletion
-    // This ensures the parent project's progress bar stays synchronized
-    await this.calculateProjectProgress(projectIdToUpdate);
-
-    return true;
   }
 
   // Project Attachments implementation
@@ -1552,19 +2083,37 @@ export class DBStorage implements IStorage {
   }
 
   async createProjectAttachment(attachment: InsertProjectAttachment): Promise<ProjectAttachment> {
-    const [newAttachment] = await db.insert(projectAttachments).values(attachment).returning();
-    return newAttachment;
+    try {
+      const [newAttachment] = await db.insert(projectAttachments).values(attachment).returning();
+      return newAttachment;
+    } catch (error) {
+      console.error(`❌ [createProjectAttachment] Error al insertar adjunto:`, {
+        input: { projectId: attachment.projectId, fileName: attachment.fileName },
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al guardar el adjunto del proyecto");
+    }
   }
 
   async deleteProjectAttachment(id: number): Promise<boolean> {
-    // First, unlink any deliverables that reference this attachment
-    await db
-      .update(projectDeliverables)
-      .set({ linkedAttachmentId: null, updatedAt: new Date() })
-      .where(eq(projectDeliverables.linkedAttachmentId, id));
+    try {
+      // First, unlink any deliverables that reference this attachment
+      await db
+        .update(projectDeliverables)
+        .set({ linkedAttachmentId: null, updatedAt: new Date() })
+        .where(eq(projectDeliverables.linkedAttachmentId, id));
 
-    const result = await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
-    return (result as unknown as PostgresResult).count > 0;
+      const result = await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
+      return (result as unknown as PostgresResult).count > 0;
+    } catch (error) {
+      console.error(`❌ [deleteProjectAttachment] Error al eliminar adjunto:`, {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar el adjunto del proyecto");
+    }
   }
 
   /**
@@ -1572,30 +2121,44 @@ export class DBStorage implements IStorage {
    * This is the only way to complete a deliverable that requires a file.
    */
   async linkAttachmentToDeliverable(deliverableId: number, attachmentId: number): Promise<ProjectDeliverable | undefined> {
-    // Verify attachment exists
-    const attachment = await this.getProjectAttachmentById(attachmentId);
-    if (!attachment) {
-      throw new Error("Attachment not found");
+    try {
+      // Verify attachment exists
+      const attachment = await this.getProjectAttachmentById(attachmentId);
+      if (!attachment) {
+        throw new Error("Attachment not found");
+      }
+
+      // Update the deliverable with the linked attachment and mark as completed
+      const [updated] = await db
+        .update(projectDeliverables)
+        .set({
+          linkedAttachmentId: attachmentId,
+          completed: true,
+          updatedAt: new Date()
+        })
+        .where(eq(projectDeliverables.id, deliverableId))
+        .returning();
+
+      // Recalculate project progress and health
+      if (updated) {
+        await this.calculateProjectProgress(updated.projectId);
+        await this.calculateProjectHealth(updated.projectId);
+      }
+
+      return updated;
+    } catch (error) {
+      // Re-throw "Attachment not found" as-is
+      if (error instanceof Error && error.message === "Attachment not found") {
+        throw error;
+      }
+      console.error(`❌ [linkAttachmentToDeliverable] Error al vincular adjunto:`, {
+        deliverableId,
+        attachmentId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al vincular el adjunto al entregable");
     }
-
-    // Update the deliverable with the linked attachment and mark as completed
-    const [updated] = await db
-      .update(projectDeliverables)
-      .set({
-        linkedAttachmentId: attachmentId,
-        completed: true,
-        updatedAt: new Date()
-      })
-      .where(eq(projectDeliverables.id, deliverableId))
-      .returning();
-
-    // Recalculate project progress and health
-    if (updated) {
-      await this.calculateProjectProgress(updated.projectId);
-      await this.calculateProjectHealth(updated.projectId);
-    }
-
-    return updated;
   }
 
   // Project Details (Command Center) implementation

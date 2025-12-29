@@ -56,7 +56,7 @@ import { Slider } from "@/components/ui/slider";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchCampaigns, createCampaign, updateCampaign, deleteCampaign } from "@/lib/api";
-import type { InsertCampaign, Campaign } from "@shared/schema";
+import { insertCampaignSchema, type InsertCampaign, type Campaign } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -172,32 +172,69 @@ export default function Dashboard() {
   });
 
   const handleCreateCampaign = useCallback(() => {
-    if (!newCampaign.campaignCode || !newCampaign.name) {
+    // 🛡️ Validate with shared schema (XSS protection + positive numbers)
+    const result = insertCampaignSchema.safeParse(newCampaign);
+    if (!result.success) {
+      const firstError = result.error.errors[0];
       toast({
         title: "Error de Validación",
-        description: "El código de campaña y el nombre son requeridos.",
+        description: firstError.message || "Por favor verifique los datos ingresados.",
         variant: "destructive",
       });
       return;
     }
-    createCampaignMutation.mutate(newCampaign);
+    createCampaignMutation.mutate(result.data as InsertCampaign);
   }, [newCampaign, createCampaignMutation, toast]);
 
   const handleEditCampaign = useCallback(() => {
     if (!selectedCampaign) return;
+    
+    // 🛡️ Preparar datos con campos numéricos procesados
+    const dataToValidate = {
+      ...editCampaign,
+      budget: Number(editCampaign.budget) || 0,
+      spend: Number(editCampaign.spend) || 0,
+      progress: selectedCampaign.progress, // Mantener progreso actual
+    };
+    
+    // 🛡️ Validación con schema compartido (XSS + números positivos)
+    const result = insertCampaignSchema.safeParse(dataToValidate);
+    
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast({
+        title: "Error de Validación",
+        description: firstError.message || "Por favor verifique los datos ingresados.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // ✅ Usar datos transformados por Zod (sanitizados y validados)
     updateCampaignMutation.mutate({
       id: selectedCampaign.id,
-      data: editCampaign,
+      data: result.data,
     });
-  }, [selectedCampaign, editCampaign, updateCampaignMutation]);
+  }, [selectedCampaign, editCampaign, updateCampaignMutation, toast]);
 
   const handleUpdateProgress = useCallback(() => {
     if (!selectedCampaign) return;
+    
+    // 🛡️ Guardia de rango: asegurar progreso entre 0 y 100
+    const validatedProgress = Math.min(100, Math.max(0, Math.round(progressValue)));
+    
+    if (validatedProgress !== progressValue) {
+      toast({
+        title: "Valor Ajustado",
+        description: `El progreso fue ajustado a ${validatedProgress}% (rango válido: 0-100)`,
+      });
+    }
+    
     updateCampaignMutation.mutate({
       id: selectedCampaign.id,
-      data: { progress: progressValue },
+      data: { progress: validatedProgress },
     });
-  }, [selectedCampaign, progressValue, updateCampaignMutation]);
+  }, [selectedCampaign, progressValue, updateCampaignMutation, toast]);
 
   const handleDeleteCampaign = useCallback(() => {
     if (!selectedCampaign) return;

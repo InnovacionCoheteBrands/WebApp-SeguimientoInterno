@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     FolderKanban, ArrowLeft, Plus, Search, Filter, Calendar,
-    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play, MoreVertical, Eye
+    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play, MoreVertical, Eye, Pencil
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
     deleteProject,
     type Project
 } from "@/lib/api";
-import type { InsertProject, UpdateProject } from "@shared/schema";
+import { insertProjectSchema, type InsertProject, type UpdateProject } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 const STATUS_COLUMNS = [
@@ -140,15 +140,37 @@ export default function Proyectos() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.clientId || !formData.name) {
-            toast({ title: "Error", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
+        
+        // 🛡️ Preparar datos para validación Zod
+        const dataToValidate = {
+            ...formData,
+            // Asegurar que clientId sea número válido
+            clientId: Number(formData.clientId) || 0,
+            // Asegurar que progress sea número
+            progress: Number(formData.progress) || 0,
+            // Procesar deadline como Date o undefined
+            deadline: formData.deadline instanceof Date ? formData.deadline : 
+                      (formData.deadline ? new Date(formData.deadline) : undefined),
+        };
+
+        // 🛡️ Validación con schema compartido (XSS + integridad numérica)
+        const result = insertProjectSchema.safeParse(dataToValidate);
+        
+        if (!result.success) {
+            const firstError = result.error.errors[0];
+            toast({
+                title: "Error de Validación",
+                description: firstError.message || "Por favor verifique los datos ingresados.",
+                variant: "destructive",
+            });
             return;
         }
 
+        // ✅ Usar datos transformados por Zod (sanitizados y validados)
         if (selectedProject) {
-            updateMutation.mutate({ id: selectedProject.id, data: formData as UpdateProject });
+            updateMutation.mutate({ id: selectedProject.id, data: result.data as UpdateProject });
         } else {
-            createMutation.mutate(formData as InsertProject);
+            createMutation.mutate(result.data);
         }
     };
 
@@ -276,7 +298,7 @@ export default function Proyectos() {
                                                 key={project.id}
                                                 status={project.health === 'green' ? 'success' : project.health === 'yellow' ? 'warning' : 'error'}
                                                 className="hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
-                                                onClick={() => handleOpenDialog(project)}
+                                                onClick={() => navigate(`/proyectos/${project.id}`)}
                                             >
                                                 <CardHeader className="p-4 pb-3">
                                                     <div className="flex items-start justify-between gap-2">
@@ -289,9 +311,24 @@ export default function Proyectos() {
                                                                 {project.client.companyName}
                                                             </p>
                                                         </div>
-                                                        <Badge variant="outline" className="rounded-sm text-[10px] px-1.5 h-5 font-normal border-border bg-secondary/20">
-                                                            {project.serviceType}
-                                                        </Badge>
+                                                        <div className="flex items-center gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOpenDialog(project);
+                                                                }}
+                                                                title="Editar proyecto"
+                                                                aria-label="Editar proyecto"
+                                                            >
+                                                                <Pencil className="size-3.5" />
+                                                            </Button>
+                                                            <Badge variant="outline" className="rounded-sm text-[10px] px-1.5 h-5 font-normal border-border bg-secondary/20">
+                                                                {project.serviceType}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
                                                 </CardHeader>
                                                 <CardContent className="p-4 pt-0 space-y-3">
