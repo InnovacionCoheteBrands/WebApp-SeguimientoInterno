@@ -192,14 +192,14 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] bg-card border-border text-foreground">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-4xl bg-card border-border text-foreground">
+                <DialogHeader className="px-10 pt-10 pb-6">
                     <DialogTitle>{initialData ? "Editar Transacción" : `Nuevo ${type === "Ingreso" ? "Ingreso" : "Egreso"}`}</DialogTitle>
                 </DialogHeader>
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-                        <DialogBody className="space-y-6">
+                        <DialogBody className="space-y-6 px-10 py-2">
                             {/* Essential Info Row */}
                             <div className="grid grid-cols-2 gap-4">
                                 <FormField
@@ -472,7 +472,7 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                             />
                         </DialogBody>
 
-                        <DialogFooter>
+                        <DialogFooter className="px-10 py-6">
                             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                                 {initialData ? "Guardar Cambios" : "Crear Transacción"}
                             </Button>

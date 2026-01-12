@@ -37,10 +37,10 @@ router.get("/transactions/:id", async (req, res) => {
 router.post("/transactions", async (req, res) => {
     try {
         console.log("📥 POST /transactions - Body received:", JSON.stringify(req.body, null, 2));
-        
+
         const validatedData = insertTransactionSchema.parse(req.body);
         console.log("✅ Validation passed:", JSON.stringify(validatedData, null, 2));
-        
+
         const transaction = await storage.createTransaction(validatedData);
         res.status(201).json(transaction);
     } catch (error) {
@@ -55,7 +55,7 @@ router.post("/transactions", async (req, res) => {
             console.error("   Error stack:", error.stack);
         }
         console.error("   Full error:", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: "Failed to create transaction",
             details: error instanceof Error ? error.message : "Unknown error"
         });
@@ -249,17 +249,30 @@ router.post("/finance/obligations/:id/pay", async (req, res) => {
     }
 });
 
-// Revert paid status (set lastExecutionDate to null so it reappears in obligations)
+// Revert paid status (delete linked transaction and reset lastExecutionDate)
+// FIN-001: Properly delete the transaction, not just hide it
 router.post("/finance/obligations/:id/unpay", async (req, res) => {
     try {
         const templateId = parseInt(req.params.id);
+
+        // 1. Delete the linked transaction from this month
+        const deleted = await storage.deleteTransactionByRecurringTemplateId(templateId);
+        if (deleted) {
+            console.log(`[Unpay] Deleted linked transaction for template ${templateId}`);
+        }
+
+        // 2. Reset the template's lastExecutionDate so it reappears in obligations
         const recurring = await storage.updateRecurringTransaction(templateId, {
             lastExecutionDate: undefined,
         });
         if (!recurring) {
             return res.status(404).json({ error: "Recurring template not found" });
         }
-        res.json(recurring);
+        res.json({
+            success: true,
+            transactionDeleted: deleted,
+            recurring
+        });
     } catch (error) {
         console.error("Failed to unpay obligation:", error);
         res.status(500).json({ error: "Failed to revert payment status" });

@@ -9,27 +9,55 @@ import { z } from "zod";
 // ===========================================
 
 /**
+ * Escape HTML entities to prevent XSS attacks.
+ * Converts dangerous characters to their HTML entity equivalents.
+ */
+const escapeHtml = (value: string): string => {
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+    '`': '&#x60;',
+    '=': '&#x3D;'
+  };
+  return value.replace(/[&<>"'`=\/]/g, (char) => htmlEntities[char] || char);
+};
+
+/**
  * Sanitize user input to prevent XSS attacks.
- * Removes or encodes dangerous HTML/script tags.
+ * First escapes HTML entities, then removes any remaining dangerous patterns.
  */
 const sanitizeString = (value: string): string => {
   if (!value || typeof value !== 'string') return value;
-  // Remove script tags and event handlers
-  return value
+
+  // Step 1: Escape all HTML entities first (primary defense)
+  let sanitized = escapeHtml(value);
+
+  // Step 2: Remove any remaining dangerous patterns as secondary defense
+  sanitized = sanitized
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<img[^>]*onerror[^>]*>/gi, '')
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
     .replace(/<iframe[^>]*>/gi, '')
     .replace(/<object[^>]*>/gi, '')
     .replace(/<embed[^>]*>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/data:/gi, '')
     .trim();
+
+  return sanitized;
 };
 
 /**
- * Safe string schema with XSS protection
+ * Safe string schema with XSS protection and required validation.
+ * Use for mandatory fields that cannot be empty.
  */
-const safeString = (maxLength: number = 500) => 
+const safeString = (maxLength: number = 500) =>
   z.string()
+    .min(1, "Este campo es requerido")
     .max(maxLength, `Máximo ${maxLength} caracteres`)
     .transform(sanitizeString);
 
@@ -44,24 +72,34 @@ const safeOptionalString = (maxLength: number = 500) =>
     .nullable();
 
 /**
- * Positive number coercion - accepts strings or numbers, ensures >= 0
+ * Positive number coercion - accepts strings or numbers, rejects negative values.
+ * Returns validation error if value is negative (does not silently convert).
  */
 const positiveNumericString = () =>
   z.union([z.string(), z.number()])
+    .refine((val) => {
+      const num = typeof val === 'string' ? parseFloat(val) : val;
+      return isNaN(num) || num >= 0;
+    }, { message: "El valor no puede ser negativo" })
     .transform((val) => {
       const num = typeof val === 'string' ? parseFloat(val) : val;
-      return isNaN(num) ? "0" : Math.abs(num).toFixed(2);
+      return isNaN(num) ? "0" : num.toFixed(2);
     });
 
 /**
- * Optional positive number coercion
+ * Optional positive number coercion - rejects negative values with validation error.
  */
 const optionalPositiveNumericString = () =>
   z.union([z.string(), z.number(), z.null(), z.undefined()])
+    .refine((val) => {
+      if (val === null || val === undefined || val === '') return true;
+      const num = typeof val === 'string' ? parseFloat(val) : val;
+      return isNaN(num) || num >= 0;
+    }, { message: "El valor no puede ser negativo" })
     .transform((val) => {
       if (val === null || val === undefined || val === '') return undefined;
       const num = typeof val === 'string' ? parseFloat(val) : val;
-      return isNaN(num) ? undefined : Math.abs(num).toFixed(2);
+      return isNaN(num) ? undefined : num.toFixed(2);
     })
     .optional();
 
@@ -110,7 +148,7 @@ export const insertCampaignSchema = createInsertSchema(campaigns, {
   status: safeString(50),
   priority: safeString(50),
   targetAudience: safeOptionalString(500),
-  
+
   // 🔢 Positive number validation for financial/metric fields
   budget: z.coerce.number().int().min(0, "El presupuesto no puede ser negativo"),
   spend: z.coerce.number().int().min(0, "El gasto no puede ser negativo"),
@@ -180,12 +218,12 @@ export const insertClientAccountSchema = createInsertSchema(clientAccounts, {
   industry: safeString(100),
   nextMilestone: safeOptionalString(300),
   status: safeString(50),
-  
+
   // 🔢 Positive number validation for financial/metric fields
   monthlyBudget: z.coerce.number().int().min(0, "El presupuesto mensual no puede ser negativo"),
   currentSpend: z.coerce.number().int().min(0, "El gasto actual no puede ser negativo"),
   healthScore: z.coerce.number().int().min(0).max(100, "El health score debe estar entre 0 y 100"),
-  
+
   // 📅 Date coercion
   lastContact: z.coerce.date().optional(),
 }).omit({
@@ -204,7 +242,8 @@ export const team = pgTable("team", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   role: text("role").notNull(),
-  department: text("department").notNull(),
+  seniority: text("seniority").notNull(), // Previously department
+  area: text("area"), // New field linked to agency_role_catalog.area
   status: text("status").notNull().default("Available"),
   avatarUrl: text("avatar_url"),
   workHoursStart: text("work_hours_start").notNull(),
@@ -222,18 +261,20 @@ export const insertTeamSchema = createInsertSchema(team, {
   // 🛡️ Secure string fields with XSS protection
   name: safeString(200),
   role: safeString(100),
-  department: safeString(100),
+  role: safeString(100),
+  seniority: safeString(100),
+  area: safeString(100).optional(),
   status: safeString(50),
   avatarUrl: safeOptionalString(500),
   workHoursStart: safeString(10),
   workHoursEnd: safeString(10),
   skills: safeOptionalString(500),
-  
+
   // 🔢 Positive number coercion for financial fields
   internalCostHour: optionalPositiveNumericString(),
   billableRate: optionalPositiveNumericString(),
   monthlySalary: optionalPositiveNumericString(),
-  
+
   // Integer coercion
   weeklyCapacity: z.coerce.number().int().min(0).max(168).default(40),
   roleCatalogId: z.coerce.number().int().positive().optional().nullable(),
@@ -262,7 +303,7 @@ export const insertTeamAssignmentSchema = createInsertSchema(teamAssignments, {
   teamId: z.coerce.number().int().positive("Se requiere un miembro del equipo válido"),
   campaignId: z.coerce.number().int().positive().optional().nullable(),
   projectId: z.coerce.number().int().positive().optional().nullable(),
-  
+
   // 🔢 Positive number validation for hours
   hoursAllocated: z.coerce.number().int().min(0, "Las horas no pueden ser negativas").default(0),
 }).omit({
@@ -292,10 +333,10 @@ export const insertResourceSchema = createInsertSchema(resources, {
   format: safeString(50),
   status: safeString(50),
   lastModified: safeOptionalString(100),
-  
+
   // 🔢 Positive number validation
   fileSize: optionalPositiveNumericString(),
-  
+
   // 🔗 Integer coercion for campaign FK
   campaignId: z.coerce.number().int().positive().optional().nullable(),
 }).omit({
@@ -310,7 +351,7 @@ export type InsertResource = z.infer<typeof insertResourceSchema>;
 export const agencyRoleCatalog = pgTable("agency_role_catalog", {
   id: serial("id").primaryKey(),
   roleName: text("role_name").notNull(),
-  department: text("department").notNull(), // Creative, Tech, Growth, etc.
+  area: text("area").notNull(), // Renamed from department
   defaultBillableRate: numeric("default_billable_rate").notNull().default("0"),
   allowedActivities: text("allowed_activities"), // JSON string array ["Logo Design", "Coding"]
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -319,9 +360,9 @@ export const agencyRoleCatalog = pgTable("agency_role_catalog", {
 export const insertAgencyRoleSchema = createInsertSchema(agencyRoleCatalog, {
   // 🛡️ XSS Protection for text fields
   roleName: safeString(100),
-  department: safeString(100),
+  area: safeString(100),
   allowedActivities: safeOptionalString(2000), // JSON array needs space
-  
+
   // 🔢 Positive number validation
   defaultBillableRate: positiveNumericString(),
 }).omit({
@@ -390,7 +431,7 @@ export const insertAdCreativeSchema = createInsertSchema(adCreatives, {
   primaryText: safeOptionalString(1000),
   ctaText: safeOptionalString(100),
   status: safeString(50),
-  
+
   // 🔗 Integer coercion for FKs
   platformId: z.coerce.number().int().positive("Se requiere una plataforma válida"),
   campaignId: z.coerce.number().int().positive().optional().nullable(),
@@ -426,7 +467,7 @@ export const insertAdMetricSchema = createInsertSchema(adMetrics, {
   // 🔗 Integer coercion for FKs
   creativeId: z.coerce.number().int().positive("Se requiere un creativo válido"),
   platformId: z.coerce.number().int().positive("Se requiere una plataforma válida"),
-  
+
   // 🔢 Positive number validation for metrics
   impressions: z.coerce.number().int().min(0).default(0),
   clicks: z.coerce.number().int().min(0).default(0),
@@ -436,7 +477,7 @@ export const insertAdMetricSchema = createInsertSchema(adMetrics, {
   ctr: optionalPositiveNumericString(),
   cpa: optionalPositiveNumericString(),
   roas: optionalPositiveNumericString(),
-  
+
   // 📅 Date coercion
   metricDate: z.coerce.date(),
 }).omit({
@@ -482,10 +523,10 @@ export const insertPlatformConnectionSchema = createInsertSchema(platformConnect
   scope: safeOptionalString(500),
   apiKeyName: safeOptionalString(200),
   apiSecret: safeOptionalString(2000), // Encrypted
-  
+
   // 🔗 Integer coercion for FKs
   platformId: z.coerce.number().int().positive("Se requiere una plataforma válida"),
-  
+
   // 📅 Date coercion
   tokenExpiresAt: z.coerce.date().optional().nullable(),
   lastSyncAt: z.coerce.date().optional().nullable(),
@@ -519,7 +560,7 @@ export const insertAccountMappingSchema = createInsertSchema(accountMappings, {
   platformAccountId: safeString(200),
   platformAccountName: safeOptionalString(200),
   internalClientName: safeString(200),
-  
+
   // 🔗 Integer coercion for FKs
   connectionId: z.coerce.number().int().positive("Se requiere una conexión válida"),
   internalClientId: z.coerce.number().int().positive().optional().nullable(),
@@ -549,7 +590,7 @@ export const clientKpiConfig = pgTable("client_kpi_config", {
 export const insertClientKpiConfigSchema = createInsertSchema(clientKpiConfig, {
   // 🛡️ XSS Protection for text fields
   clientName: safeString(200),
-  
+
   // 🔢 Positive number validation for KPIs
   targetROAS: optionalPositiveNumericString(),
   targetCPA: optionalPositiveNumericString(),
@@ -652,16 +693,16 @@ export const insertTransactionSchema = createInsertSchema(transactions, {
   status: safeOptionalString(50),
   relatedClient: safeOptionalString(200),
   source: safeOptionalString(100),
-  
+
   // 🔢 Positive number coercion - amount must be >= 0
   amount: positiveNumericString(),
   subtotal: optionalPositiveNumericString(),
   iva: optionalPositiveNumericString(),
-  
+
   // 📅 Date coercion
   date: z.coerce.date(),
   paidDate: z.coerce.date().optional().nullable(),
-  
+
   // 🔗 Integer coercion for IDs
   clientId: z.coerce.number().int().positive().optional().nullable(),
   recurringTemplateId: z.coerce.number().int().positive().optional().nullable(),
@@ -718,17 +759,17 @@ export const insertRecurringTransactionSchema = createInsertSchema(recurringTran
   provider: safeOptionalString(200),
   notes: safeOptionalString(1000),
   frequency: z.enum(["weekly", "biweekly", "monthly", "quarterly", "yearly"]),
-  
+
   // 🔢 Positive number coercion
   amount: positiveNumericString(),
   subtotal: optionalPositiveNumericString(),
   iva: optionalPositiveNumericString(),
-  
+
   // Integer coercion
   dayOfMonth: z.coerce.number().int().min(1).max(31).optional().nullable(),
   dayOfWeek: z.coerce.number().int().min(0).max(6).optional().nullable(),
   clientId: z.coerce.number().int().positive().optional().nullable(),
-  
+
   // 📅 Date coercion
   nextExecutionDate: z.coerce.date(),
   lastExecutionDate: z.coerce.date().optional().nullable(),
@@ -771,14 +812,14 @@ export const insertProjectSchema = createInsertSchema(projects, {
   description: safeOptionalString(1000),
   serviceSpecificFields: safeOptionalString(5000), // JSON fields need more space
   customFields: safeOptionalString(5000),
-  
+
   // 🔢 Positive number validation
   progress: z.coerce.number().int().min(0).max(100, "El progreso debe estar entre 0 y 100").default(0),
   budget: optionalPositiveNumericString(),
-  
+
   // 🔗 Integer coercion for client FK
   clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
-  
+
   // 📅 Date coercion
   deadline: z.coerce.date().optional().nullable(),
 }).omit({
@@ -809,7 +850,7 @@ export const insertProjectAttachmentSchema = createInsertSchema(projectAttachmen
   name: safeString(200),
   url: safeString(1000),
   fileType: safeOptionalString(100),
-  
+
   // 🔢 Integer validation
   projectId: z.coerce.number().int().positive("Se requiere un proyecto válido"),
   fileSize: z.coerce.number().int().min(0).optional().nullable(),
@@ -841,12 +882,12 @@ export const insertProjectDeliverableSchema = createInsertSchema(projectDelivera
   // 🛡️ XSS Protection for text fields
   title: safeString(200),
   description: safeOptionalString(1000),
-  
+
   // 🔢 Integer validation
   order: z.coerce.number().int().min(0).default(0),
   projectId: z.coerce.number().int().positive("Se requiere un proyecto válido"),
   linkedAttachmentId: z.coerce.number().int().positive().optional().nullable(),
-  
+
   // 📅 Date coercion
   dueDate: z.coerce.date().optional().nullable(),
 }).omit({

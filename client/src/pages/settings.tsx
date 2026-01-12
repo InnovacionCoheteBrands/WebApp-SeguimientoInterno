@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { ArrowLeft, Globe, Bell, Eye, Plug, Save } from "lucide-react";
+import { ArrowLeft, Globe, Bell, Eye, Plug, Save, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +43,10 @@ const Settings = memo(function Settings() {
   const { themeColor, setThemeColor, presetOptions } = useThemeColor();
   const [localSettings, setLocalSettings] = useState<Settings>(defaultSettings);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // SEC-004: State for robust API key regeneration confirmation
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
   // Fetch settings from API (shared cache)
   const { data: serverSettings, isLoading } = useSystemSettings();
@@ -130,9 +144,17 @@ const Settings = memo(function Settings() {
     if (key === 'language') setLanguage(value as any);
   };
 
+  // SEC-004: Robust confirmation for API key regeneration
   const handleGenerateApiKey = () => {
-    if (confirm("Are you sure? This will invalidate your existing API Key.")) {
+    setShowRegenerateDialog(true);
+    setConfirmText("");
+  };
+
+  const confirmRegenerateApiKey = () => {
+    if (confirmText === "REGENERAR") {
       regenerateKeyMutation.mutate();
+      setShowRegenerateDialog(false);
+      setConfirmText("");
     }
   };
 
@@ -473,6 +495,50 @@ const Settings = memo(function Settings() {
 
         </div>
       </div>
+
+      {/* SEC-004: Robust confirmation dialog for API key regeneration */}
+      <AlertDialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="size-5" />
+              Regenerar API Key
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                <strong>¡Advertencia!</strong> Esta acción invalidará tu API Key actual.
+                Todas las integraciones activas que usen esta clave dejarán de funcionar inmediatamente.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-regenerate" className="text-sm">
+                  Escribe <code className="bg-muted px-1 py-0.5 rounded text-destructive font-bold">REGENERAR</code> para confirmar:
+                </Label>
+                <Input
+                  id="confirm-regenerate"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                  placeholder="REGENERAR"
+                  className="font-mono uppercase"
+                  data-testid="input-confirm-regenerate"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmText("")}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRegenerateApiKey}
+              disabled={confirmText !== "REGENERAR" || regenerateKeyMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-regenerate"
+            >
+              {regenerateKeyMutation.isPending ? "Regenerando..." : "Confirmar Regeneración"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

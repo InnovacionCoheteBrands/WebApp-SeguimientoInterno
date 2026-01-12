@@ -10,6 +10,7 @@ import {
     updateClientKpiConfigSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { encrypt, isEncryptionConfigured } from "../utils/crypto";
 
 const router = Router();
 
@@ -379,12 +380,25 @@ router.post("/ads/integrations/api-key", async (req, res) => {
             });
         }
 
-        // Create platform connection
+        // Encrypt API keys before storage (SEC-002)
+        let encryptedApiKey = apiKey;
+        let encryptedApiSecret = apiSecret;
+
+        if (isEncryptionConfigured()) {
+            encryptedApiKey = encrypt(apiKey);
+            if (apiSecret) {
+                encryptedApiSecret = encrypt(apiSecret);
+            }
+        } else {
+            console.warn('⚠️  WARNING: ENCRYPTION_KEY not configured. Storing API keys in plaintext.');
+        }
+
+        // Create platform connection with encrypted credentials
         const connection = await storage.createPlatformConnection({
             platformId: adPlatform.id,
             connectionType: "api_key",
-            accessToken: apiKey, // TODO: Encrypt this
-            apiSecret: apiSecret, // TODO: Encrypt this
+            accessToken: encryptedApiKey,
+            apiSecret: encryptedApiSecret,
             apiKeyName: apiKeyName || `${platform} API Key`,
             isActive: true,
         });

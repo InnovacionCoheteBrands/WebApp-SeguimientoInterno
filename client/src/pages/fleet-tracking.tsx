@@ -180,7 +180,7 @@ const FleetTracking = memo(function FleetTracking() {
                   <Badge
                     variant="outline"
                     className={`rounded-sm text-[9px] h-4 px-1 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
-                        account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
+                      account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
                       }`}
                   >
                     {account.status}
@@ -240,7 +240,7 @@ const FleetTracking = memo(function FleetTracking() {
                   <Badge
                     variant="outline"
                     className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
-                        account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
+                      account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
                       }`}
                     data-testid={`client-status-${account.id}`}
                   >
@@ -295,8 +295,8 @@ const FleetTracking = memo(function FleetTracking() {
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-500 ${account.healthScore >= 80 ? "bg-green-500" :
-                          account.healthScore >= 50 ? "bg-yellow-500" :
-                            "bg-red-500"
+                        account.healthScore >= 50 ? "bg-yellow-500" :
+                          "bg-red-500"
                         }`}
                       style={{ width: `${account.healthScore}%` }}
                     />
@@ -355,14 +355,14 @@ const FleetTracking = memo(function FleetTracking() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-sm">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-3xl rounded-sm">
+          <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingAccount ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
             <DialogDescription>
               {editingAccount ? "Actualiza los detalles del cliente" : "Agrega un nuevo cliente a tu cartera"}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 px-10 py-2">
             <div className="space-y-2">
               <Label htmlFor="companyName">Nombre del Cliente *</Label>
               <Input
@@ -468,7 +468,7 @@ const FleetTracking = memo(function FleetTracking() {
               </Select>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="px-10 py-6">
               <Button
                 type="button"
                 variant="outline"

@@ -23,7 +23,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
     const [editingRole, setEditingRole] = useState<AgencyRole | null>(null);
     const [formData, setFormData] = useState<Partial<InsertAgencyRole>>({
         roleName: "",
-        department: "",
+        area: "",
         defaultBillableRate: "0",
         allowedActivities: "[]"
     });
@@ -50,7 +50,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
 
     const resetForm = () => {
         setEditingRole(null);
-        setFormData({ roleName: "", department: "", defaultBillableRate: "0", allowedActivities: "[]" });
+        setFormData({ roleName: "", area: "", defaultBillableRate: "0", allowedActivities: "[]" });
         setCurrentActivities([]);
         setNewActivity("");
     };
@@ -60,7 +60,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
         const activities = role.allowedActivities ? JSON.parse(role.allowedActivities as string) : [];
         setFormData({
             roleName: role.roleName,
-            department: role.department,
+            area: role.area,
             defaultBillableRate: role.defaultBillableRate,
             allowedActivities: role.allowedActivities
         });
@@ -85,8 +85,8 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.roleName || !formData.department) {
-            toast({ title: "Validation Error", description: "Role Name and Department are required", variant: "destructive" });
+        if (!formData.roleName || !formData.area) {
+            toast({ title: "Validation Error", description: "Role Name and Area are required", variant: "destructive" });
             return;
         }
 
@@ -141,7 +141,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
                                 >
                                     <div className="flex justify-between items-start mb-1">
                                         <span className="font-semibold text-sm text-foreground">{role.roleName}</span>
-                                        <Badge variant="outline" className="text-[10px] h-4 border-border text-muted-foreground">{role.department}</Badge>
+                                        <Badge variant="outline" className="text-[10px] h-4 border-border text-muted-foreground">{role.area}</Badge>
                                     </div>
                                     <div className="flex justify-between items-center text-xs text-muted-foreground font-mono">
                                         <span>${role.defaultBillableRate}/hr</span>
@@ -179,10 +179,10 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-muted-foreground">Department</Label>
+                                    <Label className="text-muted-foreground">Area</Label>
                                     <Input
-                                        value={formData.department}
-                                        onChange={e => setFormData({ ...formData, department: e.target.value })}
+                                        value={formData.area}
+                                        onChange={e => setFormData({ ...formData, area: e.target.value })}
                                         className="bg-background border-border"
                                         placeholder="Creative"
                                     />

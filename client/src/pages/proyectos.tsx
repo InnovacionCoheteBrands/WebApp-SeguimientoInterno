@@ -140,7 +140,7 @@ export default function Proyectos() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // 🛡️ Preparar datos para validación Zod
         const dataToValidate = {
             ...formData,
@@ -149,13 +149,13 @@ export default function Proyectos() {
             // Asegurar que progress sea número
             progress: Number(formData.progress) || 0,
             // Procesar deadline como Date o undefined
-            deadline: formData.deadline instanceof Date ? formData.deadline : 
-                      (formData.deadline ? new Date(formData.deadline) : undefined),
+            deadline: formData.deadline instanceof Date ? formData.deadline :
+                (formData.deadline ? new Date(formData.deadline) : undefined),
         };
 
         // 🛡️ Validación con schema compartido (XSS + integridad numérica)
         const result = insertProjectSchema.safeParse(dataToValidate);
-        
+
         if (!result.success) {
             const firstError = result.error.errors[0];
             toast({
@@ -409,14 +409,14 @@ export default function Proyectos() {
 
             {/* Project Form Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] rounded-sm">
-                    <DialogHeader>
+                <DialogContent className="sm:max-w-4xl rounded-sm">
+                    <DialogHeader className="px-10 pt-10 pb-6">
                         <DialogTitle>{selectedProject ? "Editar Proyecto" : "Nuevo Proyecto"}</DialogTitle>
                         <DialogDescription>
                             {selectedProject ? "Actualiza la información del proyecto" : "Crea un nuevo proyecto asignado a un cliente"}
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4 px-10 py-2">
                         <div className="space-y-2">
                             <Label htmlFor="client">Cliente *</Label>
                             <Select
@@ -524,7 +524,7 @@ export default function Proyectos() {
                             />
                         </div>
 
-                        <DialogFooter>
+                        <DialogFooter className="px-10 py-6">
                             <Button
                                 type="button"
                                 variant="outline"

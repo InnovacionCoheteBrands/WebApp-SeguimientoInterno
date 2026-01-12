@@ -87,6 +87,7 @@ export interface IStorage {
   /** @deprecated Feature not implemented. Kept for backward compatibility. */
   updateUserWebhook(userId: string, webhookUrl: string): Promise<User>;
   regenerateApiKey(userId: string): Promise<string>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
 
   getCampaigns(): Promise<Campaign[]>;
   getCampaignById(id: number): Promise<Campaign | undefined>;
@@ -208,6 +209,9 @@ export interface IStorage {
   getMonthlyAccountsPayable(year: number, month: number): Promise<RecurringTransaction[]>;
   getMonthlyAccountsReceivable(year: number, month: number): Promise<RecurringTransaction[]>;
   markObligationAsPaid(templateId: number, paidDate: Date): Promise<Transaction>;
+
+  // FIN-001: Delete transaction linked to recurring template for current month
+  deleteTransactionByRecurringTemplateId(templateId: number): Promise<boolean>;
 
 
   // Projects Management
@@ -397,6 +401,24 @@ export class DBStorage implements IStorage {
         stack: error instanceof Error ? error.stack : undefined,
       });
       throw new Error("Error al regenerar la API key");
+    }
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`❌ [updateUserPassword] Error al actualizar password:`, {
+        userId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al actualizar la contraseña del usuario");
     }
   }
 
@@ -1771,6 +1793,37 @@ export class DBStorage implements IStorage {
     }
   }
 
+  // FIN-001: Delete transaction linked to recurring template for current month
+  // Used by the "unpay" feature to properly revert a paid obligation
+  async deleteTransactionByRecurringTemplateId(templateId: number): Promise<boolean> {
+    try {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      // Find and delete transactions linked to this template created this month
+      const result = await db.delete(transactions)
+        .where(
+          and(
+            eq(transactions.recurringTemplateId, templateId),
+            sql`${transactions.date} >= ${startOfMonth}`,
+            sql`${transactions.date} <= ${endOfMonth}`
+          )
+        );
+
+      const deletedCount = (result as any).rowCount ?? 0;
+      console.log(`[deleteTransactionByRecurringTemplateId] Deleted ${deletedCount} transaction(s) for template ${templateId}`);
+      return deletedCount > 0;
+    } catch (error) {
+      console.error(`❌ [deleteTransactionByRecurringTemplateId] Error:`, {
+        templateId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Error al eliminar transacción vinculada al template");
+    }
+  }
+
   // Projects Management implementation
   async getProjects(): Promise<(Project & { client: ClientAccount })[]> {
     const result = await db.execute(sql`
@@ -1910,7 +1963,7 @@ export class DBStorage implements IStorage {
    */
   async calculateProjectHealth(projectId: number): Promise<string> {
     const now = new Date();
-    
+
     // Check for critical blocking conditions:
     // - requiresFile is true
     // - linkedAttachmentId is null (no file attached)
@@ -1924,18 +1977,18 @@ export class DBStorage implements IStorage {
         AND due_date IS NOT NULL
         AND due_date < ${now}
     `);
-    
+
     const overdueWithoutFile = parseInt((result[0] as any)?.count || '0');
-    
+
     let newHealth = 'green';
-    
+
     if (overdueWithoutFile > 0) {
       // Critical: Overdue deliverables without required evidence
       newHealth = 'red';
     } else {
       // Check for warning conditions (approaching deadline without file)
       const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-      
+
       const warningResult = await db.execute(sql`
         SELECT COUNT(*) as count
         FROM ${projectDeliverables}
@@ -1946,20 +1999,20 @@ export class DBStorage implements IStorage {
           AND due_date > ${now}
           AND due_date <= ${threeDaysFromNow}
       `);
-      
+
       const approachingDeadline = parseInt((warningResult[0] as any)?.count || '0');
-      
+
       if (approachingDeadline > 0) {
         newHealth = 'yellow';
       }
     }
-    
+
     // Update project health if changed
     await db
       .update(projects)
       .set({ health: newHealth, updatedAt: new Date() })
       .where(eq(projects.id, projectId));
-    
+
     return newHealth;
   }
 
@@ -1998,7 +2051,7 @@ export class DBStorage implements IStorage {
           .select()
           .from(projectDeliverables)
           .where(eq(projectDeliverables.id, id));
-        
+
         if (existing && existing.requiresFile && !existing.linkedAttachmentId) {
           throw new Error("No se puede completar: se requiere evidencia de archivo");
         }

@@ -183,7 +183,8 @@ export default function Personnel() {
   const [formData, setFormData] = useState<Partial<InsertTeam> & { addToPayroll?: boolean }>({
     name: "",
     role: "",
-    department: "Junior",
+    seniority: "Junior",
+    area: "",
     status: "Available",
     workHoursStart: "09:00",
     workHoursEnd: "18:00",
@@ -205,7 +206,8 @@ export default function Personnel() {
     setFormData({
       name: "",
       role: "",
-      department: "Junior",
+      seniority: "Junior",
+      area: "",
       status: "Available",
       workHoursStart: "09:00",
       workHoursEnd: "18:00",
@@ -226,7 +228,8 @@ export default function Personnel() {
       setFormData({
         name: member.name,
         role: member.role,
-        department: member.department,
+        seniority: member.seniority,
+        area: member.area || "",
         status: member.status,
         workHoursStart: member.workHoursStart,
         workHoursEnd: member.workHoursEnd,
@@ -254,23 +257,27 @@ export default function Personnel() {
         ...prev,
         role: selectedRole.roleName,
         roleCatalogId: roleId,
-        department: selectedRole.department,
+        area: selectedRole.area,
         billableRate: selectedRole.defaultBillableRate?.toString() || "0",
         skills: activities.join(", ")
       }));
     }
   };
 
-  // Auto-calculate Internal Cost
+  // Auto-calculate Internal Cost (with guard to prevent unnecessary updates)
   useEffect(() => {
     const salary = parseFloat(formData.monthlySalary?.toString() || "0");
     const hours = formData.weeklyCapacity || 40;
     if (salary > 0 && hours > 0) {
       // 4.33 weeks per month average
       const costPerHour = (salary / (hours * 4.33)).toFixed(2);
-      setFormData(prev => ({ ...prev, internalCostHour: costPerHour }));
+      // Only update if the calculated value differs from current to prevent re-render loops
+      const currentCost = formData.internalCostHour?.toString() || "0";
+      if (costPerHour !== currentCost) {
+        setFormData(prev => ({ ...prev, internalCostHour: costPerHour }));
+      }
     }
-  }, [formData.monthlySalary, formData.weeklyCapacity]);
+  }, [formData.monthlySalary, formData.weeklyCapacity, formData.internalCostHour]);
 
   const handleSubmitTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,9 +478,9 @@ export default function Personnel() {
                     </div>
                   </div>
                   <Badge variant="outline" className={`rounded-sm text-[10px] font-mono
-                         ${member.department === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
+                         ${member.seniority === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
                       `}>
-                    {member.department}
+                    {member.area ? `${member.area} • ` : ''}{member.seniority}
                   </Badge>
                 </div>
 
@@ -563,15 +570,15 @@ export default function Personnel() {
 
       {/* Team Member Dialog */}
       <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] border-border bg-card text-foreground rounded-sm">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-4xl border-border bg-card text-foreground rounded-sm">
+          <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingMember ? "Edit Strategic Asset" : "Onboard New Talent"}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Configure resource capacity, financial metrics, and skills.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitTeam} className="flex flex-col flex-1 min-h-0">
-            <DialogBody className="space-y-4">
+            <DialogBody className="space-y-4 px-10 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
                   <Label className="text-muted-foreground">Master Service Role</Label>
@@ -611,10 +618,15 @@ export default function Personnel() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Area</Label>
+                <Input value={formData.area} readOnly className="bg-muted text-muted-foreground border-border rounded-sm" />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Seniority</Label>
-                  <Select value={formData.department} onValueChange={v => setFormData({ ...formData, department: v })}>
+                  <Select value={formData.seniority} onValueChange={v => setFormData({ ...formData, seniority: v })}>
                     <SelectTrigger className="bg-background border-border rounded-sm">
                       <SelectValue />
                     </SelectTrigger>
@@ -725,7 +737,7 @@ export default function Personnel() {
               </div>
             </DialogBody>
 
-            <DialogFooter>
+            <DialogFooter className="px-10 py-6">
               <Button type="button" variant="ghost" onClick={() => setIsTeamDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
               <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">
                 {editingMember ? "Save Changes" : "Create Asset"}
@@ -737,15 +749,15 @@ export default function Personnel() {
 
       {/* Assignment Dialog */}
       <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] border-border bg-card text-foreground rounded-sm">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg border-border bg-card text-foreground rounded-sm">
+          <DialogHeader className="px-8 pt-8 pb-4">
             <DialogTitle>Assign Capacity</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Allocate hours to a specific project.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitAssignment} className="flex flex-col flex-1 min-h-0">
-            <DialogBody className="space-y-4">
+            <DialogBody className="space-y-4 px-8 py-2">
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Project Strategy</Label>
                 <Select value={assignmentForm.projectId.toString()} onValueChange={v => setAssignmentForm({ ...assignmentForm, projectId: parseInt(v) })}>
@@ -774,7 +786,7 @@ export default function Personnel() {
               </div>
             </DialogBody>
 
-            <DialogFooter>
+            <DialogFooter className="px-8 py-6">
               <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
               <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">Confirm Allocation</Button>
             </DialogFooter>
@@ -783,6 +795,6 @@ export default function Personnel() {
       </Dialog>
 
       <RoleCatalogDialog open={isCatalogOpen} onOpenChange={setIsCatalogOpen} />
-    </div>
+    </div >
   );
 }
