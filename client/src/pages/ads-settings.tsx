@@ -289,7 +289,7 @@ export default function AdsSettings() {
                                                     Conectar
                                                 </Button>
                                             </DialogTrigger>
-                                            <DialogContent className="max-w-2xl">
+                                            <DialogContent className="sm:max-w-4xl">
                                                 <DialogHeader>
                                                     <DialogTitle className="font-display uppercase">
                                                         Conectar {platform.displayName}

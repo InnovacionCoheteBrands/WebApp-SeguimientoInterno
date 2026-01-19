@@ -14,6 +14,12 @@ import adsRouter from "./controllers/ads";
 import agentRouter from "./controllers/agent";
 import agencyRouter from "./controllers/agency";
 import settingsRouter from "./controllers/settings";
+// New Agency Module Controllers
+import contactsRouter from "./controllers/contacts";
+import billingProfilesRouter from "./controllers/billing-profiles";
+import digitalAssetsRouter from "./controllers/digital-assets";
+import clientDocumentsRouter from "./controllers/client-documents";
+import installmentsRouter from "./controllers/installments";
 import { requireAuth } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -21,35 +27,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/auth", authRouter);
 
   // Protected routes (require JWT authentication)
-  // Note: For development/demo mode, you can comment out requireAuth
-  const isDevMode = process.env.NODE_ENV === 'development' && process.env.SKIP_AUTH === 'true';
-
-  if (isDevMode) {
-    console.warn('⚠️  WARNING: Authentication is disabled in development mode (SKIP_AUTH=true)');
-    app.use("/api", campaignsRouter);
-    app.use("/api", clientsRouter);
-    app.use("/api", teamRouter);
-    app.use("/api", resourcesRouter);
-    app.use("/api", financialRouter);
-    app.use("/api", miscRouter);
-    app.use("/api", projectsRouter);
-    app.use("/api", adsRouter);
-    app.use("/api", agentRouter);
-    app.use("/api", agencyRouter);
-    app.use("/api", settingsRouter);
-  } else {
-    app.use("/api", requireAuth, campaignsRouter);
-    app.use("/api", requireAuth, clientsRouter);
-    app.use("/api", requireAuth, teamRouter);
-    app.use("/api", requireAuth, resourcesRouter);
-    app.use("/api", requireAuth, financialRouter);
-    app.use("/api", requireAuth, miscRouter);
-    app.use("/api", requireAuth, projectsRouter);
-    app.use("/api", requireAuth, adsRouter);
-    app.use("/api", requireAuth, agentRouter);
-    app.use("/api", requireAuth, agencyRouter);
-    app.use("/api", requireAuth, settingsRouter);
-  }
+  app.use("/api", requireAuth, campaignsRouter);
+  app.use("/api", requireAuth, clientsRouter);
+  app.use("/api", requireAuth, teamRouter);
+  app.use("/api", requireAuth, resourcesRouter);
+  app.use("/api", requireAuth, financialRouter);
+  app.use("/api", requireAuth, miscRouter);
+  app.use("/api", requireAuth, projectsRouter);
+  app.use("/api", requireAuth, adsRouter);
+  app.use("/api", requireAuth, agentRouter);
+  app.use("/api", requireAuth, agencyRouter);
+  app.use("/api", requireAuth, settingsRouter);
+  // New Agency Module Routes
+  app.use("/api", requireAuth, contactsRouter);
+  app.use("/api", requireAuth, billingProfilesRouter);
+  app.use("/api", requireAuth, digitalAssetsRouter);
+  app.use("/api", requireAuth, clientDocumentsRouter);
+  app.use("/api", requireAuth, installmentsRouter);
 
   const httpServer = createServer(app);
   setupWebSocket(httpServer);

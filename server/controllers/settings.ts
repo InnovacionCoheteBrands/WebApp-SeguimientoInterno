@@ -21,10 +21,16 @@ async function getDefaultUser() {
     const username = "admin";
     let user = await storage.getUserByUsername(username);
     if (!user) {
+        // SEC-001: Use hashed password instead of plaintext
+        // Default password for fresh install is "admin123" - USER MUST CHANGE THIS
+        const { hashPassword } = await import("../utils/crypto");
+        const hashedPassword = await hashPassword("admin123");
+
         user = await storage.createUser({
             username,
-            password: "password", // SECURITY WARNING: Hardcoded password for demo only
+            password: hashedPassword,
         });
+        console.log("🔒 Created default admin user (admin/admin123)");
     }
     return user;
 }

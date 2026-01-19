@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-    FolderKanban, ArrowLeft, Plus, Search, Filter, Calendar,
-    Clock, AlertCircle, CheckCircle2, XCircle, Pause, Play, MoreVertical, Eye, Pencil
+    Calendar, Play, CheckCircle2, XCircle, ArrowLeft, Plus, Search,
+    MoreVertical, Eye, Pencil, AlertCircle, Clock
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -24,13 +24,29 @@ import {
 } from "@/lib/api";
 import { insertProjectSchema, type InsertProject, type UpdateProject } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import {
+    DndContext,
+    DragOverlay,
+    useSensor,
+    useSensors,
+    PointerSensor,
+    type DragStartEvent,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    useSortable,
+    horizontalListSortingStrategy,
+    verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const STATUS_COLUMNS = [
     { id: "Planificación", label: "Planificación", icon: Calendar, color: "bg-muted/50 border-border text-muted-foreground" },
-    { id: "En Curso", label: "En Curso", icon: Play, color: "bg-muted/50 border-border text-muted-foreground" },
-    { id: "En Revisión", label: "En Revisión", icon: CheckCircle2, color: "bg-muted/50 border-border text-muted-foreground" },
-    { id: "Bloqueado", label: "Bloqueado", icon: XCircle, color: "bg-muted/50 border-border text-muted-foreground" },
-    { id: "Completado", label: "Completado", icon: CheckCircle2, color: "bg-muted/50 border-border text-muted-foreground" },
+    { id: "En Curso", label: "En Curso", icon: Play, color: "bg-blue-500/10 border-blue-500/20 text-blue-600" },
+    { id: "En Revisión", label: "En Revisión", icon: CheckCircle2, color: "bg-orange-500/10 border-orange-500/20 text-orange-600" },
+    { id: "Bloqueado", label: "Bloqueado", icon: XCircle, color: "bg-red-500/10 border-red-500/20 text-red-600" },
+    { id: "Completado", label: "Completado", icon: CheckCircle2, color: "bg-green-500/10 border-green-500/20 text-green-600" },
 ];
 
 const SERVICE_TYPES = ["SEO", "Web", "Ads", "General"];
@@ -41,16 +57,151 @@ const HEALTH_COLORS = {
     red: { bg: "bg-red-500/20", border: "border-red-500/50", text: "text-red-500" },
 };
 
+// ----------------------------------------------------------------------
+// DRAGGABLE PROJECT CARD
+// ----------------------------------------------------------------------
+function DraggableProjectCard({ project, onClick, onEdit }: { project: Project; onClick: () => void; onEdit: (e: any) => void }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: project.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    const isOverdue = project.deadline && new Date(project.deadline) < new Date();
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <Card
+                className={`group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/50 backdrop-blur-md hover:-translate-y-1 cursor-grab active:cursor-grabbing border-border/50 bg-card/40 hover:bg-card/60 ${isDragging ? 'ring-2 ring-primary shadow-2xl rotate-2 scale-105 z-50 bg-card/90' : ''}`}
+                onClick={onClick}
+            >
+                <CardHeader className="p-4 pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                            <CardTitle className="text-sm font-bold truncate flex items-center gap-2">
+                                {project.name}
+                                {isOverdue && <AlertCircle className="size-3 text-red-500" />}
+                            </CardTitle>
+                            <p className="text-[10px] text-muted-foreground truncate uppercase font-mono tracking-wider mt-1">
+                                {project.client.companyName}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={onEdit}
+                                title="Editar proyecto"
+                            >
+                                <Pencil className="size-3.5" />
+                            </Button>
+                            <Badge variant="outline" className="rounded-sm text-[10px] px-1.5 h-5 font-normal border-border bg-secondary/20">
+                                {project.serviceType}
+                            </Badge>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-3">
+                    <div>
+                        <div className="flex justify-between text-[10px] mb-1.5 font-mono text-muted-foreground">
+                            <span>PROGRESO</span>
+                            <span className={project.progress === 100 ? "text-green-500" : ""}>{project.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-500 ${project.progress === 100 ? 'bg-green-500' : 'bg-primary'}`}
+                                style={{ width: `${project.progress}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                        {project.deadline ? (
+                            <div className={`flex items-center gap-1.5 text-[10px] font-mono ${isOverdue ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                <Clock className="size-3" />
+                                <span>
+                                    {isOverdue ? 'VENCIDO ' : ''}
+                                    {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
+                                </span>
+                            </div>
+                        ) : <div />}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+// ----------------------------------------------------------------------
+// DROPPABLE COLUMN
+// ----------------------------------------------------------------------
+function DroppableColumn({ column, projects, onEdit, navigate }: { column: any; projects: Project[]; onEdit: (p: Project) => void; navigate: any }) {
+    const { setNodeRef } = useSortable({ id: column.id });
+
+    return (
+        <div ref={setNodeRef} className="flex flex-col gap-3 h-full">
+            <div className={`flex items-center gap-2 p-3 rounded-md border backdrop-blur-sm shadow-sm ${column.color}`}>
+                <column.icon className="size-4 opacity-70" />
+                <span className="font-bold text-xs uppercase tracking-wider">{column.label}</span>
+                <Badge variant="outline" className="ml-auto rounded-sm text-xs border-white/20 bg-black/5 text-foreground/80">
+                    {projects.length}
+                </Badge>
+            </div>
+
+            <div className="space-y-3 flex-1 min-h-[150px] p-1 rounded-xl transition-colors bg-muted/5/0">
+                <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                    {projects.map((project) => (
+                        <DraggableProjectCard
+                            key={project.id}
+                            project={project}
+                            onClick={() => navigate(`/proyectos/${project.id}`)}
+                            onEdit={(e) => {
+                                e.stopPropagation();
+                                onEdit(project);
+                            }}
+                        />
+                    ))}
+                </SortableContext>
+                {projects.length === 0 && (
+                    <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-border/50 rounded-sm">
+                        Arrastra aquí
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+
 export default function Proyectos() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterClient, setFilterClient] = useState<string>("all");
     const [filterService, setFilterService] = useState<string>("all");
+    const [activeId, setActiveId] = useState<number | null>(null);
 
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [, navigate] = useLocation();
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Require movement of 8px to start drag (prevents accidental clicks)
+            },
+        })
+    );
 
     const { data: projects = [] } = useQuery({
         queryKey: ["projects"],
@@ -128,7 +279,7 @@ export default function Proyectos() {
                 name: project.name,
                 serviceType: project.serviceType,
                 status: project.status,
-                health: project.health,
+                health: project.health as "green" | "yellow" | "red",
                 description: project.description || "",
                 deadline: project.deadline ? new Date(project.deadline) : undefined,
             });
@@ -140,20 +291,14 @@ export default function Proyectos() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // 🛡️ Preparar datos para validación Zod
         const dataToValidate = {
             ...formData,
-            // Asegurar que clientId sea número válido
             clientId: Number(formData.clientId) || 0,
-            // Asegurar que progress sea número
             progress: Number(formData.progress) || 0,
-            // Procesar deadline como Date o undefined
             deadline: formData.deadline instanceof Date ? formData.deadline :
                 (formData.deadline ? new Date(formData.deadline) : undefined),
         };
 
-        // 🛡️ Validación con schema compartido (XSS + integridad numérica)
         const result = insertProjectSchema.safeParse(dataToValidate);
 
         if (!result.success) {
@@ -166,7 +311,6 @@ export default function Proyectos() {
             return;
         }
 
-        // ✅ Usar datos transformados por Zod (sanitizados y validados)
         if (selectedProject) {
             updateMutation.mutate({ id: selectedProject.id, data: result.data as UpdateProject });
         } else {
@@ -184,27 +328,51 @@ export default function Proyectos() {
         });
     }, [projects, searchTerm, filterClient, filterService]);
 
-    const projectsByStatus = useMemo(() => {
-        const grouped: Record<string, Project[]> = {};
-        STATUS_COLUMNS.forEach(col => {
-            grouped[col.id] = filteredProjects.filter(p => p.status === col.id);
-        });
-        return grouped;
-    }, [filteredProjects]);
+    const activeProject = useMemo(() =>
+        projects.find((p) => p.id === activeId),
+        [activeId, projects]
+    );
 
-    const handleStatusChange = (projectId: number, newStatus: string) => {
-        updateMutation.mutate({
-            id: projectId,
-            data: { status: newStatus }
-        });
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        setActiveId(active.id as number);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            // Check if dropped on a column (droppable)
+            const isColumn = STATUS_COLUMNS.some(col => col.id === over.id);
+
+            // If dropped on a column, update status
+            if (isColumn) {
+                const newStatus = over.id as string;
+                updateMutation.mutate({
+                    id: active.id as number,
+                    data: { status: newStatus }
+                });
+            }
+            // If dropped on another card (sortable), determine status of that card
+            else {
+                const overProject = projects.find(p => p.id === over.id);
+                if (overProject && overProject.status !== activeProject?.status) {
+                    updateMutation.mutate({
+                        id: active.id as number,
+                        data: { status: overProject.status }
+                    });
+                }
+            }
+        }
+        setActiveId(null);
     };
 
     return (
         <div className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans">
-            <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
+            <div className="max-w-[1700px] mx-auto space-y-4 sm:space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:wauthor">
+                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                         <Link href="/">
                             <Button variant="outline" size="icon" className="rounded-sm h-11 w-11">
                                 <ArrowLeft className="size-5" />
@@ -273,143 +441,54 @@ export default function Proyectos() {
                 </Card>
 
                 {/* Kanban Board */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {STATUS_COLUMNS.map((column) => {
-                        const Icon = column.icon;
-                        const projectsInColumn = projectsByStatus[column.id] || [];
+                <DndContext
+                    sensors={sensors}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+                        {STATUS_COLUMNS.map((column) => (
+                            <DroppableColumn
+                                key={column.id}
+                                column={column}
+                                projects={filteredProjects.filter(p => p.status === column.id)}
+                                onEdit={handleOpenDialog}
+                                navigate={navigate}
+                            />
+                        ))}
+                    </div>
 
-                        return (
-                            <div key={column.id} className="flex flex-col gap-3">
-                                <div className={`flex items-center gap-2 p-3 rounded-sm border ${column.color}`}>
-                                    <Icon className="size-4 text-muted-foreground" />
-                                    <span className="font-bold text-xs uppercase tracking-wider">{column.label}</span>
-                                    <Badge variant="outline" className="ml-auto rounded-sm text-xs border-border bg-background/40 text-muted-foreground">
-                                        {projectsInColumn.length}
-                                    </Badge>
-                                </div>
-
-                                <div className="space-y-3 flex-1">
-                                    {projectsInColumn.map((project) => {
-                                        const health = HEALTH_COLORS[project.health as keyof typeof HEALTH_COLORS];
-                                        const isOverdue = project.deadline && new Date(project.deadline) < new Date();
-
-                                        return (
-                                            <Card
-                                                key={project.id}
-                                                status={project.health === 'green' ? 'success' : project.health === 'yellow' ? 'warning' : 'error'}
-                                                className="hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
-                                                onClick={() => navigate(`/proyectos/${project.id}`)}
-                                            >
-                                                <CardHeader className="p-4 pb-3">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <CardTitle className="text-sm font-bold truncate flex items-center gap-2">
-                                                                {project.name}
-                                                                {isOverdue && <AlertCircle className="size-3 text-red-500" />}
-                                                            </CardTitle>
-                                                            <p className="text-[10px] text-muted-foreground truncate uppercase font-mono tracking-wider mt-1">
-                                                                {project.client.companyName}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleOpenDialog(project);
-                                                                }}
-                                                                title="Editar proyecto"
-                                                                aria-label="Editar proyecto"
-                                                            >
-                                                                <Pencil className="size-3.5" />
-                                                            </Button>
-                                                            <Badge variant="outline" className="rounded-sm text-[10px] px-1.5 h-5 font-normal border-border bg-secondary/20">
-                                                                {project.serviceType}
-                                                            </Badge>
-                                                        </div>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent className="p-4 pt-0 space-y-3">
-                                                    {/* Progress Bar */}
-                                                    <div>
-                                                        <div className="flex justify-between text-[10px] mb-1.5 font-mono text-muted-foreground">
-                                                            <span>PROGRESO</span>
-                                                            <span className={project.progress === 100 ? "text-green-500" : ""}>{project.progress}%</span>
-                                                        </div>
-                                                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full transition-all duration-500 ${project.progress === 100 ? 'bg-green-500' : 'bg-primary'}`}
-                                                                style={{ width: `${project.progress}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between pt-1">
-                                                        {project.deadline ? (
-                                                            <div className={`flex items-center gap-1.5 text-[10px] font-mono ${isOverdue ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                                                <Clock className="size-3" />
-                                                                <span>
-                                                                    {isOverdue ? 'VENCIDO ' : ''}
-                                                                    {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
-                                                                </span>
-                                                            </div>
-                                                        ) : <div />}
-
-                                                        <div className="flex items-center gap-1">
-                                                            {/* View Details Button */}
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-6 w-6 p-0 rounded-sm hover:bg-primary/10 hover:text-primary"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    navigate(`/proyectos/${project.id}`);
-                                                                }}
-                                                                title="Ver detalles"
-                                                            >
-                                                                <Eye className="size-3" />
-                                                            </Button>
-
-                                                            {/* Status Change Mini-Dropdown */}
-                                                            <Select
-                                                                value={project.status}
-                                                                onValueChange={(newStatus) => {
-                                                                    handleStatusChange(project.id, newStatus);
-                                                                }}
-                                                            >
-                                                                <SelectTrigger className="h-6 w-[24px] p-0 border-0 rounded-sm hover:bg-muted focus:ring-0" onClick={(e) => e.stopPropagation()}>
-                                                                    <MoreVertical className="size-3 text-muted-foreground" />
-                                                                </SelectTrigger>
-                                                                <SelectContent align="end">
-                                                                    {STATUS_COLUMNS.map((col) => (
-                                                                        <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-
-                                    {projectsInColumn.length === 0 && (
-                                        <div className="text-center text-sm text-muted-foreground py-8 border border-dashed rounded-sm">
-                                            No hay proyectos
+                    <DragOverlay>
+                        {activeProject ? (
+                            <div style={{ transform: 'rotate(2deg) scale(1.05)' }}>
+                                <Card className="w-[300px] shadow-2xl border-primary ring-2 ring-primary bg-card opacity-90 cursor-grabbing">
+                                    <CardHeader className="p-4 pb-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <CardTitle className="text-sm font-bold truncate">
+                                                    {activeProject.name}
+                                                </CardTitle>
+                                                <p className="text-[10px] text-muted-foreground mt-1">
+                                                    {activeProject.client.companyName}
+                                                </p>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0">
+                                        <div className="text-[10px] font-mono text-muted-foreground">
+                                            ARRASTRANDO...
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
-                        );
-                    })}
-                </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
             </div>
 
             {/* Project Form Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-4xl rounded-sm">
+                <DialogContent className="sm:max-w-6xl rounded-sm">
                     <DialogHeader className="px-10 pt-10 pb-6">
                         <DialogTitle>{selectedProject ? "Editar Proyecto" : "Nuevo Proyecto"}</DialogTitle>
                         <DialogDescription>
@@ -488,7 +567,7 @@ export default function Proyectos() {
                                 <Label htmlFor="health">Salud</Label>
                                 <Select
                                     value={formData.health}
-                                    onValueChange={(value) => setFormData({ ...formData, health: value })}
+                                    onValueChange={(value) => setFormData({ ...formData, health: value as "green" | "yellow" | "red" })}
                                 >
                                     <SelectTrigger id="health" className="h-11 rounded-sm">
                                         <SelectValue />
@@ -544,6 +623,6 @@ export default function Proyectos() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </div >
+        </div>
     );
 }

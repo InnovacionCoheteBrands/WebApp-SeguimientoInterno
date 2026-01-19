@@ -570,7 +570,7 @@ export default function Personnel() {
 
       {/* Team Member Dialog */}
       <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
-        <DialogContent className="sm:max-w-4xl border-border bg-card text-foreground rounded-sm">
+        <DialogContent className="sm:max-w-5xl border-border bg-card text-foreground rounded-sm">
           <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingMember ? "Edit Strategic Asset" : "Onboard New Talent"}</DialogTitle>
             <DialogDescription className="text-muted-foreground">

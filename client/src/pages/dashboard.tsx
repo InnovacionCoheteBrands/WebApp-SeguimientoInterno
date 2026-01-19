@@ -188,7 +188,7 @@ export default function Dashboard() {
 
   const handleEditCampaign = useCallback(() => {
     if (!selectedCampaign) return;
-    
+
     // 🛡️ Preparar datos con campos numéricos procesados
     const dataToValidate = {
       ...editCampaign,
@@ -196,10 +196,10 @@ export default function Dashboard() {
       spend: Number(editCampaign.spend) || 0,
       progress: selectedCampaign.progress, // Mantener progreso actual
     };
-    
+
     // 🛡️ Validación con schema compartido (XSS + números positivos)
     const result = insertCampaignSchema.safeParse(dataToValidate);
-    
+
     if (!result.success) {
       const firstError = result.error.errors[0];
       toast({
@@ -209,7 +209,7 @@ export default function Dashboard() {
       });
       return;
     }
-    
+
     // ✅ Usar datos transformados por Zod (sanitizados y validados)
     updateCampaignMutation.mutate({
       id: selectedCampaign.id,
@@ -219,17 +219,17 @@ export default function Dashboard() {
 
   const handleUpdateProgress = useCallback(() => {
     if (!selectedCampaign) return;
-    
+
     // 🛡️ Guardia de rango: asegurar progreso entre 0 y 100
     const validatedProgress = Math.min(100, Math.max(0, Math.round(progressValue)));
-    
+
     if (validatedProgress !== progressValue) {
       toast({
         title: "Valor Ajustado",
         description: `El progreso fue ajustado a ${validatedProgress}% (rango válido: 0-100)`,
       });
     }
-    
+
     updateCampaignMutation.mutate({
       id: selectedCampaign.id,
       data: { progress: validatedProgress },
@@ -586,7 +586,7 @@ export default function Dashboard() {
       </div>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-lg sm:text-xl">Crear Nueva Campaña</DialogTitle>
             <DialogDescription className="font-mono text-xs uppercase tracking-wider">
@@ -715,7 +715,7 @@ export default function Dashboard() {
       </Dialog>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Editar Campaña</DialogTitle>
             <DialogDescription className="font-mono text-xs uppercase tracking-wider">

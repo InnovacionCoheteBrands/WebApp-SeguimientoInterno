@@ -118,7 +118,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
 
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-            <DialogContent className="sm:max-w-[800px] border-border bg-card text-foreground rounded-sm h-[80vh] flex flex-col p-0 gap-0">
+            <DialogContent className="sm:max-w-5xl border-border bg-card text-foreground rounded-sm h-[80vh] flex flex-col p-0 gap-0">
                 <DialogHeader className="p-6 border-b border-border">
                     <DialogTitle>Master Service Catalog</DialogTitle>
                     <DialogDescription className="text-muted-foreground">

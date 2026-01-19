@@ -192,7 +192,7 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl bg-card border-border text-foreground">
+            <DialogContent className="sm:max-w-5xl bg-card border-border text-foreground">
                 <DialogHeader className="px-10 pt-10 pb-6">
                     <DialogTitle>{initialData ? "Editar Transacción" : `Nuevo ${type === "Ingreso" ? "Ingreso" : "Egreso"}`}</DialogTitle>
                 </DialogHeader>
@@ -227,20 +227,47 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                 <FormField
                                     control={form.control}
                                     name="date"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-muted-foreground">Fecha</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="date"
-                                                    value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
-                                                    onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                    className="bg-background border-border"
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
+                                    render={({ field }) => {
+                                        // 🛡️ Safe date value formatting
+                                        // Prevents crash when field.value is Invalid Date or partial string
+                                        const getDateInputValue = () => {
+                                            if (!field.value) return "";
+                                            const d = field.value instanceof Date ? field.value : new Date(field.value);
+                                            // Check if valid date before calling toISOString
+                                            if (isNaN(d.getTime())) return "";
+                                            return d.toISOString().split("T")[0];
+                                        };
+
+                                        return (
+                                            <FormItem>
+                                                <FormLabel className="text-muted-foreground">Fecha</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="date"
+                                                        value={getDateInputValue()}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            // 🛡️ Only create Date if value is a valid YYYY-MM-DD format
+                                                            // This prevents Invalid Date from partial typing
+                                                            if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                                                                const parsed = new Date(val + "T00:00:00"); // Avoid timezone shift
+                                                                if (!isNaN(parsed.getTime())) {
+                                                                    field.onChange(parsed);
+                                                                }
+                                                            }
+                                                            // For empty value, reset to today or leave undefined
+                                                            else if (!val) {
+                                                                field.onChange(new Date());
+                                                            }
+                                                            // Ignore partial values - don't update form state
+                                                        }}
+                                                        className="bg-background border-border"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
                                 />
                             </div>
 

@@ -186,7 +186,11 @@ const FleetTracking = memo(function FleetTracking() {
                     {account.status}
                   </Badge>
                 </div>
-                <h3 className="font-semibold text-sm truncate mb-2">{account.companyName}</h3>
+                <h3 className="font-semibold text-sm truncate mb-2">
+                  <Link href={`/clientes/${account.id}`} className="hover:underline">
+                    {account.companyName}
+                  </Link>
+                </h3>
                 <div className="space-y-1 text-[10px] text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Building2 className="size-3" />
@@ -234,7 +238,9 @@ const FleetTracking = memo(function FleetTracking() {
                   <div className="flex items-center gap-2">
                     <Briefcase className="size-4 text-muted-foreground" />
                     <CardTitle className="text-base font-display font-bold tracking-tight text-foreground">
-                      {account.companyName}
+                      <Link href={`/clientes/${account.id}`} className="hover:underline">
+                        {account.companyName}
+                      </Link>
                     </CardTitle>
                   </div>
                   <Badge
@@ -355,7 +361,7 @@ const FleetTracking = memo(function FleetTracking() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl rounded-sm">
+        <DialogContent className="sm:max-w-5xl rounded-sm">
           <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingAccount ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
             <DialogDescription>

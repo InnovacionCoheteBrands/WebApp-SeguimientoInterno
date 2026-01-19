@@ -1,5 +1,5 @@
 
-import { db } from "../server/db"; // Adjust import path
+import { db } from "../db"; // Fixed import path
 import { sql } from "drizzle-orm";
 
 async function main() {

@@ -697,3 +697,238 @@ export async function deleteAgencyRole(id: number): Promise<void> {
   });
   if (!res.ok) throw new Error("Failed to delete agency role");
 }
+
+// ===========================================
+// 📇 CONTACTS MODULE
+// ===========================================
+import type {
+  Contact,
+  InsertContact,
+  UpdateContact,
+  BillingProfile,
+  InsertBillingProfile,
+  UpdateBillingProfile,
+  DigitalAsset,
+  InsertDigitalAsset,
+  UpdateDigitalAsset,
+  ClientDocument,
+  InsertClientDocument,
+  Installment,
+  InsertInstallment,
+  UpdateInstallment,
+} from "@shared/schema";
+
+export async function fetchContactsByClient(clientId: number): Promise<Contact[]> {
+  const res = await fetch(`/api/clients/${clientId}/contacts`);
+  if (!res.ok) throw new Error("Failed to fetch contacts");
+  return res.json();
+}
+
+export async function fetchContactById(id: number): Promise<Contact> {
+  const res = await fetch(`/api/contacts/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch contact");
+  return res.json();
+}
+
+export async function createContact(contact: InsertContact): Promise<Contact> {
+  const res = await fetch("/api/contacts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(contact),
+  });
+  if (!res.ok) throw new Error("Failed to create contact");
+  return res.json();
+}
+
+export async function updateContact(id: number, contact: UpdateContact): Promise<Contact> {
+  const res = await fetch(`/api/contacts/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(contact),
+  });
+  if (!res.ok) throw new Error("Failed to update contact");
+  return res.json();
+}
+
+export async function deleteContact(id: number): Promise<void> {
+  const res = await fetch(`/api/contacts/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete contact");
+}
+
+// ===========================================
+// 🧾 BILLING PROFILES MODULE
+// ===========================================
+
+export async function fetchBillingProfilesByClient(clientId: number): Promise<BillingProfile[]> {
+  const res = await fetch(`/api/clients/${clientId}/billing-profiles`);
+  if (!res.ok) throw new Error("Failed to fetch billing profiles");
+  return res.json();
+}
+
+export async function fetchBillingProfileById(id: number): Promise<BillingProfile> {
+  const res = await fetch(`/api/billing-profiles/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch billing profile");
+  return res.json();
+}
+
+export async function createBillingProfile(profile: InsertBillingProfile): Promise<BillingProfile> {
+  const res = await fetch("/api/billing-profiles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+  if (!res.ok) throw new Error("Failed to create billing profile");
+  return res.json();
+}
+
+export async function updateBillingProfile(id: number, profile: UpdateBillingProfile): Promise<BillingProfile> {
+  const res = await fetch(`/api/billing-profiles/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+  if (!res.ok) throw new Error("Failed to update billing profile");
+  return res.json();
+}
+
+export async function deleteBillingProfile(id: number): Promise<void> {
+  const res = await fetch(`/api/billing-profiles/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete billing profile");
+}
+
+// ===========================================
+// 🌐 DIGITAL ASSETS MODULE (D&H)
+// ===========================================
+
+export async function fetchDigitalAssetsByClient(clientId: number): Promise<DigitalAsset[]> {
+  const res = await fetch(`/api/clients/${clientId}/digital-assets`);
+  if (!res.ok) throw new Error("Failed to fetch digital assets");
+  return res.json();
+}
+
+export async function fetchExpiringDigitalAssets(daysAhead: number = 30): Promise<DigitalAsset[]> {
+  const res = await fetch(`/api/digital-assets/expiring?days=${daysAhead}`);
+  if (!res.ok) throw new Error("Failed to fetch expiring digital assets");
+  return res.json();
+}
+
+export async function fetchDigitalAssetById(id: number): Promise<DigitalAsset> {
+  const res = await fetch(`/api/digital-assets/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch digital asset");
+  return res.json();
+}
+
+export async function createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset> {
+  const res = await fetch("/api/digital-assets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(asset),
+  });
+  if (!res.ok) throw new Error("Failed to create digital asset");
+  return res.json();
+}
+
+export async function updateDigitalAsset(id: number, asset: UpdateDigitalAsset): Promise<DigitalAsset> {
+  const res = await fetch(`/api/digital-assets/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(asset),
+  });
+  if (!res.ok) throw new Error("Failed to update digital asset");
+  return res.json();
+}
+
+export async function deleteDigitalAsset(id: number): Promise<void> {
+  const res = await fetch(`/api/digital-assets/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete digital asset");
+}
+
+// ===========================================
+// 📁 CLIENT DOCUMENTS MODULE
+// ===========================================
+
+export async function fetchClientDocuments(clientId: number): Promise<ClientDocument[]> {
+  const res = await fetch(`/api/clients/${clientId}/documents`);
+  if (!res.ok) throw new Error("Failed to fetch client documents");
+  return res.json();
+}
+
+export async function fetchClientDocumentById(id: number): Promise<ClientDocument> {
+  const res = await fetch(`/api/client-documents/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch client document");
+  return res.json();
+}
+
+export async function createClientDocument(doc: InsertClientDocument): Promise<ClientDocument> {
+  const res = await fetch("/api/client-documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(doc),
+  });
+  if (!res.ok) throw new Error("Failed to create client document");
+  return res.json();
+}
+
+export async function deleteClientDocument(id: number): Promise<void> {
+  const res = await fetch(`/api/client-documents/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete client document");
+}
+
+// ===========================================
+// 💰 INSTALLMENTS MODULE
+// ===========================================
+
+export async function fetchInstallmentsByProject(projectId: number): Promise<Installment[]> {
+  const res = await fetch(`/api/projects/${projectId}/installments`);
+  if (!res.ok) throw new Error("Failed to fetch installments");
+  return res.json();
+}
+
+export async function generateInstallmentsForProject(projectId: number): Promise<Installment[]> {
+  const res = await fetch(`/api/projects/${projectId}/installments/generate`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to generate installments");
+  return res.json();
+}
+
+export async function fetchInstallmentById(id: number): Promise<Installment> {
+  const res = await fetch(`/api/installments/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch installment");
+  return res.json();
+}
+
+export async function createInstallment(installment: InsertInstallment): Promise<Installment> {
+  const res = await fetch("/api/installments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(installment),
+  });
+  if (!res.ok) throw new Error("Failed to create installment");
+  return res.json();
+}
+
+export async function updateInstallment(id: number, installment: UpdateInstallment): Promise<Installment> {
+  const res = await fetch(`/api/installments/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(installment),
+  });
+  if (!res.ok) throw new Error("Failed to update installment");
+  return res.json();
+}
+
+export async function deleteInstallment(id: number): Promise<void> {
+  const res = await fetch(`/api/installments/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete installment");
+}

@@ -80,7 +80,7 @@ export function AutomationHub({ trigger }: { trigger?: React.ReactNode }) {
                 <DialogTrigger asChild>
                     {trigger || <Button variant="outline"><CalendarClock className="mr-2 h-4 w-4" /> Automatizaciones</Button>}
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogContent className="sm:max-w-6xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
                     <div className="p-6 pb-2 border-b bg-muted/10">
                         <DialogHeader>
                             <DialogTitle className="text-2xl flex items-center gap-2">

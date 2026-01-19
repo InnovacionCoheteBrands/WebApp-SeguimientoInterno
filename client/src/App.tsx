@@ -11,6 +11,7 @@ import { LanguageProvider } from "@/components/language-provider";
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Clients = lazy(() => import("@/pages/fleet-tracking"));
+const ClientDetail = lazy(() => import("@/pages/client-detail"));
 const Projects = lazy(() => import("@/pages/proyectos"));
 const ProjectDetail = lazy(() => import("@/pages/project-detail"));
 const Resources = lazy(() => import("@/pages/data-center"));
@@ -18,9 +19,11 @@ const Team = lazy(() => import("@/pages/personnel"));
 const KPIs = lazy(() => import("@/pages/analytics"));
 const AdsCommandCenter = lazy(() => import("@/pages/ads-command-center"));
 const AdsSettings = lazy(() => import("@/pages/ads-settings"));
+const DigitalAssets = lazy(() => import("@/pages/digital-assets-page"));
 const Finanzas = lazy(() => import("@/pages/finanzas"));
 const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
+const AuthPage = lazy(() => import("@/pages/auth"));
 const AgentChat = lazy(() => import("@/components/agent-chat").then(m => ({ default: m.AgentChat })));
 
 function LoadingFallback() {
@@ -36,27 +39,44 @@ function LoadingFallback() {
   );
 }
 
+function ProtectedRoute({ component: Component, ...rest }: any) {
+  const token = localStorage.getItem("token");
+  // Simple check - in production use a real auth context
+  if (!token) return <AuthPage />;
+  return <Component {...rest} />;
+}
+
 function Router() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <AppLayout>
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/clientes" component={Clients} />
-          <Route path="/proyectos" component={Projects} />
-          <Route path="/proyectos/:id" component={ProjectDetail} />
-          <Route path="/recursos" component={Resources} />
-          <Route path="/equipo" component={Team} />
-          <Route path="/kpis" component={KPIs} />
-          <Route path="/ads" component={AdsCommandCenter} />
-          <Route path="/ads/command-center" component={AdsCommandCenter} />
-          <Route path="/ads/settings" component={AdsSettings} />
-          <Route path="/finanzas" component={Finanzas} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/settings" component={Settings} />
-          <Route component={NotFound} />
-        </Switch>
-      </AppLayout>
+      <Switch>
+        {/* Public Route */}
+        <Route path="/auth" component={AuthPage} />
+
+        {/* Protected Routes */}
+        <Route path="/">
+          <AppLayout>
+            <Switch>
+              <Route path="/" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
+              <Route path="/clientes" component={(props) => <ProtectedRoute component={Clients} {...props} />} />
+              <Route path="/clientes/:id" component={(props) => <ProtectedRoute component={ClientDetail} {...props} />} />
+              <Route path="/proyectos" component={(props) => <ProtectedRoute component={Projects} {...props} />} />
+              <Route path="/proyectos/:id" component={(props) => <ProtectedRoute component={ProjectDetail} {...props} />} />
+              <Route path="/recursos" component={(props) => <ProtectedRoute component={Resources} {...props} />} />
+              <Route path="/equipo" component={(props) => <ProtectedRoute component={Team} {...props} />} />
+              <Route path="/kpis" component={(props) => <ProtectedRoute component={KPIs} {...props} />} />
+              <Route path="/ads" component={(props) => <ProtectedRoute component={AdsCommandCenter} {...props} />} />
+              <Route path="/ads/command-center" component={(props) => <ProtectedRoute component={AdsCommandCenter} {...props} />} />
+              <Route path="/ads/settings" component={(props) => <ProtectedRoute component={AdsSettings} {...props} />} />
+              <Route path="/digital-assets" component={(props) => <ProtectedRoute component={DigitalAssets} {...props} />} />
+              <Route path="/finanzas" component={(props) => <ProtectedRoute component={Finanzas} {...props} />} />
+              <Route path="/profile" component={(props) => <ProtectedRoute component={Profile} {...props} />} />
+              <Route path="/settings" component={(props) => <ProtectedRoute component={Settings} {...props} />} />
+              <Route component={NotFound} />
+            </Switch>
+          </AppLayout>
+        </Route>
+      </Switch>
     </Suspense>
   );
 }

@@ -175,7 +175,7 @@ export function AgentChat() {
 
       {/* Chat Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl h-[600px] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-5xl h-[600px] flex flex-col p-0 gap-0">
           <DialogHeader className="px-6 py-4 border-b border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

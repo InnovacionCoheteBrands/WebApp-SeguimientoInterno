@@ -104,9 +104,9 @@ const DataCenter = memo(function DataCenter() {
     name: "",
     type: "Creative",
     format: "PSD",
-    fileSize: null,
+    fileSize: undefined,
     status: "Disponible",
-    campaignId: null,
+    campaignId: undefined,
     lastModified: new Date().toISOString(),
   });
 
@@ -155,9 +155,9 @@ const DataCenter = memo(function DataCenter() {
       name: "",
       type: "Creative",
       format: "PSD",
-      fileSize: null,
+      fileSize: undefined,
       status: "Disponible",
-      campaignId: null,
+      campaignId: undefined,
       lastModified: new Date().toISOString(),
     });
     setEditingResource(null);
@@ -170,9 +170,9 @@ const DataCenter = memo(function DataCenter() {
         name: resource.name,
         type: resource.type,
         format: resource.format,
-        fileSize: resource.fileSize,
+        fileSize: resource.fileSize ?? undefined,
         status: resource.status,
-        campaignId: resource.campaignId,
+        campaignId: resource.campaignId ?? undefined,
         lastModified: resource.lastModified || new Date().toISOString(),
       });
     } else {
@@ -431,7 +431,7 @@ const DataCenter = memo(function DataCenter() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-sm">
+        <DialogContent className="sm:max-w-2xl rounded-sm">
           <DialogHeader>
             <DialogTitle>{editingResource ? "Editar Recurso" : "Nuevo Recurso"}</DialogTitle>
             <DialogDescription>
@@ -498,7 +498,7 @@ const DataCenter = memo(function DataCenter() {
                   type="number"
                   step="0.01"
                   value={formData.fileSize ?? ""}
-                  onChange={(e) => setFormData({ ...formData, fileSize: e.target.value ? e.target.value : null })}
+                  onChange={(e) => setFormData({ ...formData, fileSize: e.target.value || undefined })}
                   placeholder="0.00"
                   data-testid="input-file-size"
                 />

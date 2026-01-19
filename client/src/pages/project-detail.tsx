@@ -19,6 +19,7 @@ import type { ProjectDeliverable } from "@shared/schema";
 import { formatDistanceToNow, format, isPast } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { InstallmentsTable } from "@/components/projects/installments-table";
 
 const HEALTH_STYLES = {
     green: { border: "border-l-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-500", label: "Saludable" },
@@ -315,6 +316,13 @@ export default function ProjectDetail() {
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Installments Panel for Iguala Projects */}
+                    {project.dealType === "Iguala" && (
+                        <div className="lg:col-span-2">
+                            <InstallmentsTable projectId={projectId} />
+                        </div>
+                    )}
+
                     {/* Deliverables Panel - Takes 2 columns */}
                     <Card className="lg:col-span-2 rounded-sm relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
@@ -352,17 +360,16 @@ export default function ProjectDetail() {
                                     const isBlocking = isBlockingOverdue(deliverable);
                                     const requiresFileWithoutAttachment = deliverable.requiresFile && !deliverable.linkedAttachmentId;
                                     const isUploading = uploadingDeliverableId === deliverable.id;
-                                    
+
                                     return (
                                         <div
                                             key={deliverable.id}
-                                            className={`flex items-start gap-3 p-3 rounded-sm border transition-all ${
-                                                deliverable.completed
+                                            className={`flex items-start gap-3 p-3 rounded-sm border transition-all ${deliverable.completed
                                                     ? "bg-muted/30 border-muted"
                                                     : isBlocking
-                                                    ? "bg-rose-500/5 border-rose-500/50 animate-pulse-border"
-                                                    : "bg-card border-border hover:border-primary/50"
-                                            }`}
+                                                        ? "bg-rose-500/5 border-rose-500/50 animate-pulse-border"
+                                                        : "bg-card border-border hover:border-primary/50"
+                                                }`}
                                         >
                                             {/* Checkbox - disabled if requires file and no attachment */}
                                             <Tooltip>
@@ -389,7 +396,7 @@ export default function ProjectDetail() {
                                                     </TooltipContent>
                                                 )}
                                             </Tooltip>
-                                            
+
                                             <div className="flex-1 min-w-0">
                                                 <div className={`font-medium ${deliverable.completed ? "line-through text-muted-foreground" : ""}`}>
                                                     {deliverable.title}
@@ -401,9 +408,8 @@ export default function ProjectDetail() {
                                                 )}
                                                 <div className="flex items-center gap-3 mt-2">
                                                     {deliverable.dueDate && (
-                                                        <div className={`flex items-center gap-1 text-xs ${
-                                                            isBlocking ? "text-rose-500 font-medium" : "text-muted-foreground"
-                                                        }`}>
+                                                        <div className={`flex items-center gap-1 text-xs ${isBlocking ? "text-rose-500 font-medium" : "text-muted-foreground"
+                                                            }`}>
                                                             <Clock className="size-3" />
                                                             <span>
                                                                 {formatDistanceToNow(new Date(deliverable.dueDate), {
@@ -413,7 +419,7 @@ export default function ProjectDetail() {
                                                             </span>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {/* Blocking warning badge */}
                                                     {isBlocking && (
                                                         <Badge variant="destructive" className="text-[10px] rounded-sm">
@@ -423,7 +429,7 @@ export default function ProjectDetail() {
                                                     )}
                                                 </div>
                                             </div>
-                                            
+
                                             {/* File indicator / upload button */}
                                             {deliverable.requiresFile && (
                                                 <div className="shrink-0">
@@ -436,7 +442,7 @@ export default function ProjectDetail() {
                                                         }}
                                                         onChange={(e) => handleFileSelect(deliverable.id, e)}
                                                     />
-                                                    
+
                                                     {isUploading ? (
                                                         <Loader2 className="size-5 text-primary animate-spin" />
                                                     ) : deliverable.linkedAttachmentId ? (
@@ -453,18 +459,17 @@ export default function ProjectDetail() {
                                                             <TooltipTrigger asChild>
                                                                 <button
                                                                     onClick={() => triggerFileUpload(deliverable.id)}
-                                                                    className={`p-1 rounded-sm transition-colors ${
-                                                                        isBlocking 
-                                                                            ? "text-rose-500 hover:bg-rose-500/10" 
+                                                                    className={`p-1 rounded-sm transition-colors ${isBlocking
+                                                                            ? "text-rose-500 hover:bg-rose-500/10"
                                                                             : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     <Paperclip className="size-5" />
                                                                 </button>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                <p>{isBlocking 
-                                                                    ? "Evidencia Requerida para Salud del Proyecto" 
+                                                                <p>{isBlocking
+                                                                    ? "Evidencia Requerida para Salud del Proyecto"
                                                                     : "Subir evidencia"
                                                                 }</p>
                                                             </TooltipContent>
@@ -472,7 +477,7 @@ export default function ProjectDetail() {
                                                     )}
                                                 </div>
                                             )}
-                                            
+
                                             {/* Status icon */}
                                             {deliverable.completed ? (
                                                 <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />

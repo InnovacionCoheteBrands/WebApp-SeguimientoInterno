@@ -22,5 +22,9 @@
   {
     "column_name": "webhook_url",
     "data_type": "text"
+  },
+  {
+    "column_name": "role",
+    "data_type": "text"
   }
 ]

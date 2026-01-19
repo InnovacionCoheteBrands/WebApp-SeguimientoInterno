@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { storage } from "./storage";
+import { storage } from "../server/storage";
 
 async function seed() {
   console.log("[seed] Starting database seed...");
@@ -77,10 +77,10 @@ async function seed() {
 
     const updatedCampaigns = await storage.getCampaigns();
 
-    for (const campaign of updatedCampaigns) {
-      const existingAccount = await storage.getClientAccountByCampaignId(campaign.id);
-
-      if (!existingAccount) {
+    // Create client accounts for campaigns (simplified - no direct campaign link in new schema)
+    const existingClients = await storage.getClientAccounts();
+    if (existingClients.length === 0) {
+      for (const campaign of updatedCampaigns) {
         const industries = ["Tech", "Retail", "Finance", "Health", "Education"];
         const industry = industries[Math.floor(Math.random() * industries.length)];
         const monthlyBudget = Math.floor(Math.random() * 40000) + 10000;
@@ -97,7 +97,6 @@ async function seed() {
         const nextMilestone = milestones[Math.floor(Math.random() * milestones.length)];
 
         await storage.createClientAccount({
-          campaignId: campaign.id,
           companyName: campaign.clientName,
           industry,
           monthlyBudget,
@@ -112,12 +111,12 @@ async function seed() {
     }
 
     const teamData = [
-      { name: "Ana García", role: "Creative Director", department: "Director", status: "Disponible", workHoursStart: "09:00", workHoursEnd: "18:00" },
-      { name: "Carlos Ruiz", role: "Copywriter", department: "Senior", status: "Ocupado", workHoursStart: "08:00", workHoursEnd: "17:00" },
-      { name: "María López", role: "Designer", department: "Mid-Level", status: "Disponible", workHoursStart: "09:00", workHoursEnd: "18:00" },
-      { name: "Javier Martínez", role: "Social Media Manager", department: "Senior", status: "Ocupado", workHoursStart: "10:00", workHoursEnd: "19:00" },
-      { name: "Laura Fernández", role: "SEO Specialist", department: "Mid-Level", status: "Disponible", workHoursStart: "08:00", workHoursEnd: "17:00" },
-      { name: "Diego Sánchez", role: "Account Manager", department: "Lead", status: "Vacaciones", workHoursStart: "09:00", workHoursEnd: "18:00" },
+      { name: "Ana García", role: "Creative Director", seniority: "Director", status: "Disponible", workHoursStart: "09:00", workHoursEnd: "18:00", weeklyCapacity: 40 },
+      { name: "Carlos Ruiz", role: "Copywriter", seniority: "Senior", status: "Ocupado", workHoursStart: "08:00", workHoursEnd: "17:00", weeklyCapacity: 40 },
+      { name: "María López", role: "Designer", seniority: "Mid-Level", status: "Disponible", workHoursStart: "09:00", workHoursEnd: "18:00", weeklyCapacity: 40 },
+      { name: "Javier Martínez", role: "Social Media Manager", seniority: "Senior", status: "Ocupado", workHoursStart: "10:00", workHoursEnd: "19:00", weeklyCapacity: 40 },
+      { name: "Laura Fernández", role: "SEO Specialist", seniority: "Mid-Level", status: "Disponible", workHoursStart: "08:00", workHoursEnd: "17:00", weeklyCapacity: 40 },
+      { name: "Diego Sánchez", role: "Account Manager", seniority: "Lead", status: "Vacaciones", workHoursStart: "09:00", workHoursEnd: "18:00", weeklyCapacity: 40 },
     ];
 
     const existingTeam = await storage.getTeam();
@@ -137,7 +136,8 @@ async function seed() {
       for (let i = 0; i < Math.min(allTeam.length, updatedCampaigns.length); i++) {
         await storage.createTeamAssignment({
           teamId: allTeam[i].id,
-          campaignId: updatedCampaigns[i].id
+          campaignId: updatedCampaigns[i].id,
+          hoursAllocated: 20  // Default 20 hours per assignment
         });
       }
     }

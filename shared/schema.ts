@@ -201,7 +201,22 @@ export type InsertTelemetryData = z.infer<typeof insertTelemetryDataSchema>;
 export const clientAccounts = pgTable("client_accounts", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").notNull(),
+  tradeName: text("trade_name"),  // Nombre comercial / Nombre de fantasía
+  logoUrl: text("logo_url"),
   industry: text("industry").notNull(),
+  sector: text("sector"),  // Giro específico del cliente
+  companySize: text("company_size"),  // "Micro", "Pequeña", "Mediana", "Grande"
+  leadOrigin: text("lead_origin"),  // Fuente: "Facebook", "Referido", "Google", etc.
+  websiteUrl: text("website_url"),
+
+  // Address composite fields
+  addressStreet: text("address_street"),
+  addressCity: text("address_city"),
+  addressState: text("address_state"),
+  addressZip: text("address_zip"),
+  addressCountry: text("address_country").default("México"),
+
+  // Existing financial/operational fields
   monthlyBudget: integer("monthly_budget").notNull(),
   currentSpend: integer("current_spend").notNull().default(0),
   healthScore: integer("health_score").notNull().default(100),
@@ -215,7 +230,21 @@ export const clientAccounts = pgTable("client_accounts", {
 export const insertClientAccountSchema = createInsertSchema(clientAccounts, {
   // 🛡️ XSS Protection for text fields
   companyName: safeString(200),
+  tradeName: safeOptionalString(200),
+  logoUrl: safeOptionalString(500),
   industry: safeString(100),
+  sector: safeOptionalString(100),
+  companySize: safeOptionalString(50),
+  leadOrigin: safeOptionalString(100),
+  websiteUrl: safeOptionalString(500),
+
+  // Address fields
+  addressStreet: safeOptionalString(300),
+  addressCity: safeOptionalString(100),
+  addressState: safeOptionalString(100),
+  addressZip: safeOptionalString(20),
+  addressCountry: safeOptionalString(100),
+
   nextMilestone: safeOptionalString(300),
   status: safeString(50),
 
@@ -237,6 +266,198 @@ export const updateClientAccountSchema = insertClientAccountSchema.partial();
 export type ClientAccount = typeof clientAccounts.$inferSelect;
 export type InsertClientAccount = z.infer<typeof insertClientAccountSchema>;
 export type UpdateClientAccount = z.infer<typeof updateClientAccountSchema>;
+
+// ===========================================
+// 📇 CONTACTS MODULE
+// ===========================================
+
+export const contacts = pgTable("contacts", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  mobile: text("mobile"),
+  position: text("position"),  // Puesto
+
+  // Notification Preferences
+  notifyBilling: boolean("notify_billing").notNull().default(true),
+  notifyPayments: boolean("notify_payments").notNull().default(true),
+  notifyGeneral: boolean("notify_general").notNull().default(true),
+
+  isPrimary: boolean("is_primary").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertContactSchema = createInsertSchema(contacts, {
+  // 🛡️ XSS Protection
+  firstName: safeString(100),
+  lastName: safeString(100),
+  email: z.string().email("Email inválido").max(200),
+  phone: safeOptionalString(30),
+  mobile: safeOptionalString(30),
+  position: safeOptionalString(100),
+
+  // 🔗 FK coercion
+  clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateContactSchema = insertContactSchema.partial();
+
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = z.infer<typeof insertContactSchema>;
+export type UpdateContact = z.infer<typeof updateContactSchema>;
+
+// ===========================================
+// 🧾 BILLING PROFILES MODULE
+// ===========================================
+
+export const billingProfiles = pgTable("billing_profiles", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  rfc: text("rfc").notNull(),  // RFC validation handled in schema
+  businessName: text("business_name").notNull(),  // Razón Social
+  cfdiUse: text("cfdi_use").notNull(),  // "G03 - Gastos en general", etc.
+  taxRegime: text("tax_regime"),  // Régimen Fiscal
+
+  // Fiscal Address
+  fiscalStreet: text("fiscal_street"),
+  fiscalCity: text("fiscal_city"),
+  fiscalState: text("fiscal_state"),
+  fiscalZip: text("fiscal_zip"),
+
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertBillingProfileSchema = createInsertSchema(billingProfiles, {
+  // 🛡️ XSS Protection
+  rfc: safeString(20),
+  businessName: safeString(300),
+  cfdiUse: safeString(100),
+  taxRegime: safeOptionalString(100),
+  fiscalStreet: safeOptionalString(300),
+  fiscalCity: safeOptionalString(100),
+  fiscalState: safeOptionalString(100),
+  fiscalZip: safeOptionalString(10),
+
+  // 🔗 FK coercion
+  clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateBillingProfileSchema = insertBillingProfileSchema.partial();
+
+export type BillingProfile = typeof billingProfiles.$inferSelect;
+export type InsertBillingProfile = z.infer<typeof insertBillingProfileSchema>;
+export type UpdateBillingProfile = z.infer<typeof updateBillingProfileSchema>;
+
+// ===========================================
+// 🌐 DIGITAL ASSETS MODULE (D&H)
+// ===========================================
+
+export const digitalAssets = pgTable("digital_assets", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  assetType: text("asset_type").notNull(),  // "domain", "hosting", "ssl", "email"
+  name: text("name").notNull(),  // e.g., "clientwebsite.com"
+  provider: text("provider"),  // "GoDaddy", "Namecheap", etc.
+  cost: numeric("cost", { precision: 12, scale: 2 }),
+  renewalFrequency: text("renewal_frequency"),  // "yearly", "monthly", "biannual"
+  expirationDate: timestamp("expiration_date"),
+  lastRenewalDate: timestamp("last_renewal_date"),
+  autoRenew: boolean("auto_renew").notNull().default(false),
+
+  // Access/notes (encrypted in production)
+  accessNotes: text("access_notes"),
+
+  // Alert configuration
+  alertDaysBefore: integer("alert_days_before").default(30),
+  assignedManagerId: integer("assigned_manager_id"),  // FK to team added later
+
+  status: text("status").notNull().default("active"),  // "active", "expired", "transferred"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDigitalAssetSchema = createInsertSchema(digitalAssets, {
+  // 🛡️ XSS Protection
+  assetType: safeString(50),
+  name: safeString(200),
+  provider: safeOptionalString(100),
+  renewalFrequency: safeOptionalString(50),
+  accessNotes: safeOptionalString(2000),
+  status: safeString(50),
+
+  // 🔢 Number validation
+  cost: optionalPositiveNumericString(),
+  alertDaysBefore: z.coerce.number().int().min(1).max(365).default(30),
+
+  // 🔗 FK coercion
+  clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
+  assignedManagerId: z.coerce.number().int().positive().optional().nullable(),
+
+  // 📅 Date coercion
+  expirationDate: z.coerce.date().optional().nullable(),
+  lastRenewalDate: z.coerce.date().optional().nullable(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateDigitalAssetSchema = insertDigitalAssetSchema.partial();
+
+export type DigitalAsset = typeof digitalAssets.$inferSelect;
+export type InsertDigitalAsset = z.infer<typeof insertDigitalAssetSchema>;
+export type UpdateDigitalAsset = z.infer<typeof updateDigitalAssetSchema>;
+
+// ===========================================
+// 📁 CLIENT DOCUMENTS MODULE
+// ===========================================
+
+export const clientDocuments = pgTable("client_documents", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  documentType: text("document_type").notNull(),  // "acta_constitutiva", "csf", "contrato", "otro"
+  name: text("name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
+  notes: text("notes"),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
+export const insertClientDocumentSchema = createInsertSchema(clientDocuments, {
+  // 🛡️ XSS Protection
+  documentType: safeString(50),
+  name: safeString(200),
+  fileUrl: safeString(500),
+  mimeType: safeOptionalString(100),
+  notes: safeOptionalString(500),
+
+  // 🔢 Number validation
+  fileSize: z.coerce.number().int().min(0).optional().nullable(),
+
+  // 🔗 FK coercion
+  clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
+}).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export type ClientDocument = typeof clientDocuments.$inferSelect;
+export type InsertClientDocument = z.infer<typeof insertClientDocumentSchema>;
 
 export const team = pgTable("team", {
   id: serial("id").primaryKey(),
@@ -260,7 +481,6 @@ export const team = pgTable("team", {
 export const insertTeamSchema = createInsertSchema(team, {
   // 🛡️ Secure string fields with XSS protection
   name: safeString(200),
-  role: safeString(100),
   role: safeString(100),
   seniority: safeString(100),
   area: safeString(100).optional(),
@@ -785,7 +1005,7 @@ export type RecurringTransaction = typeof recurringTransactions.$inferSelect;
 export type InsertRecurringTransaction = z.infer<typeof insertRecurringTransactionSchema>;
 export type UpdateRecurringTransaction = z.infer<typeof updateRecurringTransactionSchema>;
 
-// Projects Management Module
+// Projects Management Module (Extended for Deals/Negocios)
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
@@ -799,6 +1019,19 @@ export const projects = pgTable("projects", {
   serviceSpecificFields: text("service_specific_fields"), // JSON string for dynamic fields
   customFields: text("custom_fields"), // JSON string for user-defined fields
   description: text("description"),
+
+  // ===========================================
+  // 💼 DEAL CONFIGURATION (Negocio/Iguala)
+  // ===========================================
+  dealType: text("deal_type").notNull().default("Proyecto"),  // "Proyecto" | "Iguala" (Retainer)
+  totalAmount: numeric("total_amount", { precision: 12, scale: 2 }),  // Total or monthly for iguala
+  numberOfPayments: integer("number_of_payments").default(1),  // Quantity of installments
+  paymentFrequency: text("payment_frequency"),  // "monthly", "biweekly", "quarterly", "custom"
+  billingDay: integer("billing_day"),  // Day of month for billing alerts (1-31)
+  expectedPaymentDay: integer("expected_payment_day"),  // Expected collection day (1-31)
+  assignedSellerId: integer("assigned_seller_id"),  // FK to team (vendedor)
+  contractUrl: text("contract_url"),  // Link to uploaded contract/quote
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -813,12 +1046,22 @@ export const insertProjectSchema = createInsertSchema(projects, {
   serviceSpecificFields: safeOptionalString(5000), // JSON fields need more space
   customFields: safeOptionalString(5000),
 
+  // 💼 Deal configuration fields
+  dealType: z.enum(["Proyecto", "Iguala"]).default("Proyecto"),
+  totalAmount: optionalPositiveNumericString(),
+  paymentFrequency: safeOptionalString(50),
+  contractUrl: safeOptionalString(1000),
+
   // 🔢 Positive number validation
   progress: z.coerce.number().int().min(0).max(100, "El progreso debe estar entre 0 y 100").default(0),
   budget: optionalPositiveNumericString(),
+  numberOfPayments: z.coerce.number().int().min(1).max(120).default(1),
+  billingDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
+  expectedPaymentDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
 
-  // 🔗 Integer coercion for client FK
+  // 🔗 Integer coercion for FKs
   clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
+  assignedSellerId: z.coerce.number().int().positive().optional().nullable(),
 
   // 📅 Date coercion
   deadline: z.coerce.date().optional().nullable(),
@@ -833,6 +1076,70 @@ export const updateProjectSchema = insertProjectSchema.partial();
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
+
+// ===========================================
+// 💰 INSTALLMENTS MODULE (Payment Schedule)
+// ===========================================
+
+export const installments = pgTable("installments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  installmentNumber: integer("installment_number").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  dueDate: timestamp("due_date").notNull(),
+
+  // Status tracking
+  status: text("status").notNull().default("pending"),  // "pending", "collected", "overdue", "cancelled"
+
+  // Concept with dynamic placeholders
+  conceptTemplate: text("concept_template"),  // "{{service_name}} - Mes {{month}}"
+  resolvedConcept: text("resolved_concept"),  // Computed: "Iguala Marketing - Mes Enero 2026"
+
+  // Payment linkage
+  isPaid: boolean("is_paid").notNull().default(false),
+  paidDate: timestamp("paid_date"),
+  transactionId: integer("transaction_id"),  // FK to transactions
+
+  // Simple Note (non-fiscal receipt)
+  simpleNoteNumber: text("simple_note_number"),
+  simpleNoteIssuedAt: timestamp("simple_note_issued_at"),
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertInstallmentSchema = createInsertSchema(installments, {
+  // 🛡️ XSS Protection
+  status: z.enum(["pending", "collected", "overdue", "cancelled"]).default("pending"),
+  conceptTemplate: safeOptionalString(500),
+  resolvedConcept: safeOptionalString(500),
+  simpleNoteNumber: safeOptionalString(50),
+  notes: safeOptionalString(1000),
+
+  // 🔢 Number validation
+  amount: positiveNumericString(),
+  installmentNumber: z.coerce.number().int().min(1),
+
+  // 🔗 FK coercion
+  projectId: z.coerce.number().int().positive("Se requiere un proyecto válido"),
+  transactionId: z.coerce.number().int().positive().optional().nullable(),
+
+  // 📅 Date coercion
+  dueDate: z.coerce.date(),
+  paidDate: z.coerce.date().optional().nullable(),
+  simpleNoteIssuedAt: z.coerce.date().optional().nullable(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateInstallmentSchema = insertInstallmentSchema.partial();
+
+export type Installment = typeof installments.$inferSelect;
+export type InsertInstallment = z.infer<typeof insertInstallmentSchema>;
+export type UpdateInstallment = z.infer<typeof updateInstallmentSchema>;
 
 // Project Attachments (defined before deliverables due to foreign key reference)
 export const projectAttachments = pgTable("project_attachments", {

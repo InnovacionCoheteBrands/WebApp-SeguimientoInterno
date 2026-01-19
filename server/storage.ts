@@ -47,6 +47,22 @@ import {
   type UpdateProjectDeliverable,
   type ProjectAttachment,
   type InsertProjectAttachment,
+  // New Agency Module Types
+  type Contact,
+  type InsertContact,
+  type UpdateContact,
+  type BillingProfile,
+  type InsertBillingProfile,
+  type UpdateBillingProfile,
+  type DigitalAsset,
+  type InsertDigitalAsset,
+  type UpdateDigitalAsset,
+  type ClientDocument,
+  type InsertClientDocument,
+  type Installment,
+  type InsertInstallment,
+  type UpdateInstallment,
+  // Tables
   users,
   campaigns,
   systemMetrics,
@@ -67,6 +83,12 @@ import {
   projectDeliverables,
   projectAttachments,
   agencyRoleCatalog,
+  // New Agency Module Tables
+  contacts,
+  billingProfiles,
+  digitalAssets,
+  clientDocuments,
+  installments,
   type AgencyRole,
   type InsertAgencyRole,
   type UpdateAgencyRole,
@@ -238,6 +260,52 @@ export interface IStorage {
 
   // Project Details (Command Center)
   getProjectDetails(id: number): Promise<ProjectDetails | undefined>;
+
+  // ===========================================
+  // 📇 CONTACTS MODULE
+  // ===========================================
+  getContactsByClientId(clientId: number): Promise<Contact[]>;
+  getContactById(id: number): Promise<Contact | undefined>;
+  createContact(contact: InsertContact): Promise<Contact>;
+  updateContact(id: number, contact: UpdateContact): Promise<Contact | undefined>;
+  deleteContact(id: number): Promise<boolean>;
+
+  // ===========================================
+  // 🧾 BILLING PROFILES MODULE
+  // ===========================================
+  getBillingProfilesByClientId(clientId: number): Promise<BillingProfile[]>;
+  getBillingProfileById(id: number): Promise<BillingProfile | undefined>;
+  createBillingProfile(profile: InsertBillingProfile): Promise<BillingProfile>;
+  updateBillingProfile(id: number, profile: UpdateBillingProfile): Promise<BillingProfile | undefined>;
+  deleteBillingProfile(id: number): Promise<boolean>;
+
+  // ===========================================
+  // 🌐 DIGITAL ASSETS MODULE (D&H)
+  // ===========================================
+  getDigitalAssetsByClientId(clientId: number): Promise<DigitalAsset[]>;
+  getDigitalAssetById(id: number): Promise<DigitalAsset | undefined>;
+  createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset>;
+  updateDigitalAsset(id: number, asset: UpdateDigitalAsset): Promise<DigitalAsset | undefined>;
+  deleteDigitalAsset(id: number): Promise<boolean>;
+  getExpiringDigitalAssets(daysAhead: number): Promise<DigitalAsset[]>;
+
+  // ===========================================
+  // 📁 CLIENT DOCUMENTS MODULE
+  // ===========================================
+  getClientDocumentsByClientId(clientId: number): Promise<ClientDocument[]>;
+  getClientDocumentById(id: number): Promise<ClientDocument | undefined>;
+  createClientDocument(doc: InsertClientDocument): Promise<ClientDocument>;
+  deleteClientDocument(id: number): Promise<boolean>;
+
+  // ===========================================
+  // 💰 INSTALLMENTS MODULE
+  // ===========================================
+  getInstallmentsByProjectId(projectId: number): Promise<Installment[]>;
+  getInstallmentById(id: number): Promise<Installment | undefined>;
+  createInstallment(installment: InsertInstallment): Promise<Installment>;
+  updateInstallment(id: number, installment: UpdateInstallment): Promise<Installment | undefined>;
+  deleteInstallment(id: number): Promise<boolean>;
+  generateInstallmentsForProject(projectId: number): Promise<Installment[]>;
 }
 
 // Project Details for Command Center view
@@ -1130,7 +1198,7 @@ export class DBStorage implements IStorage {
       return newConnection;
     } catch (error) {
       console.error(`❌ [createPlatformConnection] Error al insertar conexión:`, {
-        input: { platformId: connection.platformId, connectionName: connection.connectionName },
+        input: { platformId: connection.platformId, connectionType: connection.connectionType },
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
       });
@@ -2141,7 +2209,7 @@ export class DBStorage implements IStorage {
       return newAttachment;
     } catch (error) {
       console.error(`❌ [createProjectAttachment] Error al insertar adjunto:`, {
-        input: { projectId: attachment.projectId, fileName: attachment.fileName },
+        input: { projectId: attachment.projectId, name: attachment.name },
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
       });
@@ -2310,6 +2378,15 @@ export class DBStorage implements IStorage {
         serviceSpecificFields: projectData.service_specific_fields,
         customFields: projectData.custom_fields,
         description: projectData.description,
+        // Deal configuration fields
+        dealType: projectData.deal_type,
+        totalAmount: projectData.total_amount,
+        numberOfPayments: projectData.number_of_payments,
+        paymentFrequency: projectData.payment_frequency,
+        billingDay: projectData.billing_day,
+        expectedPaymentDay: projectData.expected_payment_day,
+        assignedSellerId: projectData.assigned_seller_id,
+        contractUrl: projectData.contract_url,
         createdAt: projectData.created_at,
         updatedAt: projectData.updated_at,
         client: projectData.client,
@@ -2325,6 +2402,231 @@ export class DBStorage implements IStorage {
         marginPercentage,
       },
     };
+  }
+
+  // ===========================================
+  // 📇 CONTACTS MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getContactsByClientId(clientId: number): Promise<Contact[]> {
+    return await db.select().from(contacts).where(eq(contacts.clientId, clientId));
+  }
+
+  async getContactById(id: number): Promise<Contact | undefined> {
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+    return contact;
+  }
+
+  async createContact(contact: InsertContact): Promise<Contact> {
+    const [newContact] = await db.insert(contacts).values(contact).returning();
+    return newContact;
+  }
+
+  async updateContact(id: number, contactData: UpdateContact): Promise<Contact | undefined> {
+    const [updated] = await db.update(contacts)
+      .set({ ...contactData, updatedAt: new Date() })
+      .where(eq(contacts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteContact(id: number): Promise<boolean> {
+    const result = await db.delete(contacts).where(eq(contacts.id, id));
+    return true;
+  }
+
+  // ===========================================
+  // 🧾 BILLING PROFILES MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getBillingProfilesByClientId(clientId: number): Promise<BillingProfile[]> {
+    return await db.select().from(billingProfiles).where(eq(billingProfiles.clientId, clientId));
+  }
+
+  async getBillingProfileById(id: number): Promise<BillingProfile | undefined> {
+    const [profile] = await db.select().from(billingProfiles).where(eq(billingProfiles.id, id)).limit(1);
+    return profile;
+  }
+
+  async createBillingProfile(profile: InsertBillingProfile): Promise<BillingProfile> {
+    const [newProfile] = await db.insert(billingProfiles).values(profile).returning();
+    return newProfile;
+  }
+
+  async updateBillingProfile(id: number, profileData: UpdateBillingProfile): Promise<BillingProfile | undefined> {
+    const [updated] = await db.update(billingProfiles)
+      .set({ ...profileData, updatedAt: new Date() })
+      .where(eq(billingProfiles.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBillingProfile(id: number): Promise<boolean> {
+    await db.delete(billingProfiles).where(eq(billingProfiles.id, id));
+    return true;
+  }
+
+  // ===========================================
+  // 🌐 DIGITAL ASSETS MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getDigitalAssetsByClientId(clientId: number): Promise<DigitalAsset[]> {
+    return await db.select().from(digitalAssets).where(eq(digitalAssets.clientId, clientId));
+  }
+
+  async getDigitalAssetById(id: number): Promise<DigitalAsset | undefined> {
+    const [asset] = await db.select().from(digitalAssets).where(eq(digitalAssets.id, id)).limit(1);
+    return asset;
+  }
+
+  async createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset> {
+    const [newAsset] = await db.insert(digitalAssets).values(asset).returning();
+    return newAsset;
+  }
+
+  async updateDigitalAsset(id: number, assetData: UpdateDigitalAsset): Promise<DigitalAsset | undefined> {
+    const [updated] = await db.update(digitalAssets)
+      .set({ ...assetData, updatedAt: new Date() })
+      .where(eq(digitalAssets.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDigitalAsset(id: number): Promise<boolean> {
+    await db.delete(digitalAssets).where(eq(digitalAssets.id, id));
+    return true;
+  }
+
+  async getExpiringDigitalAssets(daysAhead: number): Promise<DigitalAsset[]> {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+
+    return await db.select().from(digitalAssets)
+      .where(
+        and(
+          eq(digitalAssets.status, "active"),
+          sql`${digitalAssets.expirationDate} <= ${futureDate}`
+        )
+      );
+  }
+
+  // ===========================================
+  // 📁 CLIENT DOCUMENTS MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getClientDocumentsByClientId(clientId: number): Promise<ClientDocument[]> {
+    return await db.select().from(clientDocuments).where(eq(clientDocuments.clientId, clientId));
+  }
+
+  async getClientDocumentById(id: number): Promise<ClientDocument | undefined> {
+    const [doc] = await db.select().from(clientDocuments).where(eq(clientDocuments.id, id)).limit(1);
+    return doc;
+  }
+
+  async createClientDocument(doc: InsertClientDocument): Promise<ClientDocument> {
+    const [newDoc] = await db.insert(clientDocuments).values(doc).returning();
+    return newDoc;
+  }
+
+  async deleteClientDocument(id: number): Promise<boolean> {
+    await db.delete(clientDocuments).where(eq(clientDocuments.id, id));
+    return true;
+  }
+
+  // ===========================================
+  // 💰 INSTALLMENTS MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getInstallmentsByProjectId(projectId: number): Promise<Installment[]> {
+    return await db.select().from(installments)
+      .where(eq(installments.projectId, projectId))
+      .orderBy(installments.installmentNumber);
+  }
+
+  async getInstallmentById(id: number): Promise<Installment | undefined> {
+    const [installment] = await db.select().from(installments).where(eq(installments.id, id)).limit(1);
+    return installment;
+  }
+
+  async createInstallment(installment: InsertInstallment): Promise<Installment> {
+    const [newInstallment] = await db.insert(installments).values(installment).returning();
+    return newInstallment;
+  }
+
+  async updateInstallment(id: number, installmentData: UpdateInstallment): Promise<Installment | undefined> {
+    const [updated] = await db.update(installments)
+      .set({ ...installmentData, updatedAt: new Date() })
+      .where(eq(installments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteInstallment(id: number): Promise<boolean> {
+    await db.delete(installments).where(eq(installments.id, id));
+    return true;
+  }
+
+  async generateInstallmentsForProject(projectId: number): Promise<Installment[]> {
+    // Get project details
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+    if (!project) {
+      throw new Error(`Project ${projectId} not found`);
+    }
+
+    // Only generate for "Iguala" type deals
+    if (project.dealType !== "Iguala") {
+      console.log(`Project ${projectId} is not an Iguala deal, skipping installment generation`);
+      return [];
+    }
+
+    const numberOfPayments = project.numberOfPayments || 1;
+    const totalAmount = parseFloat(project.totalAmount || "0");
+    const amountPerInstallment = (totalAmount / numberOfPayments).toFixed(2);
+
+    // Delete existing installments for this project
+    await db.delete(installments).where(eq(installments.projectId, projectId));
+
+    const newInstallments: Installment[] = [];
+    const baseDate = new Date();
+
+    for (let i = 1; i <= numberOfPayments; i++) {
+      const dueDate = new Date(baseDate);
+
+      // Calculate due date based on frequency
+      switch (project.paymentFrequency) {
+        case "monthly":
+          dueDate.setMonth(dueDate.getMonth() + i);
+          break;
+        case "biweekly":
+          dueDate.setDate(dueDate.getDate() + (i * 14));
+          break;
+        case "quarterly":
+          dueDate.setMonth(dueDate.getMonth() + (i * 3));
+          break;
+        default:
+          dueDate.setMonth(dueDate.getMonth() + i);
+      }
+
+      // Set billing day if specified
+      if (project.billingDay) {
+        dueDate.setDate(Math.min(project.billingDay, 28)); // Avoid invalid dates
+      }
+
+      const [installment] = await db.insert(installments).values({
+        projectId,
+        installmentNumber: i,
+        amount: amountPerInstallment,
+        dueDate,
+        status: "pending",
+        conceptTemplate: `{{service_name}} - Parcialidad {{installment_number}} de {{total_payments}}`,
+        resolvedConcept: `${project.name} - Parcialidad ${i} de ${numberOfPayments}`,
+      }).returning();
+
+      newInstallments.push(installment);
+    }
+
+    console.log(`Generated ${newInstallments.length} installments for project ${projectId}`);
+    return newInstallments;
   }
 }
 

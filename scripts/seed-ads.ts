@@ -1,4 +1,4 @@
-import { storage } from './storage';
+import { storage } from '../server/storage';
 
 async function seedAdsData() {
     console.log("🚀 Seeding Ads Command Center data...");
@@ -163,7 +163,7 @@ async function seedAdsData() {
         console.log(`✅ Created ${allCreatives.length} ad creatives`);
 
         // Create metrics for each creative
-        const creatives = await storage.getAdCreatives();
+        const creatives = await storage.getAllAdCreatives();
 
         for (const creative of creatives) {
             // Generate realistic metrics based on creative quality
@@ -214,8 +214,8 @@ async function seedAdsData() {
 
         const topCreatives = await storage.getTopPerformingCreatives(3);
         console.log("\n🏆 Top 3 Performers:");
-        topCreatives.forEach((c, i) => {
-            console.log(`   ${i + 1}. ${c.headline} - ROAS: ${c.metrics.roas}x`);
+        topCreatives.forEach((c: { headline: string | null; metrics: { roas: string | null } }, i: number) => {
+            console.log(`   ${i + 1}. ${c.headline || 'Untitled'} - ROAS: ${c.metrics.roas || 'N/A'}x`);
         });
 
         console.log("\n✨ Ads Command Center data seeded successfully!");
