@@ -1,5 +1,5 @@
-import { Suspense, lazy } from "react";
-import { Switch, Route } from "wouter";
+import React, { Suspense, lazy } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/app-layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/components/language-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
@@ -15,6 +16,7 @@ const Clients = lazy(() => import("@/pages/fleet-tracking"));
 const ClientDetail = lazy(() => import("@/pages/client-detail"));
 const Projects = lazy(() => import("@/pages/proyectos"));
 const ProjectDetail = lazy(() => import("@/pages/project-detail"));
+const ProyectosTest = lazy(() => import("@/pages/proyectos-test"));
 const Resources = lazy(() => import("@/pages/data-center"));
 const Team = lazy(() => import("@/pages/personnel"));
 const KPIs = lazy(() => import("@/pages/analytics"));
@@ -26,6 +28,11 @@ const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
 const AuthPage = lazy(() => import("@/pages/auth"));
 const AgentChat = lazy(() => import("@/components/agent-chat").then(m => ({ default: m.AgentChat })));
+// Cohete Replica Pages
+const LeadsControl = lazy(() => import("@/pages/leads-control"));
+const Poes = lazy(() => import("@/pages/poes"));
+const PaymentCalendar = lazy(() => import("@/pages/payment-calendar"));
+const ControlProyectos = lazy(() => import("@/pages/control-proyectos"));
 
 function LoadingFallback() {
   return (
@@ -40,11 +47,27 @@ function LoadingFallback() {
   );
 }
 
-function ProtectedRoute({ component: Component, ...rest }: any) {
-  const token = localStorage.getItem("token");
-  // Simple check - in production use a real auth context
-  if (!token) return <AuthPage />;
-  return <Component {...rest} />;
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  // Redirect unauthenticated users
+  React.useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation('/auth');
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  if (isLoading) {
+    return <LoadingFallback />;
+  }
+
+  if (!isAuthenticated) {
+    // Return loading while redirect happens
+    return <LoadingFallback />;
+  }
+
+  return <AppLayout>{children}</AppLayout>;
 }
 
 function Router() {
@@ -54,28 +77,34 @@ function Router() {
         {/* Public Route */}
         <Route path="/auth" component={AuthPage} />
 
-        {/* Protected Routes */}
-        <Route path="/:rest*">
-          <AppLayout>
+        {/* Protected Routes - use /* to match all including root */}
+        <Route>
+          <ProtectedLayout>
             <Switch>
-              <Route path="/" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
-              <Route path="/clientes" component={(props) => <ProtectedRoute component={Clients} {...props} />} />
-              <Route path="/clientes/:id" component={(props) => <ProtectedRoute component={ClientDetail} {...props} />} />
-              <Route path="/proyectos" component={(props) => <ProtectedRoute component={Projects} {...props} />} />
-              <Route path="/proyectos/:id" component={(props) => <ProtectedRoute component={ProjectDetail} {...props} />} />
-              <Route path="/recursos" component={(props) => <ProtectedRoute component={Resources} {...props} />} />
-              <Route path="/equipo" component={(props) => <ProtectedRoute component={Team} {...props} />} />
-              <Route path="/kpis" component={(props) => <ProtectedRoute component={KPIs} {...props} />} />
-              <Route path="/ads" component={(props) => <ProtectedRoute component={AdsCommandCenter} {...props} />} />
-              <Route path="/ads/command-center" component={(props) => <ProtectedRoute component={AdsCommandCenter} {...props} />} />
-              <Route path="/ads/settings" component={(props) => <ProtectedRoute component={AdsSettings} {...props} />} />
-              <Route path="/digital-assets" component={(props) => <ProtectedRoute component={DigitalAssets} {...props} />} />
-              <Route path="/finanzas" component={(props) => <ProtectedRoute component={Finanzas} {...props} />} />
-              <Route path="/profile" component={(props) => <ProtectedRoute component={Profile} {...props} />} />
-              <Route path="/settings" component={(props) => <ProtectedRoute component={Settings} {...props} />} />
+              <Route path="/" component={Dashboard} />
+              <Route path="/clientes" component={Clients} />
+              <Route path="/clientes/:id" component={ClientDetail} />
+              <Route path="/proyectos" component={Projects} />
+              <Route path="/proyectos-test" component={ProyectosTest} />
+              <Route path="/proyectos/:id" component={ProjectDetail} />
+              <Route path="/recursos" component={Resources} />
+              <Route path="/equipo" component={Team} />
+              <Route path="/kpis" component={KPIs} />
+              <Route path="/ads" component={AdsCommandCenter} />
+              <Route path="/ads/command-center" component={AdsCommandCenter} />
+              <Route path="/ads/settings" component={AdsSettings} />
+              <Route path="/digital-assets" component={DigitalAssets} />
+              <Route path="/finanzas" component={Finanzas} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/settings" component={Settings} />
+              {/* Cohete Replica Routes */}
+              <Route path="/leads" component={LeadsControl} />
+              <Route path="/poes" component={Poes} />
+              <Route path="/calendario-pagos" component={PaymentCalendar} />
+              <Route path="/control-proyectos" component={ControlProyectos} />
               <Route component={NotFound} />
             </Switch>
-          </AppLayout>
+          </ProtectedLayout>
         </Route>
       </Switch>
     </Suspense>
@@ -87,15 +116,17 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <LanguageProvider defaultLanguage="en" storageKey="app-language">
-          <TooltipProvider>
-            <Toaster />
-            <ErrorBoundary>
-              <Router />
-            </ErrorBoundary>
-            <Suspense fallback={null}>
-              <AgentChat />
-            </Suspense>
-          </TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <ErrorBoundary>
+                <Router />
+              </ErrorBoundary>
+              <Suspense fallback={null}>
+                <AgentChat />
+              </Suspense>
+            </TooltipProvider>
+          </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -263,7 +263,7 @@ export default function Personnel() {
         ...prev,
         role: selectedRole.roleName,
         roleCatalogId: roleId,
-        area: selectedRole.area,
+        area: selectedRole.department,
         billableRate: selectedRole.defaultBillableRate?.toString() || "0",
         skills: activities.join(", ")
       }));

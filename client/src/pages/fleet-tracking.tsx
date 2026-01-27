@@ -15,10 +15,13 @@ import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { insertClientAccountSchema, type InsertClientAccount } from "@shared/schema";
+import { ClientDrawer } from "@/components/clients/client-drawer";
 
 const FleetTracking = memo(function FleetTracking() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<ClientAccount | null>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientAccount | null>(null);
   const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -109,6 +112,11 @@ const FleetTracking = memo(function FleetTracking() {
     setIsDialogOpen(true);
   };
 
+  const handleOpenDrawer = (client: ClientAccount) => {
+    setSelectedClient(client);
+    setIsDrawerOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -173,7 +181,8 @@ const FleetTracking = memo(function FleetTracking() {
             <Card
               key={account.id}
               status={account.status === "Active" ? "success" : account.status === "Paused" ? "warning" : "default"}
-              className="bg-card border-border rounded-sm"
+              className="bg-card border-border rounded-sm cursor-pointer"
+              onClick={() => handleOpenDrawer(account)}
             >
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-2">
@@ -187,9 +196,7 @@ const FleetTracking = memo(function FleetTracking() {
                   </Badge>
                 </div>
                 <h3 className="font-semibold text-sm truncate mb-2">
-                  <Link href={`/clientes/${account.id}`} className="hover:underline">
-                    {account.companyName}
-                  </Link>
+                  {account.companyName}
                 </h3>
                 <div className="space-y-1 text-[10px] text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -201,11 +208,11 @@ const FleetTracking = memo(function FleetTracking() {
                     <span>${account.monthlyBudget.toLocaleString()}</span>
                   </div>
                 </div>
-                <div className="flex gap-1 mt-3">
+                <div className="flex gap-1 mt-3" onClick={(e) => e.stopPropagation()}>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleOpenDialog(account)}
+                    onClick={(e) => { e.stopPropagation(); handleOpenDialog(account); }}
                     className="flex-1 h-7 text-xs"
                   >
                     <Pencil className="size-3" />
@@ -213,7 +220,7 @@ const FleetTracking = memo(function FleetTracking() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setDeleteClientId(account.id)}
+                    onClick={(e) => { e.stopPropagation(); setDeleteClientId(account.id); }}
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500"
                   >
                     <Trash2 className="size-3" />
@@ -230,17 +237,16 @@ const FleetTracking = memo(function FleetTracking() {
             <Card
               key={account.id}
               status={account.status === "Active" ? "success" : account.status === "Paused" ? "warning" : "default"}
-              className="bg-card border-border rounded-sm hover:border-muted-foreground/30 transition-all group relative overflow-hidden"
+              className="bg-card border-border rounded-sm hover:border-muted-foreground/30 transition-all group relative overflow-hidden cursor-pointer"
               data-testid={`client-card-${account.id}`}
+              onClick={() => handleOpenDrawer(account)}
             >
               <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Briefcase className="size-4 text-muted-foreground" />
                     <CardTitle className="text-base font-display font-bold tracking-tight text-foreground">
-                      <Link href={`/clientes/${account.id}`} className="hover:underline">
-                        {account.companyName}
-                      </Link>
+                      {account.companyName}
                     </CardTitle>
                   </div>
                   <Badge
@@ -320,11 +326,11 @@ const FleetTracking = memo(function FleetTracking() {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleOpenDialog(account)}
+                    onClick={(e) => { e.stopPropagation(); handleOpenDialog(account); }}
                     className="flex-1 rounded-sm h-8 text-xs border-dashed border-border hover:border-primary/50 hover:bg-muted hover:text-primary"
                     data-testid={`button-edit-client-${account.id}`}
                   >
@@ -334,7 +340,7 @@ const FleetTracking = memo(function FleetTracking() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setDeleteClientId(account.id)}
+                    onClick={(e) => { e.stopPropagation(); setDeleteClientId(account.id); }}
                     className="rounded-sm h-8 w-8 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
                     data-testid={`button-delete-client-${account.id}`}
                   >
@@ -360,8 +366,14 @@ const FleetTracking = memo(function FleetTracking() {
         )}
       </div>
 
+      <ClientDrawer
+        client={selectedClient}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+      />
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-5xl rounded-sm">
+        <DialogContent className="sm:max-w-5xl rounded-sm max-h-[85vh] overflow-y-auto">
           <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingAccount ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
             <DialogDescription>

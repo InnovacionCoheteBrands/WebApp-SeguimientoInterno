@@ -1,10 +1,24 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
+import rateLimit from 'express-rate-limit';
 import { registerRoutes } from "./routes";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Global rate limiter for API routes (100 requests per 15 minutes)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests', message: 'Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !req.path.startsWith('/api'), // Only limit /api routes
+});
+
+// Apply rate limiter before other middleware
+app.use(apiLimiter);
 
 declare module 'http' {
   interface IncomingMessage {

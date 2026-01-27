@@ -80,6 +80,11 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
         },
     });
 
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+    // ... existing useState hooks ...
+
+    // Reset form now clears selected files
     const resetForm = () => {
         setFormData({
             type: "domain",
@@ -90,6 +95,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
             autoRenew: true,
             status: "active",
         });
+        setSelectedFiles([]);
         setEditingAsset(null);
     };
 
@@ -105,13 +111,20 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                 autoRenew: asset.autoRenew,
                 status: asset.status,
             });
+            setSelectedFiles([]); // Files are not editable directly, only append. Existing files shown in list.
         } else {
             resetForm();
         }
         setIsDialogOpen(true);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setSelectedFiles(Array.from(e.target.files));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name || !formData.type) {
@@ -119,42 +132,35 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
             return;
         }
 
-        const payload = {
-            ...formData,
-            assetType: formData.type,
-            clientId,
-            expirationDate: formData.expirationDate ? new Date(formData.expirationDate) : undefined,
-        };
+        const formDataPayload = new FormData();
+        formDataPayload.append('clientId', clientId.toString());
+        formDataPayload.append('assetType', formData.type);
+        formDataPayload.append('name', formData.name);
+        formDataPayload.append('provider', formData.provider);
+        if (formData.cost) formDataPayload.append('cost', formData.cost.toString());
+        formDataPayload.append('autoRenew', String(formData.autoRenew));
+        formDataPayload.append('status', formData.status);
+        if (formData.expirationDate) formDataPayload.append('expirationDate', new Date(formData.expirationDate).toISOString());
 
-        // Remove the 'type' property from payload to match schema exactly if needed, 
-        // strictly speaking 'assetType' is required.
-        // We cast to InsertDigitalAsset/UpdateDigitalAsset which expects assetType.
+        selectedFiles.forEach(file => {
+            formDataPayload.append('files', file);
+        });
 
         if (editingAsset) {
-            updateMutation.mutate({ id: editingAsset.id, data: payload as unknown as UpdateDigitalAsset });
+            // For update, we might want to keep existing files.
+            // Currently backend handles appending new files.
+            // If we implemented file deletion from list, we'd pass 'keptFiles' here.
+
+            // To be typesafe with our API wrapper which expects UpdateDigitalAsset | FormData
+            // We cast to any to bypass strict type check for now or update the API signature.
+            // Updated API signature to accept FormData.
+            updateMutation.mutate({ id: editingAsset.id, data: formDataPayload });
         } else {
-            createMutation.mutate(payload as unknown as InsertDigitalAsset);
+            createMutation.mutate(formDataPayload as unknown as InsertDigitalAsset); // Cast to satisfy useMutation types, real call handles FormData
         }
     };
 
-    const getIcon = (type: string) => {
-        switch (type) {
-            case "domain": return <Globe className="size-5 text-blue-500" />;
-            case "hosting": return <Server className="size-5 text-purple-500" />;
-            case "ssl": return <Shield className="size-5 text-green-500" />;
-            case "email": return <Mail className="size-5 text-orange-500" />;
-            default: return <Globe className="size-5" />;
-        }
-    };
-
-    const getExpirationStatus = (date?: Date | null) => {
-        if (!date) return null;
-        const days = differenceInDays(new Date(date), new Date());
-        if (days < 0) return { label: "Vencido", color: "text-red-500 border-red-500/30 bg-red-500/10" };
-        if (days <= 30) return { label: `Vence en ${days} días`, color: "text-red-500 border-red-500/30 bg-red-500/10" };
-        if (days <= 60) return { label: `Vence en ${days} días`, color: "text-yellow-500 border-yellow-500/30 bg-yellow-500/10" };
-        return { label: format(new Date(date), "dd/MM/yyyy"), color: "text-muted-foreground" };
-    };
+    // ... helper functions ...
 
     return (
         <>
@@ -178,49 +184,70 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                         <div className="space-y-3">
                             {assets.map((asset) => {
                                 const expiration = getExpirationStatus(asset.expirationDate ? new Date(asset.expirationDate) : null);
+                                const hasFiles = asset.files && Array.isArray(asset.files) && asset.files.length > 0;
+
                                 return (
                                     <div
                                         key={asset.id}
-                                        className="flex items-center justify-between p-4 border border-border rounded-sm bg-card hover:bg-muted/50 transition-colors"
+                                        className="flex flex-col p-4 border border-border rounded-sm bg-card hover:bg-muted/50 transition-colors gap-3"
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                {getIcon(asset.assetType)}
+                                        <div className="flex items-center justify-between w-full">
+                                            <div className="flex items-center gap-4">
+                                                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                    {getIcon(asset.assetType)}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium">{asset.name}</p>
+                                                        <Badge variant="outline" className="text-[10px] uppercase rounded-sm">
+                                                            {asset.assetType}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                                                        <span>{asset.provider}</span>
+                                                        {asset.cost && <span>| ${Number(asset.cost).toFixed(2)}</span>}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-medium">{asset.name}</p>
-                                                    <Badge variant="outline" className="text-[10px] uppercase rounded-sm">
-                                                        {asset.assetType}
+                                            <div className="flex items-center gap-4">
+                                                {expiration && (
+                                                    <Badge variant="outline" className={`text-xs rounded-sm font-normal ${expiration.color}`}>
+                                                        {expiration.label}
                                                     </Badge>
-                                                </div>
-                                                <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                                                    <span>{asset.provider}</span>
-                                                    {asset.cost && <span>| ${Number(asset.cost).toFixed(2)}</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            {expiration && (
-                                                <Badge variant="outline" className={`text-xs rounded-sm font-normal ${expiration.color}`}>
-                                                    {expiration.label}
-                                                </Badge>
-                                            )}
+                                                )}
 
-                                            <div className="flex items-center gap-1">
-                                                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(asset)}>
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-muted-foreground hover:text-red-500"
-                                                    onClick={() => setDeleteAssetId(asset.id)}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
+                                                <div className="flex items-center gap-1">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(asset)}>
+                                                        <Pencil className="size-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-muted-foreground hover:text-red-500"
+                                                        onClick={() => setDeleteAssetId(asset.id)}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {hasFiles && (
+                                            <div className="pl-[3.5rem] flex flex-wrap gap-2">
+                                                {asset.files.map((file: any, index: number) => (
+                                                    <a
+                                                        key={index}
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center gap-1 text-xs text-primary hover:underline bg-primary/5 px-2 py-1 rounded-sm border border-primary/20"
+                                                    >
+                                                        <ExternalLink className="size-3" />
+                                                        {file.name}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -313,6 +340,30 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                                 onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
                                 className="h-10"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="files">Archivos Adjuntos</Label>
+                            <Input
+                                id="files"
+                                type="file"
+                                multiple
+                                onChange={handleFileChange}
+                                className="cursor-pointer"
+                            />
+                            {selectedFiles.length > 0 && (
+                                <ul className="text-xs text-muted-foreground list-disc pl-4 mt-1">
+                                    {selectedFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                                </ul>
+                            )}
+                            {editingAsset && editingAsset.files && Array.isArray(editingAsset.files) && editingAsset.files.length > 0 && (
+                                <div className="mt-2">
+                                    <p className="text-xs font-medium mb-1">Archivos actuales:</p>
+                                    <ul className="text-xs text-muted-foreground list-disc pl-4">
+                                        {editingAsset.files.map((f: any, i) => <li key={i}>{f.name}</li>)}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex items-center space-x-2 pt-2">

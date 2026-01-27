@@ -20,6 +20,11 @@ import billingProfilesRouter from "./controllers/billing-profiles";
 import digitalAssetsRouter from "./controllers/digital-assets";
 import clientDocumentsRouter from "./controllers/client-documents";
 import installmentsRouter from "./controllers/installments";
+import servicesRouter from "./controllers/services";
+// Cohete Replica Module Controllers
+import leadsRouter from "./controllers/leads";
+import poesRouter from "./controllers/poes";
+import projectTeamRouter from "./controllers/project-team";
 import { requireAuth } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -44,6 +49,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", requireAuth, digitalAssetsRouter);
   app.use("/api", requireAuth, clientDocumentsRouter);
   app.use("/api", requireAuth, installmentsRouter);
+  app.use("/api", requireAuth, servicesRouter);
+  // Cohete Replica Module Routes
+  app.use("/api/leads", requireAuth, leadsRouter);
+  app.use("/api/poes", requireAuth, poesRouter);
+  app.use("/api", requireAuth, projectTeamRouter);
 
   const httpServer = createServer(app);
   setupWebSocket(httpServer);

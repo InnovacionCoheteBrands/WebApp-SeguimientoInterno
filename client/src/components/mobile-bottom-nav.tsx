@@ -21,7 +21,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-border"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] pb-safe-area"
       data-testid="bottom-nav"
     >
       <div className="flex items-center justify-around h-16 px-2">
@@ -34,15 +34,21 @@ export function MobileBottomNav() {
             <Link key={item.href} href={item.href}>
               <button
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 min-w-16 h-12 rounded-lg transition-colors",
+                  "relative flex flex-col items-center justify-center gap-1 min-w-16 h-14 rounded-xl transition-all duration-300",
                   isActive
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary bg-primary/10 scale-105"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-white/5"
                 )}
                 data-testid={`nav-${item.label.toLowerCase()}`}
               >
-                <Icon className={cn("size-5", isActive && "stroke-[2.5]")} />
-                <span className="text-[10px] font-medium uppercase tracking-wider font-display">
+                {isActive && (
+                  <div className="absolute top-0 inset-x-0 mx-auto w-8 h-0.5 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)] rounded-b-full" />
+                )}
+                <Icon className={cn("size-5 transition-all duration-300", isActive && "stroke-[2.5] drop-shadow-[0_0_5px_rgba(var(--primary),0.3)]")} />
+                <span className={cn(
+                  "text-[9px] font-medium uppercase tracking-wider font-display transition-all duration-300",
+                  isActive ? "opacity-100 transform translate-y-0" : "opacity-70"
+                )}>
                   {item.label}
                 </span>
               </button>

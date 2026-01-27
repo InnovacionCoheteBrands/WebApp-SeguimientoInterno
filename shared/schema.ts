@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, timestamp, numeric, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, timestamp, numeric, boolean, json } from "drizzle-orm/pg-core";
 
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -380,6 +380,7 @@ export const digitalAssets = pgTable("digital_assets", {
 
   // Access/notes (encrypted in production)
   accessNotes: text("access_notes"),
+  files: json("files").$type<{ name: string, url: string, type?: string, size?: number }[]>().default([]),
 
   // Alert configuration
   alertDaysBefore: integer("alert_days_before").default(30),
@@ -406,6 +407,12 @@ export const insertDigitalAssetSchema = createInsertSchema(digitalAssets, {
   // 🔗 FK coercion
   clientId: z.coerce.number().int().positive("Se requiere un cliente válido"),
   assignedManagerId: z.coerce.number().int().positive().optional().nullable(),
+  files: z.array(z.object({
+    name: z.string(),
+    url: z.string(),
+    type: z.string().optional(),
+    size: z.number().optional()
+  })).optional().default([]),
 
   // 📅 Date coercion
   expirationDate: z.coerce.date().optional().nullable(),
@@ -571,7 +578,7 @@ export type InsertResource = z.infer<typeof insertResourceSchema>;
 export const agencyRoleCatalog = pgTable("agency_role_catalog", {
   id: serial("id").primaryKey(),
   roleName: text("role_name").notNull(),
-  area: text("area").notNull(), // Renamed from department
+  department: text("department").notNull(), // Renamed from department
   defaultBillableRate: numeric("default_billable_rate").notNull().default("0"),
   allowedActivities: text("allowed_activities"), // JSON string array ["Logo Design", "Coding"]
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -580,7 +587,7 @@ export const agencyRoleCatalog = pgTable("agency_role_catalog", {
 export const insertAgencyRoleSchema = createInsertSchema(agencyRoleCatalog, {
   // 🛡️ XSS Protection for text fields
   roleName: safeString(100),
-  area: safeString(100),
+  department: safeString(100),
   allowedActivities: safeOptionalString(2000), // JSON array needs space
 
   // 🔢 Positive number validation
@@ -1021,6 +1028,33 @@ export const projects = pgTable("projects", {
   description: text("description"),
 
   // ===========================================
+  // 🎯 PROJECT LEVEL/CATEGORY (Nuevo Formulario)
+  // ===========================================
+  level: text("level").notNull().default("Plata"),  // "Plata", "Oro", "Platino", "Diamante"
+
+  // ===========================================
+  // 💵 FINANCIAL FIELDS (Cotización & Mantenimiento)
+  // ===========================================
+  quotationAmount: numeric("quotation_amount", { precision: 12, scale: 2 }),  // Cotización en MXN
+  monthlyMaintenance: numeric("monthly_maintenance", { precision: 12, scale: 2 }),  // Mantenimiento mensual opcional
+
+  // ===========================================
+  // 📅 DATE FIELDS
+  // ===========================================
+  startDate: timestamp("start_date"),  // Fecha de inicio del proyecto
+
+  // ===========================================
+  // 🖼️ COVER/PORTADA FIELDS
+  // ===========================================
+  coverImageUrl: text("cover_image_url"),  // URL de imagen de portada (opcional)
+  coverColor: text("cover_color").default("#3B82F6"),  // Color de fondo si no hay imagen
+
+  // ===========================================
+  // 📝 ADDITIONAL NOTES
+  // ===========================================
+  additionalNotes: text("additional_notes"),  // Notas adicionales
+
+  // ===========================================
   // 💼 DEAL CONFIGURATION (Negocio/Iguala)
   // ===========================================
   dealType: text("deal_type").notNull().default("Proyecto"),  // "Proyecto" | "Iguala" (Retainer)
@@ -1046,6 +1080,20 @@ export const insertProjectSchema = createInsertSchema(projects, {
   serviceSpecificFields: safeOptionalString(5000), // JSON fields need more space
   customFields: safeOptionalString(5000),
 
+  // 🎯 NEW: Level/Category validation
+  level: z.enum(["Plata", "Oro", "Platino", "Diamante"]).default("Plata"),
+
+  // 💵 NEW: Financial fields validation
+  quotationAmount: optionalPositiveNumericString(),
+  monthlyMaintenance: optionalPositiveNumericString(),
+
+  // 🖼️ NEW: Cover fields validation
+  coverImageUrl: safeOptionalString(1000),
+  coverColor: safeOptionalString(20).default("#3B82F6"),
+
+  // 📝 NEW: Additional notes validation
+  additionalNotes: safeOptionalString(2000),
+
   // 💼 Deal configuration fields
   dealType: z.enum(["Proyecto", "Iguala"]).default("Proyecto"),
   totalAmount: optionalPositiveNumericString(),
@@ -1065,6 +1113,7 @@ export const insertProjectSchema = createInsertSchema(projects, {
 
   // 📅 Date coercion
   deadline: z.coerce.date().optional().nullable(),
+  startDate: z.coerce.date().optional().nullable(),
 }).omit({
   id: true,
   createdAt: true,
@@ -1208,5 +1257,300 @@ export const updateProjectDeliverableSchema = insertProjectDeliverableSchema.par
 export type ProjectDeliverable = typeof projectDeliverables.$inferSelect;
 export type InsertProjectDeliverable = z.infer<typeof insertProjectDeliverableSchema>;
 export type UpdateProjectDeliverable = z.infer<typeof updateProjectDeliverableSchema>;
+
+// ===========================================
+// 🛠️ SERVICE CATALOG MODULE
+// ===========================================
+
+export const serviceCatalog = pgTable("service_catalog", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  defaultPrice: numeric("default_price", { precision: 12, scale: 2 }),
+  category: text("category"),  // "Marketing", "Desarrollo", "Diseño", etc.
+  icon: text("icon"),  // Icon name for UI display
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertServiceCatalogSchema = createInsertSchema(serviceCatalog, {
+  // 🛡️ XSS Protection
+  name: safeString(200),
+  description: safeOptionalString(500),
+  category: safeOptionalString(100),
+  icon: safeOptionalString(50),
+
+  // 🔢 Number validation
+  defaultPrice: optionalPositiveNumericString(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateServiceCatalogSchema = insertServiceCatalogSchema.partial();
+
+export type ServiceCatalog = typeof serviceCatalog.$inferSelect;
+export type InsertServiceCatalog = z.infer<typeof insertServiceCatalogSchema>;
+export type UpdateServiceCatalog = z.infer<typeof updateServiceCatalogSchema>;
+
+// ===========================================
+// 🔗 PROJECT-SERVICES RELATIONSHIP
+// ===========================================
+
+export const projectServices = pgTable("project_services", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  serviceId: integer("service_id").notNull().references(() => serviceCatalog.id, { onDelete: "cascade" }),
+  customPrice: numeric("custom_price", { precision: 12, scale: 2 }),  // Precio específico si difiere del default
+  notes: text("notes"),  // Notas específicas para este servicio en el proyecto
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertProjectServiceSchema = createInsertSchema(projectServices, {
+  // 🔗 FK coercion
+  projectId: z.coerce.number().int().positive("Se requiere un proyecto válido"),
+  serviceId: z.coerce.number().int().positive("Se requiere un servicio válido"),
+
+  // 🔢 Number validation
+  customPrice: optionalPositiveNumericString(),
+
+  // 🛡️ XSS Protection
+  notes: safeOptionalString(500),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ProjectService = typeof projectServices.$inferSelect;
+export type InsertProjectService = z.infer<typeof insertProjectServiceSchema>;
+
+// ===========================================
+// 🎯 LEADS MODULE (CRM Kanban)
+// ===========================================
+
+export const LEAD_ORIGINS = [
+  "Referido",
+  "Instagram",
+  "TikTok",
+  "Landing Page",
+  "LinkedIn",
+  "YouTube",
+  "Evento",
+  "Campañas",
+  "Google",
+  "Facebook",
+  "Otro",
+] as const;
+
+export const LEAD_STATUSES = [
+  "Nuevo",
+  "Contactado",
+  "En Negociación",
+  "Propuesta Enviada",
+  "Ganado",
+  "Perdido",
+  "Descartado",
+] as const;
+
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+
+  // Contact Information
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  position: text("position"),
+
+  // CRM Classification
+  origin: text("origin").notNull().default("Otro"),  // From LEAD_ORIGINS
+  status: text("status").notNull().default("Nuevo"),  // From LEAD_STATUSES
+
+  // Financial Estimation
+  estimatedValue: numeric("estimated_value", { precision: 12, scale: 2 }),  // Potential deal value
+  probability: integer("probability").default(50),  // Conversion probability %
+
+  // Follow-up
+  lastContactDate: timestamp("last_contact_date"),
+  nextFollowUpDate: timestamp("next_follow_up_date"),
+  assignedToId: integer("assigned_to_id").references(() => team.id, { onDelete: "set null" }),
+
+  // Conversion
+  convertedToClientId: integer("converted_to_client_id").references(() => clientAccounts.id, { onDelete: "set null" }),
+  convertedAt: timestamp("converted_at"),
+  lostReason: text("lost_reason"),  // If status = "Perdido"
+
+  notes: text("notes"),
+  tags: text("tags"),  // JSON array for custom tags
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertLeadSchema = createInsertSchema(leads, {
+  // 🛡️ XSS Protection
+  name: safeString(200),
+  email: z.string().email("Email inválido").max(200).optional().nullable(),
+  phone: safeOptionalString(30),
+  company: safeOptionalString(200),
+  position: safeOptionalString(100),
+  origin: z.enum(LEAD_ORIGINS).default("Otro"),
+  status: z.enum(LEAD_STATUSES).default("Nuevo"),
+  lostReason: safeOptionalString(500),
+  notes: safeOptionalString(2000),
+  tags: safeOptionalString(500),  // JSON array
+
+  // 🔢 Number validation
+  estimatedValue: optionalPositiveNumericString(),
+  probability: z.coerce.number().int().min(0).max(100).default(50),
+
+  // 🔗 FK coercion
+  assignedToId: z.coerce.number().int().positive().optional().nullable(),
+  convertedToClientId: z.coerce.number().int().positive().optional().nullable(),
+
+  // 📅 Date coercion
+  lastContactDate: z.coerce.date().optional().nullable(),
+  nextFollowUpDate: z.coerce.date().optional().nullable(),
+  convertedAt: z.coerce.date().optional().nullable(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateLeadSchema = insertLeadSchema.partial();
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type UpdateLead = z.infer<typeof updateLeadSchema>;
+
+// ===========================================
+// 📋 POES MODULE (Standard Operating Procedures)
+// ===========================================
+
+export const POE_CATEGORIES = [
+  "Operaciones",
+  "Ventas",
+  "Marketing",
+  "Finanzas",
+  "Recursos Humanos",
+  "Tecnología",
+  "Diseño",
+  "Atención al Cliente",
+  "General",
+] as const;
+
+export const poes = pgTable("poes", {
+  id: serial("id").primaryKey(),
+
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category").notNull().default("General"),  // From POE_CATEGORIES
+
+  // Document
+  fileUrl: text("file_url"),  // URL to PDF or document
+  fileType: text("file_type"),  // "pdf", "doc", "video", etc.
+  fileSize: integer("file_size"),  // In bytes
+
+  // Versioning
+  version: text("version").notNull().default("1.0"),
+  lastReviewedAt: timestamp("last_reviewed_at"),
+  reviewedById: integer("reviewed_by_id").references(() => team.id, { onDelete: "set null" }),
+
+  // Access Control
+  isPublic: boolean("is_public").notNull().default(true),  // Visible to all or restricted
+  allowedRoles: text("allowed_roles"),  // JSON array: ["admin", "project_manager"]
+
+  // Status
+  isActive: boolean("is_active").notNull().default(true),
+
+  createdById: integer("created_by_id").references(() => team.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPoeSchema = createInsertSchema(poes, {
+  // 🛡️ XSS Protection
+  title: safeString(200),
+  description: safeOptionalString(1000),
+  category: z.enum(POE_CATEGORIES).default("General"),
+  fileUrl: safeOptionalString(1000),
+  fileType: safeOptionalString(50),
+  version: safeString(20).default("1.0"),
+  allowedRoles: safeOptionalString(500),  // JSON array
+
+  // 🔢 Number validation
+  fileSize: z.coerce.number().int().min(0).optional().nullable(),
+
+  // 🔗 FK coercion
+  reviewedById: z.coerce.number().int().positive().optional().nullable(),
+  createdById: z.coerce.number().int().positive().optional().nullable(),
+
+  // 📅 Date coercion
+  lastReviewedAt: z.coerce.date().optional().nullable(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updatePoeSchema = insertPoeSchema.partial();
+
+export type Poe = typeof poes.$inferSelect;
+export type InsertPoe = z.infer<typeof insertPoeSchema>;
+export type UpdatePoe = z.infer<typeof updatePoeSchema>;
+
+// ===========================================
+// 👥 PROJECT TEAM ASSIGNMENTS (Explicit per-project)
+// ===========================================
+
+export const projectTeamAssignments = pgTable("project_team_assignments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  teamMemberId: integer("team_member_id").notNull().references(() => team.id, { onDelete: "cascade" }),
+
+  // Role in this project
+  roleInProject: text("role_in_project"),  // "Lead", "Support", "Reviewer"
+
+  // Time tracking
+  allocatedHours: integer("allocated_hours").default(0),
+  loggedHours: numeric("logged_hours", { precision: 10, scale: 2 }).default("0"),
+
+  // Service assignment (optional, if team member is assigned for a specific service)
+  serviceId: integer("service_id").references(() => serviceCatalog.id, { onDelete: "set null" }),
+
+  // Performance tracking
+  revenueAttributed: numeric("revenue_attributed", { precision: 12, scale: 2 }).default("0"),
+
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertProjectTeamAssignmentSchema = createInsertSchema(projectTeamAssignments, {
+  // 🛡️ XSS Protection
+  roleInProject: safeOptionalString(100),
+
+  // 🔢 Number validation
+  allocatedHours: z.coerce.number().int().min(0).default(0),
+  loggedHours: optionalPositiveNumericString(),
+  revenueAttributed: optionalPositiveNumericString(),
+
+  // 🔗 FK coercion
+  projectId: z.coerce.number().int().positive("Se requiere un proyecto válido"),
+  teamMemberId: z.coerce.number().int().positive("Se requiere un miembro del equipo válido"),
+  serviceId: z.coerce.number().int().positive().optional().nullable(),
+}).omit({
+  id: true,
+  assignedAt: true,
+  updatedAt: true,
+});
+
+export const updateProjectTeamAssignmentSchema = insertProjectTeamAssignmentSchema.partial();
+
+export type ProjectTeamAssignment = typeof projectTeamAssignments.$inferSelect;
+export type InsertProjectTeamAssignment = z.infer<typeof insertProjectTeamAssignmentSchema>;
+export type UpdateProjectTeamAssignment = z.infer<typeof updateProjectTeamAssignmentSchema>;
 
 

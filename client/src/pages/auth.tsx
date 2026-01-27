@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Lock, User, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function AuthPage() {
     const [, setLocation] = useLocation();
     const { toast } = useToast();
+    const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +66,8 @@ export default function AuthPage() {
                 throw new Error(result.message || "Error al iniciar sesión");
             }
 
-            // Store token (securely ideally, but localStorage for this demo scope)
-            localStorage.setItem("token", result.token);
-            localStorage.setItem("user", JSON.stringify(result.user));
+            // Use AuthContext login method instead of direct localStorage
+            login(result.token, result.user);
 
             toast({
                 title: "¡Bienvenido!",

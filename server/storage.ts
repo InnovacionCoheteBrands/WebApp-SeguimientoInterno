@@ -62,6 +62,22 @@ import {
   type Installment,
   type InsertInstallment,
   type UpdateInstallment,
+  // Service Catalog Types
+  type ServiceCatalog,
+  type InsertServiceCatalog,
+  type UpdateServiceCatalog,
+  type ProjectService,
+  type InsertProjectService,
+  // Cohete Replica Types
+  type Lead,
+  type InsertLead,
+  type UpdateLead,
+  type Poe,
+  type InsertPoe,
+  type UpdatePoe,
+  type ProjectTeamAssignment,
+  type InsertProjectTeamAssignment,
+  type UpdateProjectTeamAssignment,
   // Tables
   users,
   campaigns,
@@ -89,6 +105,13 @@ import {
   digitalAssets,
   clientDocuments,
   installments,
+  // Service Catalog Tables
+  serviceCatalog,
+  projectServices,
+  // Cohete Replica Tables
+  leads,
+  poes,
+  projectTeamAssignments,
   type AgencyRole,
   type InsertAgencyRole,
   type UpdateAgencyRole,
@@ -306,6 +329,38 @@ export interface IStorage {
   updateInstallment(id: number, installment: UpdateInstallment): Promise<Installment | undefined>;
   deleteInstallment(id: number): Promise<boolean>;
   generateInstallmentsForProject(projectId: number): Promise<Installment[]>;
+
+  // ===========================================
+  // 🎯 LEADS MODULE (CRM Kanban)
+  // ===========================================
+  getLeads(): Promise<Lead[]>;
+  getLeadsByOrigin(origin: string): Promise<Lead[]>;
+  getLeadsByStatus(status: string): Promise<Lead[]>;
+  getLeadById(id: number): Promise<Lead | undefined>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: number, lead: UpdateLead): Promise<Lead | undefined>;
+  deleteLead(id: number): Promise<boolean>;
+  convertLeadToClient(leadId: number): Promise<{ lead: Lead; clientId: number }>;
+  getLeadsMetrics(): Promise<{ total: number; byOrigin: Record<string, number>; conversionRate: number; avgValue: number }>;
+
+  // ===========================================
+  // 📋 POES MODULE (Standard Operating Procedures)
+  // ===========================================
+  getPoes(): Promise<Poe[]>;
+  getPoesByCategory(category: string): Promise<Poe[]>;
+  getPoeById(id: number): Promise<Poe | undefined>;
+  createPoe(poe: InsertPoe): Promise<Poe>;
+  updatePoe(id: number, poe: UpdatePoe): Promise<Poe | undefined>;
+  deletePoe(id: number): Promise<boolean>;
+
+  // ===========================================
+  // 👥 PROJECT TEAM ASSIGNMENTS MODULE
+  // ===========================================
+  getProjectTeamAssignments(projectId: number): Promise<(ProjectTeamAssignment & { member: Team })[]>;
+  createProjectTeamAssignment(assignment: InsertProjectTeamAssignment): Promise<ProjectTeamAssignment>;
+  updateProjectTeamAssignment(id: number, assignment: UpdateProjectTeamAssignment): Promise<ProjectTeamAssignment | undefined>;
+  deleteProjectTeamAssignment(id: number): Promise<boolean>;
+  getTeamMemberPerformance(teamMemberId: number): Promise<{ revenueGenerated: number; projectsCount: number; hoursLogged: number }>;
 }
 
 // Project Details for Command Center view
@@ -2378,6 +2433,14 @@ export class DBStorage implements IStorage {
         serviceSpecificFields: projectData.service_specific_fields,
         customFields: projectData.custom_fields,
         description: projectData.description,
+        // New form fields
+        level: projectData.level,
+        quotationAmount: projectData.quotation_amount,
+        monthlyMaintenance: projectData.monthly_maintenance,
+        startDate: projectData.start_date,
+        coverImageUrl: projectData.cover_image_url,
+        coverColor: projectData.cover_color,
+        additionalNotes: projectData.additional_notes,
         // Deal configuration fields
         dealType: projectData.deal_type,
         totalAmount: projectData.total_amount,
@@ -2628,6 +2691,286 @@ export class DBStorage implements IStorage {
     console.log(`Generated ${newInstallments.length} installments for project ${projectId}`);
     return newInstallments;
   }
+
+  // ===========================================
+  // 🛠️ SERVICE CATALOG MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getServiceCatalog(): Promise<ServiceCatalog[]> {
+    return await db.select().from(serviceCatalog)
+      .where(eq(serviceCatalog.isActive, true))
+      .orderBy(serviceCatalog.name);
+  }
+
+  async getServiceCatalogById(id: number): Promise<ServiceCatalog | undefined> {
+    const [service] = await db.select().from(serviceCatalog).where(eq(serviceCatalog.id, id)).limit(1);
+    return service;
+  }
+
+  async createServiceCatalog(service: InsertServiceCatalog): Promise<ServiceCatalog> {
+    const [newService] = await db.insert(serviceCatalog).values(service).returning();
+    return newService;
+  }
+
+  async updateServiceCatalog(id: number, serviceData: UpdateServiceCatalog): Promise<ServiceCatalog | undefined> {
+    const [updated] = await db.update(serviceCatalog)
+      .set({ ...serviceData, updatedAt: new Date() })
+      .where(eq(serviceCatalog.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteServiceCatalog(id: number): Promise<boolean> {
+    // Soft delete - set isActive to false
+    const [updated] = await db.update(serviceCatalog)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(serviceCatalog.id, id))
+      .returning();
+    return !!updated;
+  }
+
+  // ===========================================
+  // 🔗 PROJECT SERVICES IMPLEMENTATION
+  // ===========================================
+
+  async getProjectServices(projectId: number): Promise<(ProjectService & { service: ServiceCatalog })[]> {
+    const result = await db.execute(sql`
+      SELECT 
+        ps.*,
+        json_build_object(
+          'id', sc.id,
+          'name', sc.name,
+          'description', sc.description,
+          'defaultPrice', sc.default_price,
+          'category', sc.category,
+          'icon', sc.icon,
+          'isActive', sc.is_active
+        ) as service
+      FROM ${projectServices} ps
+      INNER JOIN ${serviceCatalog} sc ON ps.service_id = sc.id
+      WHERE ps.project_id = ${projectId}
+      ORDER BY sc.name
+    `);
+    return result as unknown as (ProjectService & { service: ServiceCatalog })[];
+  }
+
+  async addProjectService(data: InsertProjectService): Promise<ProjectService> {
+    const [newAssignment] = await db.insert(projectServices).values(data).returning();
+    return newAssignment;
+  }
+
+  async removeProjectService(projectId: number, serviceId: number): Promise<boolean> {
+    const result = await db.delete(projectServices)
+      .where(and(
+        eq(projectServices.projectId, projectId),
+        eq(projectServices.serviceId, serviceId)
+      ));
+    return true;
+  }
+
+  async updateProjectServicePrice(projectId: number, serviceId: number, customPrice: string | null, notes?: string): Promise<ProjectService | undefined> {
+    const [updated] = await db.update(projectServices)
+      .set({ customPrice, notes })
+      .where(and(
+        eq(projectServices.projectId, projectId),
+        eq(projectServices.serviceId, serviceId)
+      ))
+      .returning();
+    return updated;
+  }
+
+  // ===========================================
+  // 🎯 LEADS MODULE IMPLEMENTATION (CRM Kanban)
+  // ===========================================
+
+  async getLeads(): Promise<Lead[]> {
+    return await db.select().from(leads).orderBy(desc(leads.createdAt));
+  }
+
+  async getLeadsByOrigin(origin: string): Promise<Lead[]> {
+    return await db.select().from(leads).where(eq(leads.origin, origin)).orderBy(desc(leads.createdAt));
+  }
+
+  async getLeadsByStatus(status: string): Promise<Lead[]> {
+    return await db.select().from(leads).where(eq(leads.status, status)).orderBy(desc(leads.createdAt));
+  }
+
+  async getLeadById(id: number): Promise<Lead | undefined> {
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+    return lead;
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const [newLead] = await db.insert(leads).values(lead).returning();
+    return newLead;
+  }
+
+  async updateLead(id: number, lead: UpdateLead): Promise<Lead | undefined> {
+    const [updated] = await db.update(leads)
+      .set({ ...lead, updatedAt: new Date() })
+      .where(eq(leads.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteLead(id: number): Promise<boolean> {
+    await db.delete(leads).where(eq(leads.id, id));
+    return true;
+  }
+
+  async convertLeadToClient(leadId: number): Promise<{ lead: Lead; clientId: number }> {
+    const lead = await this.getLeadById(leadId);
+    if (!lead) throw new Error("Lead not found");
+
+    // Create client from lead data
+    const newClient = await this.createClientAccount({
+      companyName: lead.company || lead.name,
+      industry: "Por definir",
+      monthlyBudget: Number(lead.estimatedValue) || 0,
+      currentSpend: 0,
+      healthScore: 100,
+      status: "Active",
+    });
+
+    // Update lead with conversion info
+    const updatedLead = await this.updateLead(leadId, {
+      status: "Ganado",
+      convertedToClientId: newClient.id,
+      convertedAt: new Date(),
+    });
+
+    return { lead: updatedLead!, clientId: newClient.id };
+  }
+
+  async getLeadsMetrics(): Promise<{ total: number; byOrigin: Record<string, number>; conversionRate: number; avgValue: number }> {
+    const allLeads = await this.getLeads();
+    const total = allLeads.length;
+    const byOrigin: Record<string, number> = {};
+    let wonCount = 0;
+    let totalValue = 0;
+
+    for (const lead of allLeads) {
+      byOrigin[lead.origin] = (byOrigin[lead.origin] || 0) + 1;
+      if (lead.status === "Ganado") wonCount++;
+      if (lead.estimatedValue) totalValue += Number(lead.estimatedValue);
+    }
+
+    return {
+      total,
+      byOrigin,
+      conversionRate: total > 0 ? (wonCount / total) * 100 : 0,
+      avgValue: total > 0 ? totalValue / total : 0,
+    };
+  }
+
+  // ===========================================
+  // 📋 POES MODULE IMPLEMENTATION (SOPs)
+  // ===========================================
+
+  async getPoes(): Promise<Poe[]> {
+    return await db.select().from(poes)
+      .where(eq(poes.isActive, true))
+      .orderBy(desc(poes.createdAt));
+  }
+
+  async getPoesByCategory(category: string): Promise<Poe[]> {
+    return await db.select().from(poes)
+      .where(and(eq(poes.category, category), eq(poes.isActive, true)))
+      .orderBy(desc(poes.createdAt));
+  }
+
+  async getPoeById(id: number): Promise<Poe | undefined> {
+    const [poe] = await db.select().from(poes).where(eq(poes.id, id)).limit(1);
+    return poe;
+  }
+
+  async createPoe(poe: InsertPoe): Promise<Poe> {
+    const [newPoe] = await db.insert(poes).values(poe).returning();
+    return newPoe;
+  }
+
+  async updatePoe(id: number, poe: UpdatePoe): Promise<Poe | undefined> {
+    const [updated] = await db.update(poes)
+      .set({ ...poe, updatedAt: new Date() })
+      .where(eq(poes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePoe(id: number): Promise<boolean> {
+    // Soft delete
+    const [updated] = await db.update(poes)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(poes.id, id))
+      .returning();
+    return !!updated;
+  }
+
+  // ===========================================
+  // 👥 PROJECT TEAM ASSIGNMENTS IMPLEMENTATION
+  // ===========================================
+
+  async getProjectTeamAssignments(projectId: number): Promise<(ProjectTeamAssignment & { member: Team })[]> {
+    const result = await db.execute(sql`
+      SELECT 
+        pta.*,
+        json_build_object(
+          'id', t.id,
+          'name', t.name,
+          'role', t.role,
+          'seniority', t.department,
+          'status', t.status,
+          'avatarUrl', t.avatar_url,
+          'internalCostHour', t.internal_cost_hour,
+          'billableRate', t.billable_rate
+        ) as member
+      FROM ${projectTeamAssignments} pta
+      INNER JOIN ${team} t ON pta.team_member_id = t.id
+      WHERE pta.project_id = ${projectId}
+      ORDER BY t.name
+    `);
+    return result as unknown as (ProjectTeamAssignment & { member: Team })[];
+  }
+
+  async createProjectTeamAssignment(assignment: InsertProjectTeamAssignment): Promise<ProjectTeamAssignment> {
+    const [newAssignment] = await db.insert(projectTeamAssignments).values(assignment).returning();
+    return newAssignment;
+  }
+
+  async updateProjectTeamAssignment(id: number, assignment: UpdateProjectTeamAssignment): Promise<ProjectTeamAssignment | undefined> {
+    const [updated] = await db.update(projectTeamAssignments)
+      .set({ ...assignment, updatedAt: new Date() })
+      .where(eq(projectTeamAssignments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProjectTeamAssignment(id: number): Promise<boolean> {
+    await db.delete(projectTeamAssignments).where(eq(projectTeamAssignments.id, id));
+    return true;
+  }
+
+  async getTeamMemberPerformance(teamMemberId: number): Promise<{ revenueGenerated: number; projectsCount: number; hoursLogged: number }> {
+    const assignments = await db.select().from(projectTeamAssignments)
+      .where(eq(projectTeamAssignments.teamMemberId, teamMemberId));
+
+    let revenueGenerated = 0;
+    let hoursLogged = 0;
+    const projectIds = new Set<number>();
+
+    for (const assignment of assignments) {
+      revenueGenerated += Number(assignment.revenueAttributed) || 0;
+      hoursLogged += Number(assignment.loggedHours) || 0;
+      projectIds.add(assignment.projectId);
+    }
+
+    return {
+      revenueGenerated,
+      projectsCount: projectIds.size,
+      hoursLogged,
+    };
+  }
 }
 
 export const storage = new DBStorage();
+

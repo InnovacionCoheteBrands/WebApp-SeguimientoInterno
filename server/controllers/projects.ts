@@ -5,7 +5,8 @@ import {
     updateProjectSchema,
     insertProjectDeliverableSchema,
     updateProjectDeliverableSchema,
-    insertProjectAttachmentSchema
+    insertProjectAttachmentSchema,
+    insertProjectServiceSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { desc } from "drizzle-orm"; // Note: storage implementation handles sorting, but checking just in case
@@ -231,11 +232,11 @@ router.post("/deliverables/:id/link-attachment", async (req, res) => {
     try {
         const deliverableId = parseInt(req.params.id);
         const { attachmentId } = req.body;
-        
+
         if (!attachmentId) {
             return res.status(400).json({ error: "attachmentId is required" });
         }
-        
+
         const deliverable = await storage.linkAttachmentToDeliverable(deliverableId, attachmentId);
         if (!deliverable) {
             return res.status(404).json({ error: "Deliverable not found" });
@@ -252,11 +253,11 @@ router.post("/deliverables/:id/upload-and-link", async (req, res) => {
     try {
         const deliverableId = parseInt(req.params.id);
         const { projectId, name, url, fileType, fileSize } = req.body;
-        
+
         if (!projectId || !name || !url) {
             return res.status(400).json({ error: "projectId, name, and url are required" });
         }
-        
+
         // 1. Create the attachment
         const attachment = await storage.createProjectAttachment({
             projectId,
@@ -265,14 +266,14 @@ router.post("/deliverables/:id/upload-and-link", async (req, res) => {
             fileType,
             fileSize
         });
-        
+
         // 2. Link it to the deliverable (this also marks it as completed)
         const deliverable = await storage.linkAttachmentToDeliverable(deliverableId, attachment.id);
-        
+
         if (!deliverable) {
             return res.status(404).json({ error: "Deliverable not found" });
         }
-        
+
         res.json({ deliverable, attachment });
     } catch (error: any) {
         console.error("Failed to upload and link:", error);
@@ -300,5 +301,66 @@ router.post("/projects/:id/recalculate-health", async (req, res) => {
 // ...
 // This means the file handles purely the logic but we need to be careful with mounting.
 // I will adopt the Strategy: Mount at `/api`.
+
+// ===========================================
+// 🛠️ PROJECT SERVICES ENDPOINTS
+// ===========================================
+
+router.get("/projects/:id/services", async (req, res) => {
+    try {
+        const projectId = parseInt(req.params.id);
+        const services = await storage.getProjectServices(projectId);
+        res.json(services);
+    } catch (error) {
+        console.error("Failed to fetch project services:", error);
+        res.status(500).json({ error: "Failed to fetch project services" });
+    }
+});
+
+router.post("/projects/:id/services", async (req, res) => {
+    try {
+        const projectId = parseInt(req.params.id);
+        const validatedData = insertProjectServiceSchema.parse({
+            ...req.body,
+            projectId
+        });
+        const service = await storage.addProjectService(validatedData);
+        res.status(201).json(service);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors });
+        }
+        console.error("Failed to add service to project:", error);
+        res.status(500).json({ error: "Failed to add service to project" });
+    }
+});
+
+router.delete("/projects/:id/services/:serviceId", async (req, res) => {
+    try {
+        const projectId = parseInt(req.params.id);
+        const serviceId = parseInt(req.params.serviceId);
+        await storage.removeProjectService(projectId, serviceId);
+        res.status(204).send();
+    } catch (error) {
+        console.error("Failed to remove service from project:", error);
+        res.status(500).json({ error: "Failed to remove service from project" });
+    }
+});
+
+router.patch("/projects/:id/services/:serviceId", async (req, res) => {
+    try {
+        const projectId = parseInt(req.params.id);
+        const serviceId = parseInt(req.params.serviceId);
+        const { customPrice, notes } = req.body;
+        const updated = await storage.updateProjectServicePrice(projectId, serviceId, customPrice, notes);
+        if (!updated) {
+            return res.status(404).json({ error: "Service assignment not found" });
+        }
+        res.json(updated);
+    } catch (error) {
+        console.error("Failed to update project service:", error);
+        res.status(500).json({ error: "Failed to update project service" });
+    }
+});
 
 export default router;

@@ -1,8 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-    Calendar, Play, CheckCircle2, XCircle, ArrowLeft, Plus, Search,
-    MoreVertical, Eye, Pencil, AlertCircle, Clock
+    Calendar, Play, CheckCircle2, XCircle, ArrowLeft, Plus, Search, Eye, Clock, AlertCircle
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -13,14 +12,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
     fetchProjects,
     fetchClientAccounts,
     createProject,
     updateProject,
-    deleteProject,
-    type Project
+    fetchServiceCatalog,
+    fetchProjectServices,
+    addProjectService,
+    removeProjectService,
+    type Project,
+    type ServiceCatalog,
+    type ProjectServiceWithDetails,
 } from "@/lib/api";
 import { insertProjectSchema, type InsertProject, type UpdateProject } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
@@ -30,13 +36,13 @@ import {
     useSensor,
     useSensors,
     PointerSensor,
+    useDroppable,
     type DragStartEvent,
     type DragEndEvent,
 } from '@dnd-kit/core';
 import {
     SortableContext,
     useSortable,
-    horizontalListSortingStrategy,
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -50,17 +56,12 @@ const STATUS_COLUMNS = [
 ];
 
 const SERVICE_TYPES = ["SEO", "Web", "Ads", "General"];
-
-const HEALTH_COLORS = {
-    green: { bg: "bg-green-500/20", border: "border-green-500/50", text: "text-green-500" },
-    yellow: { bg: "bg-yellow-500/20", border: "border-yellow-500/50", text: "text-yellow-500" },
-    red: { bg: "bg-red-500/20", border: "border-red-500/50", text: "text-red-500" },
-};
+const PROJECT_LEVELS = ["Plata", "Oro", "Platino", "Diamante"];
 
 // ----------------------------------------------------------------------
 // DRAGGABLE PROJECT CARD
 // ----------------------------------------------------------------------
-function DraggableProjectCard({ project, onClick, onEdit }: { project: Project; onClick: () => void; onEdit: (e: any) => void }) {
+function DraggableProjectCard({ project, onClick, onViewDetails }: { project: Project; onClick: () => void; onViewDetails: (e: React.MouseEvent) => void }) {
     const {
         attributes,
         listeners,
@@ -100,10 +101,10 @@ function DraggableProjectCard({ project, onClick, onEdit }: { project: Project; 
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={onEdit}
-                                title="Editar proyecto"
+                                onClick={onViewDetails}
+                                title="Ver detalles completos"
                             >
-                                <Pencil className="size-3.5" />
+                                <Eye className="size-3.5" />
                             </Button>
                             <Badge variant="outline" className="rounded-sm text-[10px] px-1.5 h-5 font-normal border-border bg-secondary/20">
                                 {project.serviceType}
@@ -124,7 +125,6 @@ function DraggableProjectCard({ project, onClick, onEdit }: { project: Project; 
                             />
                         </div>
                     </div>
-
                     <div className="flex items-center justify-between pt-1">
                         {project.deadline ? (
                             <div className={`flex items-center gap-1.5 text-[10px] font-mono ${isOverdue ? 'text-red-500' : 'text-muted-foreground'}`}>
@@ -145,12 +145,12 @@ function DraggableProjectCard({ project, onClick, onEdit }: { project: Project; 
 // ----------------------------------------------------------------------
 // DROPPABLE COLUMN
 // ----------------------------------------------------------------------
-function DroppableColumn({ column, projects, onEdit, navigate }: { column: any; projects: Project[]; onEdit: (p: Project) => void; navigate: any }) {
-    const { setNodeRef } = useSortable({ id: column.id });
+function DroppableColumn({ column, projects, onEdit, navigate }: { column: typeof STATUS_COLUMNS[0]; projects: Project[]; onEdit: (p: Project) => void; navigate: (path: string) => void }) {
+    const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
     return (
         <div ref={setNodeRef} className="flex flex-col gap-3 h-full">
-            <div className={`flex items-center gap-2 p-3 rounded-md border backdrop-blur-sm shadow-sm ${column.color}`}>
+            <div className={`flex items-center gap-2 p-3 rounded-md border backdrop-blur-sm shadow-sm ${column.color} ${isOver ? 'ring-2 ring-primary' : ''}`}>
                 <column.icon className="size-4 opacity-70" />
                 <span className="font-bold text-xs uppercase tracking-wider">{column.label}</span>
                 <Badge variant="outline" className="ml-auto rounded-sm text-xs border-white/20 bg-black/5 text-foreground/80">
@@ -158,23 +158,23 @@ function DroppableColumn({ column, projects, onEdit, navigate }: { column: any; 
                 </Badge>
             </div>
 
-            <div className="space-y-3 flex-1 min-h-[150px] p-1 rounded-xl transition-colors bg-muted/5/0">
+            <div className={`space-y-3 flex-1 min-h-[150px] p-1 rounded-xl transition-colors ${isOver ? 'bg-primary/5' : ''}`}>
                 <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
                     {projects.map((project) => (
                         <DraggableProjectCard
                             key={project.id}
                             project={project}
-                            onClick={() => navigate(`/proyectos/${project.id}`)}
-                            onEdit={(e) => {
+                            onClick={() => onEdit(project)}
+                            onViewDetails={(e) => {
                                 e.stopPropagation();
-                                onEdit(project);
+                                navigate(`/proyectos/${project.id}`);
                             }}
                         />
                     ))}
                 </SortableContext>
                 {projects.length === 0 && (
-                    <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-border/50 rounded-sm">
-                        Arrastra aquí
+                    <div className={`text-center text-xs text-muted-foreground py-8 border border-dashed rounded-sm ${isOver ? 'border-primary bg-primary/10' : 'border-border/50'}`}>
+                        {isOver ? 'Soltar aquí' : 'Sin proyectos'}
                     </div>
                 )}
             </div>
@@ -195,23 +195,43 @@ export default function Proyectos() {
     const queryClient = useQueryClient();
     const [, navigate] = useLocation();
 
+    // Sensors with activation constraint to prevent accidental drags
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8, // Require movement of 8px to start drag (prevents accidental clicks)
+                distance: 8,
             },
         })
     );
 
-    const { data: projects = [] } = useQuery({
+    const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
         queryKey: ["projects"],
         queryFn: fetchProjects,
     });
 
-    const { data: clients = [] } = useQuery({
+    const { data: clients = [], isLoading: isLoadingClients } = useQuery({
         queryKey: ["client-accounts"],
         queryFn: fetchClientAccounts,
     });
+
+    const { data: serviceCatalog = [] } = useQuery({
+        queryKey: ["service-catalog"],
+        queryFn: fetchServiceCatalog,
+    });
+
+    const [selectedServices, setSelectedServices] = useState<number[]>([]);
+
+    const { data: currentProjectServices = [] } = useQuery({
+        queryKey: ["project-services", selectedProject?.id],
+        queryFn: () => fetchProjectServices(selectedProject!.id),
+        enabled: !!selectedProject?.id,
+    });
+
+    useEffect(() => {
+        if (selectedProject && currentProjectServices) {
+            setSelectedServices(currentProjectServices.map(s => s.serviceId));
+        }
+    }, [currentProjectServices, selectedProject]);
 
     const [formData, setFormData] = useState<Partial<InsertProject>>({
         clientId: 0,
@@ -221,11 +241,27 @@ export default function Proyectos() {
         health: "green",
         progress: 0,
         description: "",
+        level: "Plata",
+        quotationAmount: "",
+        monthlyMaintenance: "",
+        coverColor: "#3B82F6",
+        additionalNotes: "",
     });
 
     const createMutation = useMutation({
         mutationFn: createProject,
-        onSuccess: () => {
+        onSuccess: async (newProject) => {
+            if (selectedServices.length > 0) {
+                try {
+                    await Promise.all(selectedServices.map(serviceId =>
+                        addProjectService(newProject.id, serviceId)
+                    ));
+                } catch (e) {
+                    console.error("Error adding services", e);
+                    toast({ title: "Advertencia", description: "Proyecto creado, pero hubo un error al asignar servicios.", variant: "default" });
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             setIsDialogOpen(false);
             resetForm();
@@ -240,25 +276,74 @@ export default function Proyectos() {
         },
     });
 
+    // OPTIMISTIC UPDATE MUTATION - The key to avoiding infinite loops
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: number; data: UpdateProject }) => updateProject(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["projects"] });
-            setIsDialogOpen(false);
-            resetForm();
-            toast({ title: "Éxito", description: "Proyecto actualizado exitosamente" });
-        },
-    });
+        onMutate: async ({ id, data }) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ["projects"] });
 
-    const deleteMutation = useMutation({
-        mutationFn: deleteProject,
-        onSuccess: () => {
+            // Snapshot the previous value
+            const previousProjects = queryClient.getQueryData<Project[]>(["projects"]);
+
+            // Optimistically update the cache
+            if (previousProjects) {
+                queryClient.setQueryData<Project[]>(["projects"],
+                    previousProjects.map(p =>
+                        p.id === id ? { ...p, ...data } : p
+                    )
+                );
+            }
+
+            // Return context with the snapshot
+            return { previousProjects };
+        },
+        onError: (_error, _variables, context) => {
+            // Rollback on error
+            if (context?.previousProjects) {
+                queryClient.setQueryData(["projects"], context.previousProjects);
+            }
+            toast({
+                title: "Error",
+                description: "No se pudo actualizar el proyecto",
+                variant: "destructive"
+            });
+        },
+        onSettled: () => {
+            // Always refetch after error or success to ensure consistency
             queryClient.invalidateQueries({ queryKey: ["projects"] });
-            toast({ title: "Éxito", description: "Proyecto eliminado exitosamente" });
+        },
+        onSuccess: async (_, variables) => {
+            if (isDialogOpen) {
+                const projectId = variables.id;
+                const currentIds = currentProjectServices.map(s => s.serviceId);
+                const newIds = selectedServices;
+
+                const toAdd = newIds.filter(id => !currentIds.includes(id));
+                const toRemove = currentIds.filter(id => !newIds.includes(id));
+
+                if (toAdd.length > 0 || toRemove.length > 0) {
+                    try {
+                        await Promise.all([
+                            ...toAdd.map(id => addProjectService(projectId, id)),
+                            ...toRemove.map(id => removeProjectService(projectId, id))
+                        ]);
+                        queryClient.invalidateQueries({ queryKey: ["project-services", projectId] });
+                    } catch (e) {
+                        console.error("Error syncing services", e);
+                        toast({ title: "Advertencia", description: "Proyecto actualizado, pero hubo error al sincronizar servicios.", variant: "default" });
+                    }
+                }
+
+                setIsDialogOpen(false);
+                resetForm();
+                toast({ title: "Éxito", description: "Proyecto actualizado exitosamente" });
+            }
         },
     });
 
     const resetForm = () => {
+        setSelectedServices([]);
         setFormData({
             clientId: 0,
             name: "",
@@ -267,11 +352,24 @@ export default function Proyectos() {
             health: "green",
             progress: 0,
             description: "",
+            level: "Plata",
+            quotationAmount: "",
+            monthlyMaintenance: "",
+            coverColor: "#3B82F6",
+            additionalNotes: "",
         });
         setSelectedProject(null);
     };
 
-    const handleOpenDialog = (project?: Project) => {
+    const toggleService = (serviceId: number) => {
+        setSelectedServices(prev =>
+            prev.includes(serviceId)
+                ? prev.filter(id => id !== serviceId)
+                : [...prev, serviceId]
+        );
+    };
+
+    const handleOpenDialog = useCallback((project?: Project) => {
         if (project) {
             setSelectedProject(project);
             setFormData({
@@ -282,12 +380,18 @@ export default function Proyectos() {
                 health: project.health as "green" | "yellow" | "red",
                 description: project.description || "",
                 deadline: project.deadline ? new Date(project.deadline) : undefined,
+                level: (project as any).level || "Plata",
+                quotationAmount: (project as any).quotationAmount || "",
+                monthlyMaintenance: (project as any).monthlyMaintenance || "",
+                startDate: (project as any).startDate ? new Date((project as any).startDate) : undefined,
+                coverColor: (project as any).coverColor || "#3B82F6",
+                additionalNotes: (project as any).additionalNotes || "",
             });
         } else {
             resetForm();
         }
         setIsDialogOpen(true);
-    };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -318,6 +422,23 @@ export default function Proyectos() {
         }
     };
 
+    // Memoized projects grouped by status column
+    const projectsByColumn = useMemo(() => {
+        const result: Record<string, Project[]> = {};
+        STATUS_COLUMNS.forEach(col => {
+            result[col.id] = projects.filter(p => {
+                const matchesStatus = p.status === col.id;
+                const matchesSearch = searchTerm === "" ||
+                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.client.companyName.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesClient = filterClient === "all" || p.client.id.toString() === filterClient;
+                const matchesService = filterService === "all" || p.serviceType === filterService;
+                return matchesStatus && matchesSearch && matchesClient && matchesService;
+            });
+        });
+        return result;
+    }, [projects, searchTerm, filterClient, filterService]);
+
     const filteredProjects = useMemo(() => {
         return projects.filter((project) => {
             const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -333,39 +454,61 @@ export default function Proyectos() {
         [activeId, projects]
     );
 
-    const handleDragStart = (event: DragStartEvent) => {
-        const { active } = event;
-        setActiveId(active.id as number);
-    };
+    // Drag handlers - memoized to prevent re-renders
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        setActiveId(event.active.id as number);
+    }, []);
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveId(null);
 
-        if (over && active.id !== over.id) {
-            // Check if dropped on a column (droppable)
-            const isColumn = STATUS_COLUMNS.some(col => col.id === over.id);
+        if (!over || active.id === over.id) return;
 
-            // If dropped on a column, update status
-            if (isColumn) {
-                const newStatus = over.id as string;
-                updateMutation.mutate({
-                    id: active.id as number,
-                    data: { status: newStatus }
-                });
-            }
-            // If dropped on another card (sortable), determine status of that card
-            else {
-                const overProject = projects.find(p => p.id === over.id);
-                if (overProject && overProject.status !== activeProject?.status) {
-                    updateMutation.mutate({
-                        id: active.id as number,
-                        data: { status: overProject.status }
-                    });
-                }
+        const projectId = Number(active.id);
+        const overId = over.id;
+
+        // Determine target status
+        let newStatus: string | null = null;
+
+        // Check if dropped on a column
+        const isColumn = STATUS_COLUMNS.some(col => col.id === overId);
+        if (isColumn) {
+            newStatus = overId as string;
+        } else {
+            // Dropped on a card - get that card's status
+            const overProject = projects.find(p => p.id === Number(overId));
+            if (overProject) {
+                newStatus = overProject.status;
             }
         }
-        setActiveId(null);
-    };
+
+        if (!newStatus) return;
+
+        // Check if status actually changed
+        const draggedProject = projects.find(p => p.id === projectId);
+        if (!draggedProject || draggedProject.status === newStatus) return;
+
+        // Trigger optimistic update
+        updateMutation.mutate({
+            id: projectId,
+            data: { status: newStatus }
+        });
+    }, [projects, updateMutation]);
+
+    // Show loading state - critical for preventing DnD init issues
+    if (isLoadingProjects || isLoadingClients) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
+                        Cargando proyectos...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans">
@@ -440,7 +583,7 @@ export default function Proyectos() {
                     </CardContent>
                 </Card>
 
-                {/* Kanban Board */}
+                {/* Kanban Board with DnD */}
                 <DndContext
                     sensors={sensors}
                     onDragStart={handleDragStart}
@@ -451,7 +594,7 @@ export default function Proyectos() {
                             <DroppableColumn
                                 key={column.id}
                                 column={column}
-                                projects={filteredProjects.filter(p => p.status === column.id)}
+                                projects={projectsByColumn[column.id] || []}
                                 onEdit={handleOpenDialog}
                                 navigate={navigate}
                             />
@@ -460,22 +603,18 @@ export default function Proyectos() {
 
                     <DragOverlay>
                         {activeProject ? (
-                            <div style={{ transform: 'rotate(2deg) scale(1.05)' }}>
-                                <Card className="w-[300px] shadow-2xl border-primary ring-2 ring-primary bg-card opacity-90 cursor-grabbing">
+                            <div style={{ transform: 'rotate(3deg)', width: 280 }}>
+                                <Card className="shadow-2xl border-primary ring-2 ring-primary bg-card cursor-grabbing">
                                     <CardHeader className="p-4 pb-3">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
-                                                <CardTitle className="text-sm font-bold truncate">
-                                                    {activeProject.name}
-                                                </CardTitle>
-                                                <p className="text-[10px] text-muted-foreground mt-1">
-                                                    {activeProject.client.companyName}
-                                                </p>
-                                            </div>
-                                        </div>
+                                        <CardTitle className="text-sm font-bold truncate">
+                                            {activeProject.name}
+                                        </CardTitle>
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                            {activeProject.client.companyName}
+                                        </p>
                                     </CardHeader>
                                     <CardContent className="p-4 pt-0">
-                                        <div className="text-[10px] font-mono text-muted-foreground">
+                                        <div className="text-[10px] font-mono text-primary">
                                             ARRASTRANDO...
                                         </div>
                                     </CardContent>
@@ -495,131 +634,287 @@ export default function Proyectos() {
                             {selectedProject ? "Actualiza la información del proyecto" : "Crea un nuevo proyecto asignado a un cliente"}
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4 px-10 py-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="client">Cliente *</Label>
-                            <Select
-                                value={formData.clientId?.toString()}
-                                onValueChange={(value) => setFormData({ ...formData, clientId: parseInt(value) })}
-                            >
-                                <SelectTrigger id="client" className="h-11 rounded-sm">
-                                    <SelectValue placeholder="Selecciona un cliente" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {clients.map((client) => (
-                                        <SelectItem key={client.id} value={client.id.toString()}>
-                                            {client.companyName}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <form onSubmit={handleSubmit}>
+                        <Tabs defaultValue="general" className="w-full">
+                            <TabsList className="w-full justify-start px-10 mt-2 mb-4 bg-transparent border-b h-auto p-0 rounded-none w-[calc(100%-5rem)] mx-auto">
+                                <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 font-medium">General</TabsTrigger>
+                                <TabsTrigger value="services" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 font-medium">Servicios Incluidos</TabsTrigger>
+                            </TabsList>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nombre del Proyecto *</Label>
-                                <Input
-                                    id="name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="ej. Campaña Q1 2025"
-                                    className="h-11 rounded-sm"
-                                />
+                            <div className="h-[60vh] overflow-y-auto px-10 py-2 custom-scrollbar">
+                                <TabsContent value="general" className="space-y-4 mt-0">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="client">Cliente *</Label>
+                                        <Select
+                                            value={formData.clientId?.toString()}
+                                            onValueChange={(value) => setFormData({ ...formData, clientId: parseInt(value) })}
+                                        >
+                                            <SelectTrigger id="client" className="h-11 rounded-sm">
+                                                <SelectValue placeholder="Selecciona un cliente" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {clients.map((client) => (
+                                                    <SelectItem key={client.id} value={client.id.toString()}>
+                                                        {client.companyName}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">Nombre del Proyecto *</Label>
+                                            <Input
+                                                id="name"
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                placeholder="ej. Campaña Q1 2025"
+                                                className="h-11 rounded-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="serviceType">Tipo de Servicio *</Label>
+                                            <Select
+                                                value={formData.serviceType}
+                                                onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
+                                            >
+                                                <SelectTrigger id="serviceType" className="h-11 rounded-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {SERVICE_TYPES.map((type) => (
+                                                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="status">Estado</Label>
+                                            <Select
+                                                value={formData.status}
+                                                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                                            >
+                                                <SelectTrigger id="status" className="h-11 rounded-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {STATUS_COLUMNS.map((col) => (
+                                                        <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="health">Salud</Label>
+                                            <Select
+                                                value={formData.health}
+                                                onValueChange={(value) => setFormData({ ...formData, health: value as "green" | "yellow" | "red" })}
+                                            >
+                                                <SelectTrigger id="health" className="h-11 rounded-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="green">🟢 Verde (Sano)</SelectItem>
+                                                    <SelectItem value="yellow">🟡 Amarillo (Advertencia)</SelectItem>
+                                                    <SelectItem value="red">🔴 Rojo (Crítico)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="deadline">Fecha Límite</Label>
+                                            <Input
+                                                id="deadline"
+                                                type="date"
+                                                value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''}
+                                                onChange={(e) => setFormData({ ...formData, deadline: e.target.value ? new Date(e.target.value) : undefined })}
+                                                className="h-11 rounded-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Descripción</Label>
+                                        <Textarea
+                                            id="description"
+                                            value={formData.description ?? ""}
+                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            placeholder="Descripción del proyecto..."
+                                            className="rounded-sm min-h-[80px]"
+                                        />
+                                    </div>
+
+                                    {/* New Fields Section */}
+                                    <div className="border-t border-border pt-4 mt-4">
+                                        <h4 className="text-sm font-semibold text-muted-foreground mb-4">Información Adicional</h4>
+
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="level">Nivel/Categoría</Label>
+                                                <Select
+                                                    value={formData.level as string || "Plata"}
+                                                    onValueChange={(value) => setFormData({ ...formData, level: value as "Plata" | "Oro" | "Platino" | "Diamante" })}
+                                                >
+                                                    <SelectTrigger id="level" className="h-11 rounded-sm">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {PROJECT_LEVELS.map((level) => (
+                                                            <SelectItem key={level} value={level}>
+                                                                {level === "Plata" && "🥈 "}
+                                                                {level === "Oro" && "🥇 "}
+                                                                {level === "Platino" && "💎 "}
+                                                                {level === "Diamante" && "💠 "}
+                                                                {level}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="quotationAmount">Cotización (MXN)</Label>
+                                                <Input
+                                                    id="quotationAmount"
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={formData.quotationAmount ?? ""}
+                                                    onChange={(e) => setFormData({ ...formData, quotationAmount: e.target.value })}
+                                                    placeholder="0.00"
+                                                    className="h-11 rounded-sm"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="monthlyMaintenance">Mant. Mensual (MXN)</Label>
+                                                <Input
+                                                    id="monthlyMaintenance"
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={formData.monthlyMaintenance ?? ""}
+                                                    onChange={(e) => setFormData({ ...formData, monthlyMaintenance: e.target.value })}
+                                                    placeholder="0.00"
+                                                    className="h-11 rounded-sm"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="startDate">Fecha de Inicio</Label>
+                                                <Input
+                                                    id="startDate"
+                                                    type="date"
+                                                    value={formData.startDate ? new Date(formData.startDate).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : undefined })}
+                                                    className="h-11 rounded-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="coverColor">Color de Portada</Label>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        id="coverColor"
+                                                        type="color"
+                                                        value={formData.coverColor ?? "#3B82F6"}
+                                                        onChange={(e) => setFormData({ ...formData, coverColor: e.target.value })}
+                                                        className="h-11 w-16 rounded-sm p-1 cursor-pointer"
+                                                    />
+                                                    <Input
+                                                        type="text"
+                                                        value={formData.coverColor ?? "#3B82F6"}
+                                                        onChange={(e) => setFormData({ ...formData, coverColor: e.target.value })}
+                                                        placeholder="#3B82F6"
+                                                        className="h-11 rounded-sm flex-1"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="additionalNotes">Notas Adicionales</Label>
+                                                <Textarea
+                                                    id="additionalNotes"
+                                                    value={formData.additionalNotes ?? ""}
+                                                    onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
+                                                    placeholder="Información adicional del proyecto..."
+                                                    className="rounded-sm min-h-[60px]"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </TabsContent>
+
+                                <TabsContent value="services" className="space-y-4 mt-0">
+                                    <div className="space-y-4 pt-1">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-base font-medium">Selecciona los servicios incluidos</Label>
+                                            <Badge variant="outline">{selectedServices.length} seleccionados</Badge>
+                                        </div>
+
+                                        {serviceCatalog.length === 0 ? (
+                                            <div className="text-center py-10 text-muted-foreground border border-dashed rounded-md bg-muted/20">
+                                                No hay servicios configurados en el sistema.
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {serviceCatalog.map((service) => (
+                                                    <div
+                                                        key={service.id}
+                                                        className={`flex items-start space-x-3 border p-3 rounded-md cursor-pointer transition-all duration-200 ${selectedServices.includes(service.id) ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'hover:bg-muted/50 hover:border-primary/30'}`}
+                                                        onClick={() => toggleService(service.id)}
+                                                    >
+                                                        <Checkbox
+                                                            checked={selectedServices.includes(service.id)}
+                                                            onCheckedChange={() => toggleService(service.id)}
+                                                            className="mt-1"
+                                                            id={`service-${service.id}`}
+                                                        />
+                                                        <div className="flex-1 space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <Label htmlFor={`service-${service.id}`} className="font-medium text-sm leading-none cursor-pointer">{service.name}</Label>
+                                                                {service.basePrice && (
+                                                                    <span className="font-bold text-sm text-primary">
+                                                                        ${Number(service.basePrice).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
+                                                            <Badge variant="secondary" className="text-[10px] h-5 mt-1 font-normal opacity-80">{service.category}</Badge>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </TabsContent>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="serviceType">Tipo de Servicio *</Label>
-                                <Select
-                                    value={formData.serviceType}
-                                    onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
+                            <DialogFooter className="px-10 py-6 border-t mt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsDialogOpen(false)}
+                                    className="rounded-sm h-11"
                                 >
-                                    <SelectTrigger id="serviceType" className="h-11 rounded-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {SERVICE_TYPES.map((type) => (
-                                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="status">Estado</Label>
-                                <Select
-                                    value={formData.status}
-                                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="rounded-sm h-11"
+                                    disabled={createMutation.isPending || updateMutation.isPending}
                                 >
-                                    <SelectTrigger id="status" className="h-11 rounded-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {STATUS_COLUMNS.map((col) => (
-                                            <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="health">Salud</Label>
-                                <Select
-                                    value={formData.health}
-                                    onValueChange={(value) => setFormData({ ...formData, health: value as "green" | "yellow" | "red" })}
-                                >
-                                    <SelectTrigger id="health" className="h-11 rounded-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="green">🟢 Verde (Sano)</SelectItem>
-                                        <SelectItem value="yellow">🟡 Amarillo (Advertencia)</SelectItem>
-                                        <SelectItem value="red">🔴 Rojo (Crítico)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="deadline">Fecha Límite</Label>
-                                <Input
-                                    id="deadline"
-                                    type="date"
-                                    value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''}
-                                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value ? new Date(e.target.value) : undefined })}
-                                    className="h-11 rounded-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Descripción</Label>
-                            <Textarea
-                                id="description"
-                                value={formData.description ?? ""}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="Descripción del proyecto..."
-                                className="rounded-sm min-h-[100px]"
-                            />
-                        </div>
-
-                        <DialogFooter className="px-10 py-6">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsDialogOpen(false)}
-                                className="rounded-sm h-11"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="rounded-sm h-11"
-                                disabled={createMutation.isPending || updateMutation.isPending}
-                            >
-                                {selectedProject ? "Actualizar" : "Crear"} Proyecto
-                            </Button>
-                        </DialogFooter>
+                                    {selectedProject ? "Actualizar" : "Crear"} Proyecto
+                                </Button>
+                            </DialogFooter>
+                        </Tabs>
                     </form>
                 </DialogContent>
             </Dialog>

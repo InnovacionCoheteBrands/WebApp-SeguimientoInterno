@@ -13,10 +13,14 @@ import {
   Bell,
   Megaphone,
   DollarSign,
-  Globe
+  Globe,
+  UserPlus,
+  FileText,
+  CalendarDays,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import logoUrl from "@assets/Logo Cohete Brands_1763657286156.png";
@@ -160,6 +164,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" collapsed={isCollapsed} />
             <NavButton icon={Globe} label="Digital Assets" active={location === "/digital-assets"} href="/digital-assets" collapsed={isCollapsed} />
             <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" collapsed={isCollapsed} />
+            <NavButton icon={UserPlus} label="Leads" active={location === "/leads"} href="/leads" collapsed={isCollapsed} />
+            <NavButton icon={FileText} label="POES" active={location === "/poes"} href="/poes" collapsed={isCollapsed} />
+            <NavButton icon={CalendarDays} label="Calendario" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
+            <NavButton icon={BarChart3} label="Control" active={location === "/control-proyectos"} href="/control-proyectos" collapsed={isCollapsed} />
           </div>
         </nav>
 
@@ -189,51 +197,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </motion.aside>
 
-      {/* Mobile Sidebar - Hidden, replaced with bottom navigation */}
-      <Sheet open={false} onOpenChange={() => { }}>
-        <SheetContent side="left" className="hidden w-64 p-0 border-r border-border bg-sidebar flex flex-col">
-          <div className="p-6 flex items-center justify-center border-b border-border h-24">
-            <img
-              src={logoUrl}
-              alt="Cohete Brands"
-              className="h-16 w-auto object-contain filter invert hue-rotate-180 brightness-110 contrast-125"
-            />
-          </div>
-          <nav className="flex-1 p-4 space-y-1">
-            <NavButton icon={LayoutDashboard} label={t("dashboard")} active={location === "/"} href="/" />
-            <div className="pt-2 border-t border-border/50">
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-4 py-2">{t("mission_control")}</p>
-              <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" />
-              <NavButton icon={FolderKanban} label={t("projects")} active={location === "/proyectos"} href="/proyectos" />
-              <NavButton icon={Users} label={t("team")} active={location === "/equipo"} href="/equipo" />
-              <NavButton icon={TrendingUp} label={t("analytics")} active={location === "/kpis"} href="/kpis" />
-              <NavButton icon={Megaphone} label="Ads Center" active={location === "/ads"} href="/ads" />
-              <NavButton icon={Globe} label="D&H" active={location === "/digital-assets"} href="/digital-assets" />
-              <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" />
-            </div>
-          </nav>
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-2">
-              <Link href="/profile" className="flex-1">
-                <div className="flex items-center gap-3 p-2 rounded hover:bg-sidebar-accent cursor-pointer transition-colors" data-testid="button-user-profile-mobile">
-                  <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
-                    <span className="font-display font-bold">CM</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">Marketing Manager</p>
-                    <p className="text-xs text-muted-foreground truncate">Admin Access</p>
-                  </div>
-                </div>
-              </Link>
-              <Link href="/settings">
-                <Button variant="ghost" size="icon" className="rounded shrink-0 h-10 w-10 hover:bg-sidebar-accent" data-testid="button-settings-mobile">
-                  <Settings className="size-5 text-muted-foreground" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Mobile Sidebar - Removed (replaced by bottom nav) */}
 
       {/* Main Content */}
       <motion.main

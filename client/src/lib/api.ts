@@ -118,7 +118,9 @@ export async function fetchTelemetryData(limit?: number): Promise<TelemetryData[
 
 export async function fetchClientAccounts(): Promise<ClientAccount[]> {
   const res = await request("/api/clients");
-  if (!res.ok) throw new Error("Failed to fetch client accounts");
+  if (!res.ok) {
+    throw new Error("Failed to fetch client accounts");
+  }
   return res.json();
 }
 
@@ -128,7 +130,11 @@ export async function createClientAccount(account: InsertClientAccount): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(account),
   });
-  if (!res.ok) throw new Error("Failed to create client account");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const errorMessage = errorData.error || errorData.message || "Failed to create client account";
+    throw new Error(Array.isArray(errorMessage) ? JSON.stringify(errorMessage) : errorMessage);
+  }
   return res.json();
 }
 
@@ -138,7 +144,11 @@ export async function updateClientAccount(id: number, account: Partial<InsertCli
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(account),
   });
-  if (!res.ok) throw new Error("Failed to update client account");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const errorMessage = errorData.error || errorData.message || "Failed to update client account";
+    throw new Error(Array.isArray(errorMessage) ? JSON.stringify(errorMessage) : errorMessage);
+  }
   return res.json();
 }
 
@@ -146,7 +156,11 @@ export async function deleteClientAccount(id: number): Promise<void> {
   const res = await request(`/api/clients/${id}`, {
     method: "DELETE",
   });
-  if (!res.ok) throw new Error("Failed to delete client account");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const errorMessage = errorData.error || errorData.message || "Failed to delete client account";
+    throw new Error(Array.isArray(errorMessage) ? JSON.stringify(errorMessage) : errorMessage);
+  }
 }
 
 export async function fetchTeam(): Promise<Team[]> {
@@ -844,21 +858,29 @@ export async function fetchDigitalAssetById(id: number): Promise<DigitalAsset> {
   return res.json();
 }
 
-export async function createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset> {
+export async function createDigitalAsset(asset: InsertDigitalAsset | FormData): Promise<DigitalAsset> {
+  const isFormData = asset instanceof FormData;
+  const headers: HeadersInit = isFormData ? {} : { "Content-Type": "application/json" };
+  const body = isFormData ? asset : JSON.stringify(asset);
+
   const res = await request("/api/digital-assets", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(asset),
+    headers,
+    body,
   });
   if (!res.ok) throw new Error("Failed to create digital asset");
   return res.json();
 }
 
-export async function updateDigitalAsset(id: number, asset: UpdateDigitalAsset): Promise<DigitalAsset> {
+export async function updateDigitalAsset(id: number, asset: UpdateDigitalAsset | FormData): Promise<DigitalAsset> {
+  const isFormData = asset instanceof FormData;
+  const headers: HeadersInit = isFormData ? {} : { "Content-Type": "application/json" };
+  const body = isFormData ? asset : JSON.stringify(asset);
+
   const res = await request(`/api/digital-assets/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(asset),
+    headers,
+    body,
   });
   if (!res.ok) throw new Error("Failed to update digital asset");
   return res.json();
@@ -953,4 +975,225 @@ export async function deleteInstallment(id: number): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete installment");
+}
+
+// ===========================================
+// 🛠️ SERVICE CATALOG MODULE
+// ===========================================
+
+import type {
+  ServiceCatalog,
+  InsertServiceCatalog,
+  UpdateServiceCatalog,
+  ProjectService,
+  InsertProjectService,
+} from "@shared/schema";
+
+export async function fetchServiceCatalog(): Promise<ServiceCatalog[]> {
+  const res = await request("/api/services");
+  if (!res.ok) throw new Error("Failed to fetch service catalog");
+  return res.json();
+}
+
+export async function fetchServiceById(id: number): Promise<ServiceCatalog> {
+  const res = await request(`/api/services/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch service");
+  return res.json();
+}
+
+export async function createService(service: InsertServiceCatalog): Promise<ServiceCatalog> {
+  const res = await request("/api/services", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(service),
+  });
+  if (!res.ok) throw new Error("Failed to create service");
+  return res.json();
+}
+
+export async function updateService(id: number, service: UpdateServiceCatalog): Promise<ServiceCatalog> {
+  const res = await request(`/api/services/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(service),
+  });
+  if (!res.ok) throw new Error("Failed to update service");
+  return res.json();
+}
+
+export async function deleteService(id: number): Promise<void> {
+  const res = await request(`/api/services/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete service");
+}
+
+// ===========================================
+// 🔗 PROJECT SERVICES (Service Assignment)
+// ===========================================
+
+export interface ProjectServiceWithDetails extends ProjectService {
+  service: ServiceCatalog;
+}
+
+export async function fetchProjectServices(projectId: number): Promise<ProjectServiceWithDetails[]> {
+  const res = await request(`/api/projects/${projectId}/services`);
+  if (!res.ok) throw new Error("Failed to fetch project services");
+  return res.json();
+}
+
+export async function addProjectService(projectId: number, serviceId: number, customPrice?: string, notes?: string): Promise<ProjectService> {
+  const res = await request(`/api/projects/${projectId}/services`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ serviceId, customPrice, notes }),
+  });
+  if (!res.ok) throw new Error("Failed to add service to project");
+  return res.json();
+}
+
+export async function removeProjectService(projectId: number, serviceId: number): Promise<void> {
+  const res = await request(`/api/projects/${projectId}/services/${serviceId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to remove service from project");
+}
+
+export async function updateProjectService(projectId: number, serviceId: number, customPrice?: string, notes?: string): Promise<ProjectService> {
+  const res = await request(`/api/projects/${projectId}/services/${serviceId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ customPrice, notes }),
+  });
+  if (!res.ok) throw new Error("Failed to update project service");
+  return res.json();
+}
+
+// ===========================================
+// 🎯 LEADS MODULE (CRM Kanban)
+// ===========================================
+import type {
+  Lead,
+  InsertLead,
+  UpdateLead,
+  Poe,
+  InsertPoe,
+  UpdatePoe,
+} from "@shared/schema";
+
+export type { Lead, Poe };
+
+export interface LeadsMetrics {
+  total: number;
+  byOrigin: Record<string, number>;
+  conversionRate: number;
+  avgValue: number;
+}
+
+export async function fetchLeads(): Promise<Lead[]> {
+  const res = await request("/api/leads");
+  if (!res.ok) throw new Error("Failed to fetch leads");
+  return res.json();
+}
+
+export async function fetchLeadsByOrigin(origin: string): Promise<Lead[]> {
+  const res = await request(`/api/leads/origin/${encodeURIComponent(origin)}`);
+  if (!res.ok) throw new Error("Failed to fetch leads by origin");
+  return res.json();
+}
+
+export async function fetchLeadById(id: number): Promise<Lead> {
+  const res = await request(`/api/leads/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch lead");
+  return res.json();
+}
+
+export async function fetchLeadsMetrics(): Promise<LeadsMetrics> {
+  const res = await request("/api/leads/metrics");
+  if (!res.ok) throw new Error("Failed to fetch leads metrics");
+  return res.json();
+}
+
+export async function createLead(lead: InsertLead): Promise<Lead> {
+  const res = await request("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lead),
+  });
+  if (!res.ok) throw new Error("Failed to create lead");
+  return res.json();
+}
+
+export async function updateLead(id: number, lead: UpdateLead): Promise<Lead> {
+  const res = await request(`/api/leads/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lead),
+  });
+  if (!res.ok) throw new Error("Failed to update lead");
+  return res.json();
+}
+
+export async function deleteLead(id: number): Promise<void> {
+  const res = await request(`/api/leads/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete lead");
+}
+
+export async function convertLeadToClient(leadId: number): Promise<{ lead: Lead; clientId: number }> {
+  const res = await request(`/api/leads/${leadId}/convert`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to convert lead to client");
+  return res.json();
+}
+
+// ===========================================
+// 📋 POES MODULE (Standard Operating Procedures)
+// ===========================================
+
+export async function fetchPoes(): Promise<Poe[]> {
+  const res = await request("/api/poes");
+  if (!res.ok) throw new Error("Failed to fetch POES");
+  return res.json();
+}
+
+export async function fetchPoesByCategory(category: string): Promise<Poe[]> {
+  const res = await request(`/api/poes/category/${encodeURIComponent(category)}`);
+  if (!res.ok) throw new Error("Failed to fetch POES by category");
+  return res.json();
+}
+
+export async function fetchPoeById(id: number): Promise<Poe> {
+  const res = await request(`/api/poes/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch POE");
+  return res.json();
+}
+
+export async function createPoe(poe: InsertPoe): Promise<Poe> {
+  const res = await request("/api/poes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(poe),
+  });
+  if (!res.ok) throw new Error("Failed to create POE");
+  return res.json();
+}
+
+export async function updatePoe(id: number, poe: UpdatePoe): Promise<Poe> {
+  const res = await request(`/api/poes/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(poe),
+  });
+  if (!res.ok) throw new Error("Failed to update POE");
+  return res.json();
+}
+
+export async function deletePoe(id: number): Promise<void> {
+  const res = await request(`/api/poes/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete POE");
 }

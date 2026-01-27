@@ -7,10 +7,12 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+import * as schema from "@shared/schema";
+
 // Create postgres client
 const client = postgres(process.env.DATABASE_URL, {
   ssl: process.env.NODE_ENV === 'production' ? 'require' : 'prefer',
   max: 10,
 });
 
-export const db = drizzle(client);
+export const db = drizzle(client, { schema });

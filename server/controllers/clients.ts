@@ -39,7 +39,8 @@ router.post("/clients", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        res.status(500).json({ error: "Failed to create client account" });
+        const message = error instanceof Error ? error.message : "Unknown error";
+        res.status(500).json({ error: `Failed to create client account: ${message}` });
     }
 });
 
@@ -56,7 +57,8 @@ router.patch("/clients/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        res.status(500).json({ error: "Failed to update client account" });
+        const message = error instanceof Error ? error.message : "Unknown error";
+        res.status(500).json({ error: `Failed to update client account: ${message}` });
     }
 });
 
