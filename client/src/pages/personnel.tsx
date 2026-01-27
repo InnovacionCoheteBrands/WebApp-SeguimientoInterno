@@ -49,11 +49,17 @@ export default function Personnel() {
   const queryClient = useQueryClient();
 
   // --- Data Fetching ---
-  const { data: teamMembers = [] } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
+  console.log("Rendering Personnel Page...");
+  const { data: teamMembers = [], error: teamError } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
+  console.log("Team Data:", teamMembers.length, teamError);
+
   const { data: assignments = [] } = useQuery({ queryKey: ["team-assignments"], queryFn: fetchTeamAssignments });
   const { data: campaigns = [] } = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
   const { data: projects = [] } = useQuery({ queryKey: ["projects"], queryFn: fetchProjects });
-  const { data: roles = [] } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
+
+  console.log("Fetching Roles...");
+  const { data: roles = [], error: roleError } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
+  console.log("Roles Data:", roles, roleError);
 
   // --- Derived State & Logic ---
   const teamWithMetrics = useMemo(() => {

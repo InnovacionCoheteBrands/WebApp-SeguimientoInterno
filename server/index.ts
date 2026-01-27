@@ -90,4 +90,4 @@ app.use((req, res, next) => {
     log(`serving on ${host}:${port}`);
   });
 })();
-// Force reload - Schema fix applied: deadline now uses z.coerce.date() in createInsertSchema second parameter
+// Force reload - Schema fix applied: team table structure synchronized.

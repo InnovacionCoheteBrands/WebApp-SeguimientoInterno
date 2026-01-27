@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/app-layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/components/language-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
@@ -54,7 +55,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
 
         {/* Protected Routes */}
-        <Route path="/">
+        <Route path="/:rest*">
           <AppLayout>
             <Switch>
               <Route path="/" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
@@ -88,7 +89,9 @@ function App() {
         <LanguageProvider defaultLanguage="en" storageKey="app-language">
           <TooltipProvider>
             <Toaster />
-            <Router />
+            <ErrorBoundary>
+              <Router />
+            </ErrorBoundary>
             <Suspense fallback={null}>
               <AgentChat />
             </Suspense>

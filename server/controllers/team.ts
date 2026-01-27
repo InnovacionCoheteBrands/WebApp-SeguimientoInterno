@@ -10,17 +10,18 @@ router.get("/team", async (req, res) => {
         const allTeam = await storage.getTeam();
         res.json(allTeam);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch team" });
+        console.error("Failed to fetch team:", error);
+        res.status(500).json({ error: "Failed to fetch team", details: error instanceof Error ? error.message : String(error) });
     }
 });
 
 router.post("/team", async (req, res) => {
     try {
         console.log("📥 POST /team - Body received:", JSON.stringify(req.body, null, 2));
-        
+
         const validatedData = insertTeamSchema.parse(req.body);
         console.log("✅ Team validation passed:", JSON.stringify(validatedData, null, 2));
-        
+
         const person = await storage.createTeam(validatedData);
         res.status(201).json(person);
     } catch (error) {
@@ -35,7 +36,7 @@ router.post("/team", async (req, res) => {
             console.error("   Error stack:", error.stack);
         }
         console.error("   Full error:", error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: "Failed to create team member",
             details: error instanceof Error ? error.message : "Unknown error"
         });

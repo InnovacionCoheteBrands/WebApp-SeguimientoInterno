@@ -37,25 +37,47 @@ export type ClientAccount = Omit<DBClientAccount, 'lastContact' | 'timestamp'> &
   timestamp: string;
 };
 
+// ... imports ...
+
 export type Project = DBProject & {
   client: ClientAccount;
   deliverables?: ProjectDeliverable[];
 };
 
+// 🔒 Security Wrapper: Auto-injects JWT token
+async function request(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = localStorage.getItem("token");
+  const headers = new Headers(options.headers);
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  // Ensure credentials are included if not explicitly disabled
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers,
+    credentials: options.credentials || "include",
+  };
+
+  return fetch(url, fetchOptions);
+}
+
 export async function fetchCampaigns(): Promise<Campaign[]> {
-  const res = await fetch("/api/campaigns");
+  // ...
+  const res = await request("/api/campaigns");
   if (!res.ok) throw new Error("Failed to fetch campaigns");
   return res.json();
 }
 
 export async function fetchCampaignById(id: number): Promise<Campaign> {
-  const res = await fetch(`/api/campaigns/${id}`);
+  const res = await request(`/api/campaigns/${id}`);
   if (!res.ok) throw new Error("Failed to fetch campaign");
   return res.json();
 }
 
 export async function createCampaign(campaign: InsertCampaign): Promise<Campaign> {
-  const res = await fetch("/api/campaigns", {
+  const res = await request("/api/campaigns", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(campaign),
@@ -65,7 +87,7 @@ export async function createCampaign(campaign: InsertCampaign): Promise<Campaign
 }
 
 export async function updateCampaign(id: number, campaign: UpdateCampaign): Promise<Campaign> {
-  const res = await fetch(`/api/campaigns/${id}`, {
+  const res = await request(`/api/campaigns/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(campaign),
@@ -75,33 +97,33 @@ export async function updateCampaign(id: number, campaign: UpdateCampaign): Prom
 }
 
 export async function deleteCampaign(id: number): Promise<void> {
-  const res = await fetch(`/api/campaigns/${id}`, {
+  const res = await request(`/api/campaigns/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete campaign");
 }
 
 export async function fetchSystemMetrics(): Promise<SystemMetric[]> {
-  const res = await fetch("/api/metrics");
+  const res = await request("/api/metrics");
   if (!res.ok) throw new Error("Failed to fetch metrics");
   return res.json();
 }
 
 export async function fetchTelemetryData(limit?: number): Promise<TelemetryData[]> {
   const url = limit ? `/api/telemetry?limit=${limit}` : "/api/telemetry";
-  const res = await fetch(url);
+  const res = await request(url);
   if (!res.ok) throw new Error("Failed to fetch telemetry");
   return res.json();
 }
 
 export async function fetchClientAccounts(): Promise<ClientAccount[]> {
-  const res = await fetch("/api/clients");
+  const res = await request("/api/clients");
   if (!res.ok) throw new Error("Failed to fetch client accounts");
   return res.json();
 }
 
 export async function createClientAccount(account: InsertClientAccount): Promise<ClientAccount> {
-  const res = await fetch("/api/clients", {
+  const res = await request("/api/clients", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(account),
@@ -111,7 +133,7 @@ export async function createClientAccount(account: InsertClientAccount): Promise
 }
 
 export async function updateClientAccount(id: number, account: Partial<InsertClientAccount>): Promise<ClientAccount> {
-  const res = await fetch(`/api/clients/${id}`, {
+  const res = await request(`/api/clients/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(account),
@@ -121,20 +143,20 @@ export async function updateClientAccount(id: number, account: Partial<InsertCli
 }
 
 export async function deleteClientAccount(id: number): Promise<void> {
-  const res = await fetch(`/api/clients/${id}`, {
+  const res = await request(`/api/clients/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete client account");
 }
 
 export async function fetchTeam(): Promise<Team[]> {
-  const res = await fetch("/api/team");
+  const res = await request("/api/team");
   if (!res.ok) throw new Error("Failed to fetch team");
   return res.json();
 }
 
 export async function createTeam(person: InsertTeam): Promise<Team> {
-  const res = await fetch("/api/team", {
+  const res = await request("/api/team", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(person),
@@ -144,7 +166,7 @@ export async function createTeam(person: InsertTeam): Promise<Team> {
 }
 
 export async function updateTeam(id: number, person: UpdateTeam): Promise<Team> {
-  const res = await fetch(`/api/team/${id}`, {
+  const res = await request(`/api/team/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(person),
@@ -154,20 +176,20 @@ export async function updateTeam(id: number, person: UpdateTeam): Promise<Team> 
 }
 
 export async function deleteTeam(id: number): Promise<void> {
-  const res = await fetch(`/api/team/${id}`, {
+  const res = await request(`/api/team/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete team member");
 }
 
 export async function fetchTeamAssignments(): Promise<TeamAssignment[]> {
-  const res = await fetch("/api/team/assignments");
+  const res = await request("/api/team/assignments");
   if (!res.ok) throw new Error("Failed to fetch assignments");
   return res.json();
 }
 
 export async function createTeamAssignment(assignment: InsertTeamAssignment): Promise<TeamAssignment> {
-  const res = await fetch("/api/team/assignments", {
+  const res = await request("/api/team/assignments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(assignment),
@@ -177,20 +199,20 @@ export async function createTeamAssignment(assignment: InsertTeamAssignment): Pr
 }
 
 export async function deleteTeamAssignment(id: number): Promise<void> {
-  const res = await fetch(`/api/team/assignments/${id}`, {
+  const res = await request(`/api/team/assignments/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete assignment");
 }
 
 export async function fetchResources(): Promise<Resource[]> {
-  const res = await fetch("/api/resources");
+  const res = await request("/api/resources");
   if (!res.ok) throw new Error("Failed to fetch resources");
   return res.json();
 }
 
 export async function createResource(resource: InsertResource): Promise<Resource> {
-  const res = await fetch("/api/resources", {
+  const res = await request("/api/resources", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(resource),
@@ -200,7 +222,7 @@ export async function createResource(resource: InsertResource): Promise<Resource
 }
 
 export async function updateResource(id: number, resource: Partial<InsertResource>): Promise<Resource> {
-  const res = await fetch(`/api/resources/${id}`, {
+  const res = await request(`/api/resources/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(resource),
@@ -210,7 +232,7 @@ export async function updateResource(id: number, resource: Partial<InsertResourc
 }
 
 export async function deleteResource(id: number): Promise<void> {
-  const res = await fetch(`/api/resources/${id}`, {
+  const res = await request(`/api/resources/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete resource entry");
@@ -238,7 +260,7 @@ export interface Analytics {
 }
 
 export async function fetchAnalytics(): Promise<Analytics> {
-  const res = await fetch("/api/analytics");
+  const res = await request("/api/analytics");
   if (!res.ok) throw new Error("Failed to fetch analytics");
   return res.json();
 }
@@ -247,7 +269,7 @@ export async function fetchAnalytics(): Promise<Analytics> {
 // System Settings (Settings)
 // =========================
 export async function fetchSystemSettings(): Promise<unknown> {
-  const res = await fetch("/api/settings");
+  const res = await request("/api/settings");
   if (!res.ok) throw new Error("Failed to fetch settings");
   return res.json();
 }
@@ -273,7 +295,7 @@ export interface AgentResponse {
 }
 
 export async function sendAgentMessage(messages: ChatMessage[]): Promise<AgentResponse> {
-  const res = await fetch("/api/agent/chat", {
+  const res = await request("/api/agent/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages }),
@@ -286,7 +308,7 @@ export async function sendAgentMessage(messages: ChatMessage[]): Promise<AgentRe
 }
 
 export async function executeAgentAction(actionType: string, actionData: any): Promise<AgentResponse> {
-  const res = await fetch("/api/agent/chat", {
+  const res = await request("/api/agent/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -303,13 +325,13 @@ export async function executeAgentAction(actionType: string, actionData: any): P
 
 // Financial Hub - Transactions
 export async function fetchTransactions(): Promise<Transaction[]> {
-  const res = await fetch("/api/transactions");
+  const res = await request("/api/transactions");
   if (!res.ok) throw new Error("Failed to fetch transactions");
   return res.json();
 }
 
 export async function createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-  const res = await fetch("/api/transactions", {
+  const res = await request("/api/transactions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(transaction),
@@ -328,7 +350,7 @@ export async function createTransaction(transaction: InsertTransaction): Promise
 }
 
 export async function updateTransaction(id: number, transaction: UpdateTransaction): Promise<Transaction> {
-  const res = await fetch(`/api/transactions/${id}`, {
+  const res = await request(`/api/transactions/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(transaction),
@@ -347,7 +369,7 @@ export async function updateTransaction(id: number, transaction: UpdateTransacti
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
-  const res = await fetch(`/api/transactions/${id}`, {
+  const res = await request(`/api/transactions/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete transaction");
@@ -372,7 +394,7 @@ export async function fetchFinancialSummary(
   if (endDate) params.append("endDate", endDate.toISOString());
 
   const url = params.toString() ? `/api/finance/summary?${params}` : "/api/finance/summary";
-  const res = await fetch(url);
+  const res = await request(url);
   if (!res.ok) throw new Error("Failed to fetch financial summary");
   return res.json();
 }
@@ -383,7 +405,7 @@ export async function fetchMonthlyPayables(year?: number, month?: number): Promi
   const y = year || now.getFullYear();
   const m = month || now.getMonth() + 1;
 
-  const res = await fetch(`/api/finance/obligations/payables?year=${y}&month=${m}`);
+  const res = await request(`/api/finance/obligations/payables?year=${y}&month=${m}`);
   if (!res.ok) throw new Error("Failed to fetch monthly payables");
   return res.json();
 }
@@ -393,13 +415,13 @@ export async function fetchMonthlyReceivables(year?: number, month?: number): Pr
   const y = year || now.getFullYear();
   const m = month || now.getMonth() + 1;
 
-  const res = await fetch(`/api/finance/obligations/receivables?year=${y}&month=${m}`);
+  const res = await request(`/api/finance/obligations/receivables?year=${y}&month=${m}`);
   if (!res.ok) throw new Error("Failed to fetch monthly receivables");
   return res.json();
 }
 
 export async function markObligationAsPaid(templateId: number, paidDate?: Date): Promise<Transaction> {
-  const res = await fetch(`/api/finance/obligations/${templateId}/pay`, {
+  const res = await request(`/api/finance/obligations/${templateId}/pay`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -411,7 +433,7 @@ export async function markObligationAsPaid(templateId: number, paidDate?: Date):
 }
 
 export async function unpayObligation(templateId: number): Promise<RecurringTransaction> {
-  const res = await fetch(`/api/finance/obligations/${templateId}/unpay`, {
+  const res = await request(`/api/finance/obligations/${templateId}/unpay`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to revert payment status");
@@ -421,13 +443,13 @@ export async function unpayObligation(templateId: number): Promise<RecurringTran
 
 // Recurring Transactions
 export async function fetchRecurringTransactions(): Promise<RecurringTransaction[]> {
-  const res = await fetch("/api/recurring-transactions");
+  const res = await request("/api/recurring-transactions");
   if (!res.ok) throw new Error("Failed to fetch recurring transactions");
   return res.json();
 }
 
 export async function createRecurringTransaction(recurring: InsertRecurringTransaction): Promise<RecurringTransaction> {
-  const res = await fetch("/api/recurring-transactions", {
+  const res = await request("/api/recurring-transactions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(recurring),
@@ -440,7 +462,7 @@ export async function updateRecurringTransaction(
   id: number,
   recurring: UpdateRecurringTransaction
 ): Promise<RecurringTransaction> {
-  const res = await fetch(`/api/recurring-transactions/${id}`, {
+  const res = await request(`/api/recurring-transactions/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(recurring),
@@ -450,14 +472,14 @@ export async function updateRecurringTransaction(
 }
 
 export async function deleteRecurringTransaction(id: number): Promise<void> {
-  const res = await fetch(`/api/recurring-transactions/${id}`, {
+  const res = await request(`/api/recurring-transactions/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete recurring transaction");
 }
 
 export async function executeRecurringTransaction(id: number): Promise<Transaction> {
-  const res = await fetch(`/api/recurring-transactions/${id}/execute`, {
+  const res = await request(`/api/recurring-transactions/${id}/execute`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to execute recurring transaction");
@@ -465,7 +487,7 @@ export async function executeRecurringTransaction(id: number): Promise<Transacti
 }
 
 export async function executePendingRecurringTransactions(): Promise<{ count: number; transactions: Transaction[] }> {
-  const res = await fetch("/api/recurring-transactions/execute-pending", {
+  const res = await request("/api/recurring-transactions/execute-pending", {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to execute pending recurring transactions");
@@ -474,13 +496,13 @@ export async function executePendingRecurringTransactions(): Promise<{ count: nu
 
 // Projects Management
 export async function fetchProjects(): Promise<Project[]> {
-  const res = await fetch("/api/projects");
+  const res = await request("/api/projects");
   if (!res.ok) throw new Error("Failed to fetch projects");
   return res.json();
 }
 
 export async function fetchProjectById(id: number): Promise<Project> {
-  const res = await fetch(`/api/projects/${id}`);
+  const res = await request(`/api/projects/${id}`);
   if (!res.ok) throw new Error("Failed to fetch project");
   return res.json();
 }
@@ -513,13 +535,13 @@ export interface ProjectDetails {
 }
 
 export async function fetchProjectDetails(id: number): Promise<ProjectDetails> {
-  const res = await fetch(`/api/projects/${id}/details`);
+  const res = await request(`/api/projects/${id}/details`);
   if (!res.ok) throw new Error("Failed to fetch project details");
   return res.json();
 }
 
 export async function createProject(project: InsertProject): Promise<DBProject> {
-  const res = await fetch("/api/projects", {
+  const res = await request("/api/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(project),
@@ -538,7 +560,7 @@ export async function createProject(project: InsertProject): Promise<DBProject> 
 }
 
 export async function updateProject(id: number, project: UpdateProject): Promise<DBProject> {
-  const res = await fetch(`/api/projects/${id}`, {
+  const res = await request(`/api/projects/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(project),
@@ -548,7 +570,7 @@ export async function updateProject(id: number, project: UpdateProject): Promise
 }
 
 export async function deleteProject(id: number): Promise<void> {
-  const res = await fetch(`/api/projects/${id}`, {
+  const res = await request(`/api/projects/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete project");
@@ -556,7 +578,7 @@ export async function deleteProject(id: number): Promise<void> {
 
 // Project Deliverables
 export async function fetchProjectDeliverables(projectId: number): Promise<ProjectDeliverable[]> {
-  const res = await fetch(`/api/projects/${projectId}/deliverables`);
+  const res = await request(`/api/projects/${projectId}/deliverables`);
   if (!res.ok) throw new Error("Failed to fetch deliverables");
   return res.json();
 }
@@ -565,7 +587,7 @@ export async function createProjectDeliverable(
   projectId: number,
   deliverable: Omit<InsertProjectDeliverable, 'projectId'>
 ): Promise<ProjectDeliverable> {
-  const res = await fetch(`/api/projects/${projectId}/deliverables`, {
+  const res = await request(`/api/projects/${projectId}/deliverables`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(deliverable),
@@ -578,7 +600,7 @@ export async function updateProjectDeliverable(
   id: number,
   deliverable: UpdateProjectDeliverable
 ): Promise<ProjectDeliverable> {
-  const res = await fetch(`/api/deliverables/${id}`, {
+  const res = await request(`/api/deliverables/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(deliverable),
@@ -588,7 +610,7 @@ export async function updateProjectDeliverable(
 }
 
 export async function deleteProjectDeliverable(id: number): Promise<void> {
-  const res = await fetch(`/api/deliverables/${id}`, {
+  const res = await request(`/api/deliverables/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete deliverable");
@@ -596,7 +618,7 @@ export async function deleteProjectDeliverable(id: number): Promise<void> {
 
 // Project Attachments
 export async function fetchProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
-  const res = await fetch(`/api/projects/${projectId}/attachments`);
+  const res = await request(`/api/projects/${projectId}/attachments`);
   if (!res.ok) throw new Error("Failed to fetch attachments");
   return res.json();
 }
@@ -605,7 +627,7 @@ export async function createProjectAttachment(
   projectId: number,
   attachment: Omit<InsertProjectAttachment, 'projectId'>
 ): Promise<ProjectAttachment> {
-  const res = await fetch(`/api/projects/${projectId}/attachments`, {
+  const res = await request(`/api/projects/${projectId}/attachments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(attachment),
@@ -615,7 +637,7 @@ export async function createProjectAttachment(
 }
 
 export async function deleteProjectAttachment(id: number): Promise<void> {
-  const res = await fetch(`/api/attachments/${id}`, {
+  const res = await request(`/api/attachments/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete attachment");
@@ -626,7 +648,7 @@ export async function linkAttachmentToDeliverable(
   deliverableId: number,
   attachmentId: number
 ): Promise<ProjectDeliverable> {
-  const res = await fetch(`/api/deliverables/${deliverableId}/link-attachment`, {
+  const res = await request(`/api/deliverables/${deliverableId}/link-attachment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ attachmentId }),
@@ -646,7 +668,7 @@ export async function uploadAndLinkToDeliverable(
   projectId: number,
   file: { name: string; url: string; fileType?: string; fileSize?: number }
 ): Promise<UploadAndLinkResult> {
-  const res = await fetch(`/api/deliverables/${deliverableId}/upload-and-link`, {
+  const res = await request(`/api/deliverables/${deliverableId}/upload-and-link`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -666,13 +688,13 @@ export async function uploadAndLinkToDeliverable(
 
 // Agency Role Catalog
 export async function fetchAgencyRoles(): Promise<AgencyRole[]> {
-  const res = await fetch("/api/agency/roles");
+  const res = await request("/api/agency/roles");
   if (!res.ok) throw new Error("Failed to fetch agency roles");
   return res.json();
 }
 
 export async function createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole> {
-  const res = await fetch("/api/agency/roles", {
+  const res = await request("/api/agency/roles", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(role),
@@ -682,7 +704,7 @@ export async function createAgencyRole(role: InsertAgencyRole): Promise<AgencyRo
 }
 
 export async function updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole> {
-  const res = await fetch(`/api/agency/roles/${id}`, {
+  const res = await request(`/api/agency/roles/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(role),
@@ -692,7 +714,7 @@ export async function updateAgencyRole(id: number, role: UpdateAgencyRole): Prom
 }
 
 export async function deleteAgencyRole(id: number): Promise<void> {
-  const res = await fetch(`/api/agency/roles/${id}`, {
+  const res = await request(`/api/agency/roles/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete agency role");
@@ -719,19 +741,19 @@ import type {
 } from "@shared/schema";
 
 export async function fetchContactsByClient(clientId: number): Promise<Contact[]> {
-  const res = await fetch(`/api/clients/${clientId}/contacts`);
+  const res = await request(`/api/clients/${clientId}/contacts`);
   if (!res.ok) throw new Error("Failed to fetch contacts");
   return res.json();
 }
 
 export async function fetchContactById(id: number): Promise<Contact> {
-  const res = await fetch(`/api/contacts/${id}`);
+  const res = await request(`/api/contacts/${id}`);
   if (!res.ok) throw new Error("Failed to fetch contact");
   return res.json();
 }
 
 export async function createContact(contact: InsertContact): Promise<Contact> {
-  const res = await fetch("/api/contacts", {
+  const res = await request("/api/contacts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(contact),
@@ -741,7 +763,7 @@ export async function createContact(contact: InsertContact): Promise<Contact> {
 }
 
 export async function updateContact(id: number, contact: UpdateContact): Promise<Contact> {
-  const res = await fetch(`/api/contacts/${id}`, {
+  const res = await request(`/api/contacts/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(contact),
@@ -751,7 +773,7 @@ export async function updateContact(id: number, contact: UpdateContact): Promise
 }
 
 export async function deleteContact(id: number): Promise<void> {
-  const res = await fetch(`/api/contacts/${id}`, {
+  const res = await request(`/api/contacts/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete contact");
@@ -762,19 +784,19 @@ export async function deleteContact(id: number): Promise<void> {
 // ===========================================
 
 export async function fetchBillingProfilesByClient(clientId: number): Promise<BillingProfile[]> {
-  const res = await fetch(`/api/clients/${clientId}/billing-profiles`);
+  const res = await request(`/api/clients/${clientId}/billing-profiles`);
   if (!res.ok) throw new Error("Failed to fetch billing profiles");
   return res.json();
 }
 
 export async function fetchBillingProfileById(id: number): Promise<BillingProfile> {
-  const res = await fetch(`/api/billing-profiles/${id}`);
+  const res = await request(`/api/billing-profiles/${id}`);
   if (!res.ok) throw new Error("Failed to fetch billing profile");
   return res.json();
 }
 
 export async function createBillingProfile(profile: InsertBillingProfile): Promise<BillingProfile> {
-  const res = await fetch("/api/billing-profiles", {
+  const res = await request("/api/billing-profiles", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
@@ -784,7 +806,7 @@ export async function createBillingProfile(profile: InsertBillingProfile): Promi
 }
 
 export async function updateBillingProfile(id: number, profile: UpdateBillingProfile): Promise<BillingProfile> {
-  const res = await fetch(`/api/billing-profiles/${id}`, {
+  const res = await request(`/api/billing-profiles/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
@@ -794,7 +816,7 @@ export async function updateBillingProfile(id: number, profile: UpdateBillingPro
 }
 
 export async function deleteBillingProfile(id: number): Promise<void> {
-  const res = await fetch(`/api/billing-profiles/${id}`, {
+  const res = await request(`/api/billing-profiles/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete billing profile");
@@ -805,25 +827,25 @@ export async function deleteBillingProfile(id: number): Promise<void> {
 // ===========================================
 
 export async function fetchDigitalAssetsByClient(clientId: number): Promise<DigitalAsset[]> {
-  const res = await fetch(`/api/clients/${clientId}/digital-assets`);
+  const res = await request(`/api/clients/${clientId}/digital-assets`);
   if (!res.ok) throw new Error("Failed to fetch digital assets");
   return res.json();
 }
 
 export async function fetchExpiringDigitalAssets(daysAhead: number = 30): Promise<DigitalAsset[]> {
-  const res = await fetch(`/api/digital-assets/expiring?days=${daysAhead}`);
+  const res = await request(`/api/digital-assets/expiring?days=${daysAhead}`);
   if (!res.ok) throw new Error("Failed to fetch expiring digital assets");
   return res.json();
 }
 
 export async function fetchDigitalAssetById(id: number): Promise<DigitalAsset> {
-  const res = await fetch(`/api/digital-assets/${id}`);
+  const res = await request(`/api/digital-assets/${id}`);
   if (!res.ok) throw new Error("Failed to fetch digital asset");
   return res.json();
 }
 
 export async function createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset> {
-  const res = await fetch("/api/digital-assets", {
+  const res = await request("/api/digital-assets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(asset),
@@ -833,7 +855,7 @@ export async function createDigitalAsset(asset: InsertDigitalAsset): Promise<Dig
 }
 
 export async function updateDigitalAsset(id: number, asset: UpdateDigitalAsset): Promise<DigitalAsset> {
-  const res = await fetch(`/api/digital-assets/${id}`, {
+  const res = await request(`/api/digital-assets/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(asset),
@@ -843,7 +865,7 @@ export async function updateDigitalAsset(id: number, asset: UpdateDigitalAsset):
 }
 
 export async function deleteDigitalAsset(id: number): Promise<void> {
-  const res = await fetch(`/api/digital-assets/${id}`, {
+  const res = await request(`/api/digital-assets/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete digital asset");
@@ -854,19 +876,19 @@ export async function deleteDigitalAsset(id: number): Promise<void> {
 // ===========================================
 
 export async function fetchClientDocuments(clientId: number): Promise<ClientDocument[]> {
-  const res = await fetch(`/api/clients/${clientId}/documents`);
+  const res = await request(`/api/clients/${clientId}/documents`);
   if (!res.ok) throw new Error("Failed to fetch client documents");
   return res.json();
 }
 
 export async function fetchClientDocumentById(id: number): Promise<ClientDocument> {
-  const res = await fetch(`/api/client-documents/${id}`);
+  const res = await request(`/api/client-documents/${id}`);
   if (!res.ok) throw new Error("Failed to fetch client document");
   return res.json();
 }
 
 export async function createClientDocument(doc: InsertClientDocument): Promise<ClientDocument> {
-  const res = await fetch("/api/client-documents", {
+  const res = await request("/api/client-documents", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(doc),
@@ -876,7 +898,7 @@ export async function createClientDocument(doc: InsertClientDocument): Promise<C
 }
 
 export async function deleteClientDocument(id: number): Promise<void> {
-  const res = await fetch(`/api/client-documents/${id}`, {
+  const res = await request(`/api/client-documents/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete client document");
@@ -887,13 +909,13 @@ export async function deleteClientDocument(id: number): Promise<void> {
 // ===========================================
 
 export async function fetchInstallmentsByProject(projectId: number): Promise<Installment[]> {
-  const res = await fetch(`/api/projects/${projectId}/installments`);
+  const res = await request(`/api/projects/${projectId}/installments`);
   if (!res.ok) throw new Error("Failed to fetch installments");
   return res.json();
 }
 
 export async function generateInstallmentsForProject(projectId: number): Promise<Installment[]> {
-  const res = await fetch(`/api/projects/${projectId}/installments/generate`, {
+  const res = await request(`/api/projects/${projectId}/installments/generate`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to generate installments");
@@ -901,13 +923,13 @@ export async function generateInstallmentsForProject(projectId: number): Promise
 }
 
 export async function fetchInstallmentById(id: number): Promise<Installment> {
-  const res = await fetch(`/api/installments/${id}`);
+  const res = await request(`/api/installments/${id}`);
   if (!res.ok) throw new Error("Failed to fetch installment");
   return res.json();
 }
 
 export async function createInstallment(installment: InsertInstallment): Promise<Installment> {
-  const res = await fetch("/api/installments", {
+  const res = await request("/api/installments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(installment),
@@ -917,7 +939,7 @@ export async function createInstallment(installment: InsertInstallment): Promise
 }
 
 export async function updateInstallment(id: number, installment: UpdateInstallment): Promise<Installment> {
-  const res = await fetch(`/api/installments/${id}`, {
+  const res = await request(`/api/installments/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(installment),
@@ -927,7 +949,7 @@ export async function updateInstallment(id: number, installment: UpdateInstallme
 }
 
 export async function deleteInstallment(id: number): Promise<void> {
-  const res = await fetch(`/api/installments/${id}`, {
+  const res = await request(`/api/installments/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete installment");

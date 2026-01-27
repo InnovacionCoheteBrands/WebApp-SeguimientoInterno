@@ -463,7 +463,7 @@ export const team = pgTable("team", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   role: text("role").notNull(),
-  seniority: text("seniority").notNull(), // Previously department
+  seniority: text("department").notNull(), // Mapped to existing 'department' column
   area: text("area"), // New field linked to agency_role_catalog.area
   status: text("status").notNull().default("Available"),
   avatarUrl: text("avatar_url"),
