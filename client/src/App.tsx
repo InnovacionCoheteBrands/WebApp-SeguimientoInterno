@@ -33,6 +33,7 @@ const LeadsControl = lazy(() => import("@/pages/leads-control"));
 const Poes = lazy(() => import("@/pages/poes"));
 const PaymentCalendar = lazy(() => import("@/pages/payment-calendar"));
 const ControlProyectos = lazy(() => import("@/pages/control-proyectos"));
+const Usuarios = lazy(() => import("@/pages/usuarios"));
 
 function LoadingFallback() {
   return (
@@ -102,6 +103,7 @@ function Router() {
               <Route path="/poes" component={Poes} />
               <Route path="/calendario-pagos" component={PaymentCalendar} />
               <Route path="/control-proyectos" component={ControlProyectos} />
+              <Route path="/usuarios" component={Usuarios} />
               <Route component={NotFound} />
             </Switch>
           </ProtectedLayout>

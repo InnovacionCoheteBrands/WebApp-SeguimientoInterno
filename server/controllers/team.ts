@@ -38,7 +38,8 @@ router.post("/team", async (req, res) => {
         console.error("   Full error:", error);
         res.status(500).json({
             error: "Failed to create team member",
-            details: error instanceof Error ? error.message : "Unknown error"
+            details: error instanceof Error ? error.message : "Unknown error",
+            stack: error instanceof Error ? error.stack : undefined
         });
     }
 });

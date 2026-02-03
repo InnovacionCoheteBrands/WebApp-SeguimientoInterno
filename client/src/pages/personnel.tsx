@@ -32,6 +32,7 @@ import {
   fetchAgencyRoles,
   createRecurringTransaction
 } from "@/lib/api";
+import { PersonnelForm } from "@/components/forms/personnel-form";
 import { insertTeamSchema, type InsertTeam, type UpdateTeam, type Team, type InsertTeamAssignment, type AgencyRole, type InsertRecurringTransaction } from "@shared/schema";
 
 export default function Personnel() {
@@ -117,46 +118,6 @@ export default function Personnel() {
     });
   }, [teamWithMetrics, searchTerm, filterRole]);
 
-  // --- Mutations ---
-  const createTeamMutation = useMutation({
-    mutationFn: createTeam,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["team"] });
-      // Handle Payroll Integration if selected
-      if (formData.addToPayroll && formData.monthlySalary && parseFloat(formData.monthlySalary as string) > 0) {
-        const transaction: InsertRecurringTransaction = {
-          name: `Nomina: ${data.name}`,
-          type: "Gasto",
-          category: "Nómina",
-          amount: formData.monthlySalary as string,
-          frequency: "monthly",
-          dayOfMonth: 1,
-          isActive: true,
-          nextExecutionDate: new Date(),
-          description: `Recurring salary for ${data.name} (${data.role})`
-        };
-        createRecurringTransaction(transaction)
-          .then(() => toast({ title: "Payroll Integrated", description: "Recurring expense created in Finance Hub." }))
-          .catch(() => toast({ title: "Warning", description: "Team created but failed to add to payroll.", variant: "destructive" }));
-      }
-
-      setIsTeamDialogOpen(false);
-      resetForm();
-      toast({ title: "Talento Agregado", description: "El perfil ha sido creado exitosamente." });
-    },
-  });
-
-  const updateTeamMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateTeam }) => updateTeam(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["team"] });
-      setIsTeamDialogOpen(false);
-      setEditingMember(null);
-      resetForm();
-      toast({ title: "Perfil Actualizado", description: "Los datos del talento han sido guardados." });
-    },
-  });
-
   const deleteTeamMutation = useMutation({
     mutationFn: deleteTeam,
     onSuccess: () => {
@@ -186,128 +147,24 @@ export default function Personnel() {
   });
 
   // --- Forms ---
-  const [formData, setFormData] = useState<Partial<InsertTeam> & { addToPayroll?: boolean }>({
-    name: "",
-    role: "",
-    seniority: "Junior",
-    area: "",
-    status: "Available",
-    workHoursStart: "09:00",
-    workHoursEnd: "18:00",
-    weeklyCapacity: 40,
-    internalCostHour: "0",
-    billableRate: "0",
-    monthlySalary: "0",
-    skills: "",
-    roleCatalogId: undefined,
-    addToPayroll: false
-  });
-
-  const [assignmentForm, setAssignmentForm] = useState({
-    projectId: 0,
-    hoursAllocated: 10
-  });
-
   const resetForm = () => {
-    setFormData({
-      name: "",
-      role: "",
-      seniority: "Junior",
-      area: "",
-      status: "Available",
-      workHoursStart: "09:00",
-      workHoursEnd: "18:00",
-      weeklyCapacity: 40,
-      internalCostHour: "0",
-      billableRate: "0",
-      monthlySalary: "0",
-      skills: "",
-      roleCatalogId: undefined,
-      addToPayroll: false
-    });
     setEditingMember(null);
   };
 
   const handleOpenTeamDialog = (member?: Team) => {
     if (member) {
       setEditingMember(member);
-      setFormData({
-        name: member.name,
-        role: member.role,
-        seniority: member.seniority,
-        area: member.area || "",
-        status: member.status,
-        workHoursStart: member.workHoursStart,
-        workHoursEnd: member.workHoursEnd,
-        weeklyCapacity: member.weeklyCapacity || 40,
-        internalCostHour: member.internalCostHour?.toString() || "0",
-        billableRate: member.billableRate?.toString() || "0",
-        monthlySalary: member.monthlySalary?.toString() || "0",
-        skills: member.skills || "",
-        roleCatalogId: member.roleCatalogId,
-        addToPayroll: false
-      });
     } else {
       resetForm();
     }
     setIsTeamDialogOpen(true);
   };
 
-  // Smart Autofill from Catalog
-  const handleRoleSelect = (catalogId: string) => {
-    const roleId = parseInt(catalogId);
-    const selectedRole = roles.find(r => r.id === roleId);
-    if (selectedRole) {
-      const activities = selectedRole.allowedActivities ? JSON.parse(selectedRole.allowedActivities as string) : [];
-      setFormData(prev => ({
-        ...prev,
-        role: selectedRole.roleName,
-        roleCatalogId: roleId,
-        area: selectedRole.department,
-        billableRate: selectedRole.defaultBillableRate?.toString() || "0",
-        skills: activities.join(", ")
-      }));
-    }
-  };
+  const [assignmentForm, setAssignmentForm] = useState({
+    projectId: 0,
+    hoursAllocated: 10
+  });
 
-  // Auto-calculate Internal Cost (with guard to prevent unnecessary updates)
-  useEffect(() => {
-    const salary = parseFloat(formData.monthlySalary?.toString() || "0");
-    const hours = formData.weeklyCapacity || 40;
-    if (salary > 0 && hours > 0) {
-      // 4.33 weeks per month average
-      const costPerHour = (salary / (hours * 4.33)).toFixed(2);
-      // Only update if the calculated value differs from current to prevent re-render loops
-      const currentCost = formData.internalCostHour?.toString() || "0";
-      if (costPerHour !== currentCost) {
-        setFormData(prev => ({ ...prev, internalCostHour: costPerHour }));
-      }
-    }
-  }, [formData.monthlySalary, formData.weeklyCapacity, formData.internalCostHour]);
-
-  const handleSubmitTeam = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Exclude addToPayroll before sending to API
-    const { addToPayroll, ...dataToSend } = formData;
-
-    // 🛡️ Validate with shared schema (XSS protection + positive numbers)
-    const result = insertTeamSchema.safeParse(dataToSend);
-    if (!result.success) {
-      const firstError = result.error.errors[0];
-      toast({
-        title: "Error de validación",
-        description: firstError.message || "Por favor verifique los datos ingresados",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (editingMember) {
-      updateTeamMutation.mutate({ id: editingMember.id, data: result.data as UpdateTeam });
-    } else {
-      createTeamMutation.mutate(result.data as InsertTeam);
-    }
-  };
 
   const handleSubmitAssignment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -574,182 +431,21 @@ export default function Personnel() {
 
       {/* --- DIALOGS --- */}
 
-      {/* Team Member Dialog */}
       <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
-        <DialogContent className="sm:max-w-5xl border-border bg-card text-foreground rounded-sm">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] border-border bg-card text-foreground rounded-sm flex flex-col">
           <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingMember ? "Edit Strategic Asset" : "Onboard New Talent"}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Configure resource capacity, financial metrics, and skills.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitTeam} className="flex flex-col flex-1 min-h-0">
-            <DialogBody className="space-y-4 px-10 py-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 col-span-2">
-                  <Label className="text-muted-foreground">Master Service Role</Label>
-                  <Select
-                    value={formData.roleCatalogId?.toString()}
-                    onValueChange={handleRoleSelect}
-                  >
-                    <SelectTrigger className="bg-background border-border rounded-sm">
-                      <SelectValue placeholder="Select from Catalog (Recommended)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map(role => (
-                        <SelectItem key={role.id} value={role.id.toString()}>
-                          {role.roleName} <span className="text-muted-foreground text-xs ml-2">(${role.defaultBillableRate}/hr)</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Full Name</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="bg-background border-border rounded-sm"
-                    placeholder="e.g. Alex Chen"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Custom Role Title</Label>
-                  <Input
-                    value={formData.role}
-                    onChange={e => setFormData({ ...formData, role: e.target.value })}
-                    className="bg-background border-border rounded-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Area</Label>
-                <Input value={formData.area} readOnly className="bg-muted text-muted-foreground border-border rounded-sm" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Seniority</Label>
-                  <Select value={formData.seniority} onValueChange={v => setFormData({ ...formData, seniority: v })}>
-                    <SelectTrigger className="bg-background border-border rounded-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Junior">Junior</SelectItem>
-                      <SelectItem value="Mid-Level">Mid-Level</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                      <SelectItem value="Lead">Lead</SelectItem>
-                      <SelectItem value="Director">Director</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Weekly Capacity (Hours)</Label>
-                  <Input
-                    type="number" min="0" max="168"
-                    value={formData.weeklyCapacity || ""}
-                    onChange={e => setFormData({ ...formData, weeklyCapacity: parseInt(e.target.value) })}
-                    className="bg-background border-border rounded-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 bg-muted/30 border border-border rounded-sm space-y-3">
-                <h4 className="text-xs font-mono uppercase text-primary tracking-wider">Financial Intelligence</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Internal Cost / Hr</Label>
-                    <Input
-                      type="number" min="0" step="0.01"
-                      value={formData.internalCostHour || ""}
-                      onChange={e => setFormData({ ...formData, internalCostHour: e.target.value })}
-                      className="bg-background border-border rounded-sm h-8 text-xs font-mono"
-                    />
-                  </div>
-                  <div className="space-y-2 text-green-500">
-                    <Label className="text-xs text-green-700/70">Theoretical Margin</Label>
-                    <div className="h-8 flex items-center gap-2 font-mono text-sm">
-                      {(() => {
-                        const cost = parseFloat(formData.internalCostHour as string || "0");
-                        const rate = parseFloat(formData.billableRate as string || "0");
-                        if (rate > 0 && cost > 0) {
-                          const margin = ((rate - cost) / rate * 100).toFixed(1);
-                          return <span className={Number(margin) > 50 ? 'text-green-500' : 'text-yellow-500'}>{margin}%</span>
-                        }
-                        return <span className="text-muted-foreground">--</span>
-                      })()}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Billing Rate / Hr</Label>
-                    <Input
-                      type="number" min="0" step="0.01"
-                      value={formData.billableRate || ""}
-                      onChange={e => setFormData({ ...formData, billableRate: e.target.value })}
-                      className="bg-background border-border rounded-sm h-8 text-xs font-mono text-green-500"
-                    />
-                  </div>
-                  <div className="space-y-2 col-span-2 border-t border-border pt-2 flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-muted-foreground">Add to Payroll</Label>
-                      <p className="text-[10px] text-muted-foreground">Automatically create a monthly recurring expense.</p>
-                    </div>
-                    <Switch
-                      checked={formData.addToPayroll}
-                      onCheckedChange={(c) => setFormData({ ...formData, addToPayroll: c })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Monthly Salary</Label>
-                  <Input
-                    type="number" min="0" step="0.01"
-                    value={formData.monthlySalary || ""}
-                    onChange={e => setFormData({ ...formData, monthlySalary: e.target.value })}
-                    className="bg-background border-border rounded-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground text-xs mt-8">
-                    Calculated Internal Cost: <span className="text-foreground font-mono">${formData.internalCostHour}</span>/hr
-                  </Label>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Skills (Comma separated)</Label>
-                <Input
-                  value={formData.skills || ""}
-                  onChange={e => setFormData({ ...formData, skills: e.target.value })}
-                  className="bg-background border-border rounded-sm"
-                  placeholder="React, TypeScript, SEO, Copywriting..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Shift Start</Label>
-                  <Input type="time" value={formData.workHoursStart} onChange={e => setFormData({ ...formData, workHoursStart: e.target.value })} className="bg-background border-border rounded-sm" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Shift End</Label>
-                  <Input type="time" value={formData.workHoursEnd} onChange={e => setFormData({ ...formData, workHoursEnd: e.target.value })} className="bg-background border-border rounded-sm" />
-                </div>
-              </div>
-            </DialogBody>
-
-            <DialogFooter className="px-10 py-6">
-              <Button type="button" variant="ghost" onClick={() => setIsTeamDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">
-                {editingMember ? "Save Changes" : "Create Asset"}
-              </Button>
-            </DialogFooter>
-          </form>
+          <div className="px-10 pb-10 overflow-y-auto flex-1">
+            <PersonnelForm
+              open={isTeamDialogOpen}
+              onOpenChange={setIsTeamDialogOpen}
+              initialData={editingMember}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

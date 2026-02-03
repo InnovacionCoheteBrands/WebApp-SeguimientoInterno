@@ -25,6 +25,7 @@ import servicesRouter from "./controllers/services";
 import leadsRouter from "./controllers/leads";
 import poesRouter from "./controllers/poes";
 import projectTeamRouter from "./controllers/project-team";
+import usersRouter from "./controllers/users";
 import { requireAuth } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -53,6 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cohete Replica Module Routes
   app.use("/api/leads", requireAuth, leadsRouter);
   app.use("/api/poes", requireAuth, poesRouter);
+  app.use("/api/users", requireAuth, usersRouter);
   app.use("/api", requireAuth, projectTeamRouter);
 
   const httpServer = createServer(app);

@@ -18,6 +18,7 @@ import {
   FileText,
   CalendarDays,
   BarChart3,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -29,6 +30,7 @@ import { fetchCampaigns } from "@/lib/api";
 import { useLanguage } from "@/components/language-provider";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { QuickCreateMenu } from "@/components/quick-create-menu";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -168,6 +170,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <NavButton icon={FileText} label="POES" active={location === "/poes"} href="/poes" collapsed={isCollapsed} />
             <NavButton icon={CalendarDays} label="Calendario" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
             <NavButton icon={BarChart3} label="Control" active={location === "/control-proyectos"} href="/control-proyectos" collapsed={isCollapsed} />
+            <NavButton icon={Shield} label="Usuarios" active={location === "/usuarios"} href="/usuarios" collapsed={isCollapsed} />
           </div>
         </nav>
 
@@ -204,7 +207,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         layout
         animate={{ marginLeft: isCollapsed ? 80 : 256 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0 md:ml-64"
+        className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 md:pb-0"
       >
 
         {/* Top Bar */}
@@ -241,6 +244,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               </span>
               TODAS LAS CAMPAÑAS ACTIVAS
             </div>
+
+            <QuickCreateMenu />
+
             <Button variant="outline" size="icon" className="rounded-sm border-border hover:bg-accent hover:text-accent-foreground h-11 w-11" data-testid="button-notifications">
               <Bell className="size-5" />
             </Button>

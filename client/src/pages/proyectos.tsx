@@ -47,6 +47,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+import { ProjectForm } from "@/components/forms/project-form";
 const STATUS_COLUMNS = [
     { id: "Planificación", label: "Planificación", icon: Calendar, color: "bg-muted/50 border-border text-muted-foreground" },
     { id: "En Curso", label: "En Curso", icon: Play, color: "bg-blue-500/10 border-blue-500/20 text-blue-600" },
@@ -623,301 +624,26 @@ export default function Proyectos() {
                         ) : null}
                     </DragOverlay>
                 </DndContext>
+
+                {/* Project Form Dialog */}
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogContent className="sm:max-w-4xl rounded-sm">
+                        <DialogHeader className="px-10 pt-10 pb-6">
+                            <DialogTitle>{selectedProject ? "Editar Proyecto" : "Nuevo Proyecto"}</DialogTitle>
+                            <DialogDescription>
+                                {selectedProject ? "Actualiza la información del proyecto" : "Crea un nuevo proyecto asignado a un cliente"}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="px-10 pb-10">
+                            <ProjectForm
+                                open={isDialogOpen}
+                                onOpenChange={setIsDialogOpen}
+                                initialData={selectedProject}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
-
-            {/* Project Form Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-6xl rounded-sm">
-                    <DialogHeader className="px-10 pt-10 pb-6">
-                        <DialogTitle>{selectedProject ? "Editar Proyecto" : "Nuevo Proyecto"}</DialogTitle>
-                        <DialogDescription>
-                            {selectedProject ? "Actualiza la información del proyecto" : "Crea un nuevo proyecto asignado a un cliente"}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit}>
-                        <Tabs defaultValue="general" className="w-full">
-                            <TabsList className="w-full justify-start px-10 mt-2 mb-4 bg-transparent border-b h-auto p-0 rounded-none w-[calc(100%-5rem)] mx-auto">
-                                <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 font-medium">General</TabsTrigger>
-                                <TabsTrigger value="services" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 font-medium">Servicios Incluidos</TabsTrigger>
-                            </TabsList>
-
-                            <div className="h-[60vh] overflow-y-auto px-10 py-2 custom-scrollbar">
-                                <TabsContent value="general" className="space-y-4 mt-0">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="client">Cliente *</Label>
-                                        <Select
-                                            value={formData.clientId?.toString()}
-                                            onValueChange={(value) => setFormData({ ...formData, clientId: parseInt(value) })}
-                                        >
-                                            <SelectTrigger id="client" className="h-11 rounded-sm">
-                                                <SelectValue placeholder="Selecciona un cliente" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {clients.map((client) => (
-                                                    <SelectItem key={client.id} value={client.id.toString()}>
-                                                        {client.companyName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="name">Nombre del Proyecto *</Label>
-                                            <Input
-                                                id="name"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                placeholder="ej. Campaña Q1 2025"
-                                                className="h-11 rounded-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="serviceType">Tipo de Servicio *</Label>
-                                            <Select
-                                                value={formData.serviceType}
-                                                onValueChange={(value) => setFormData({ ...formData, serviceType: value })}
-                                            >
-                                                <SelectTrigger id="serviceType" className="h-11 rounded-sm">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {SERVICE_TYPES.map((type) => (
-                                                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="status">Estado</Label>
-                                            <Select
-                                                value={formData.status}
-                                                onValueChange={(value) => setFormData({ ...formData, status: value })}
-                                            >
-                                                <SelectTrigger id="status" className="h-11 rounded-sm">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {STATUS_COLUMNS.map((col) => (
-                                                        <SelectItem key={col.id} value={col.id}>{col.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="health">Salud</Label>
-                                            <Select
-                                                value={formData.health}
-                                                onValueChange={(value) => setFormData({ ...formData, health: value as "green" | "yellow" | "red" })}
-                                            >
-                                                <SelectTrigger id="health" className="h-11 rounded-sm">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="green">🟢 Verde (Sano)</SelectItem>
-                                                    <SelectItem value="yellow">🟡 Amarillo (Advertencia)</SelectItem>
-                                                    <SelectItem value="red">🔴 Rojo (Crítico)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="deadline">Fecha Límite</Label>
-                                            <Input
-                                                id="deadline"
-                                                type="date"
-                                                value={formData.deadline ? new Date(formData.deadline).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => setFormData({ ...formData, deadline: e.target.value ? new Date(e.target.value) : undefined })}
-                                                className="h-11 rounded-sm"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description">Descripción</Label>
-                                        <Textarea
-                                            id="description"
-                                            value={formData.description ?? ""}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            placeholder="Descripción del proyecto..."
-                                            className="rounded-sm min-h-[80px]"
-                                        />
-                                    </div>
-
-                                    {/* New Fields Section */}
-                                    <div className="border-t border-border pt-4 mt-4">
-                                        <h4 className="text-sm font-semibold text-muted-foreground mb-4">Información Adicional</h4>
-
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="level">Nivel/Categoría</Label>
-                                                <Select
-                                                    value={formData.level as string || "Plata"}
-                                                    onValueChange={(value) => setFormData({ ...formData, level: value as "Plata" | "Oro" | "Platino" | "Diamante" })}
-                                                >
-                                                    <SelectTrigger id="level" className="h-11 rounded-sm">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {PROJECT_LEVELS.map((level) => (
-                                                            <SelectItem key={level} value={level}>
-                                                                {level === "Plata" && "🥈 "}
-                                                                {level === "Oro" && "🥇 "}
-                                                                {level === "Platino" && "💎 "}
-                                                                {level === "Diamante" && "💠 "}
-                                                                {level}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="quotationAmount">Cotización (MXN)</Label>
-                                                <Input
-                                                    id="quotationAmount"
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={formData.quotationAmount ?? ""}
-                                                    onChange={(e) => setFormData({ ...formData, quotationAmount: e.target.value })}
-                                                    placeholder="0.00"
-                                                    className="h-11 rounded-sm"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="monthlyMaintenance">Mant. Mensual (MXN)</Label>
-                                                <Input
-                                                    id="monthlyMaintenance"
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={formData.monthlyMaintenance ?? ""}
-                                                    onChange={(e) => setFormData({ ...formData, monthlyMaintenance: e.target.value })}
-                                                    placeholder="0.00"
-                                                    className="h-11 rounded-sm"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="startDate">Fecha de Inicio</Label>
-                                                <Input
-                                                    id="startDate"
-                                                    type="date"
-                                                    value={formData.startDate ? new Date(formData.startDate).toISOString().split('T')[0] : ''}
-                                                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : undefined })}
-                                                    className="h-11 rounded-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="coverColor">Color de Portada</Label>
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        id="coverColor"
-                                                        type="color"
-                                                        value={formData.coverColor ?? "#3B82F6"}
-                                                        onChange={(e) => setFormData({ ...formData, coverColor: e.target.value })}
-                                                        className="h-11 w-16 rounded-sm p-1 cursor-pointer"
-                                                    />
-                                                    <Input
-                                                        type="text"
-                                                        value={formData.coverColor ?? "#3B82F6"}
-                                                        onChange={(e) => setFormData({ ...formData, coverColor: e.target.value })}
-                                                        placeholder="#3B82F6"
-                                                        className="h-11 rounded-sm flex-1"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="additionalNotes">Notas Adicionales</Label>
-                                                <Textarea
-                                                    id="additionalNotes"
-                                                    value={formData.additionalNotes ?? ""}
-                                                    onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
-                                                    placeholder="Información adicional del proyecto..."
-                                                    className="rounded-sm min-h-[60px]"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </TabsContent>
-
-                                <TabsContent value="services" className="space-y-4 mt-0">
-                                    <div className="space-y-4 pt-1">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-base font-medium">Selecciona los servicios incluidos</Label>
-                                            <Badge variant="outline">{selectedServices.length} seleccionados</Badge>
-                                        </div>
-
-                                        {serviceCatalog.length === 0 ? (
-                                            <div className="text-center py-10 text-muted-foreground border border-dashed rounded-md bg-muted/20">
-                                                No hay servicios configurados en el sistema.
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {serviceCatalog.map((service) => (
-                                                    <div
-                                                        key={service.id}
-                                                        className={`flex items-start space-x-3 border p-3 rounded-md cursor-pointer transition-all duration-200 ${selectedServices.includes(service.id) ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'hover:bg-muted/50 hover:border-primary/30'}`}
-                                                        onClick={() => toggleService(service.id)}
-                                                    >
-                                                        <Checkbox
-                                                            checked={selectedServices.includes(service.id)}
-                                                            onCheckedChange={() => toggleService(service.id)}
-                                                            className="mt-1"
-                                                            id={`service-${service.id}`}
-                                                        />
-                                                        <div className="flex-1 space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <Label htmlFor={`service-${service.id}`} className="font-medium text-sm leading-none cursor-pointer">{service.name}</Label>
-                                                                {service.basePrice && (
-                                                                    <span className="font-bold text-sm text-primary">
-                                                                        ${Number(service.basePrice).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
-                                                            <Badge variant="secondary" className="text-[10px] h-5 mt-1 font-normal opacity-80">{service.category}</Badge>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </TabsContent>
-                            </div>
-
-                            <DialogFooter className="px-10 py-6 border-t mt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsDialogOpen(false)}
-                                    className="rounded-sm h-11"
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    className="rounded-sm h-11"
-                                    disabled={createMutation.isPending || updateMutation.isPending}
-                                >
-                                    {selectedProject ? "Actualizar" : "Crear"} Proyecto
-                                </Button>
-                            </DialogFooter>
-                        </Tabs>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

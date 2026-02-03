@@ -1,5 +1,5 @@
 
-import { db } from "../server/db.ts";
+import { db } from "../db";
 import { sql } from "drizzle-orm";
 
 async function inspectTeamTable() {
@@ -12,9 +12,9 @@ async function inspectTeamTable() {
             AND table_name = 'team';
         `);
 
-        console.log("Table check result:", tableCheck.rows);
+        console.log("Table check result:", tableCheck);
 
-        if (tableCheck.rows.length === 0) {
+        if (tableCheck.length === 0) {
             console.error("❌ CRITICAL: 'team' table does not exist!");
             process.exit(1);
         }
@@ -25,7 +25,7 @@ async function inspectTeamTable() {
             FROM information_schema.columns 
             WHERE table_name = 'team';
         `);
-        console.log("Columns:", columnCheck.rows.map(r => `${r.column_name} (${r.data_type})`));
+        console.log("Columns:", columnCheck.map((r: any) => `${r.column_name} (${r.data_type})`));
 
         process.exit(0);
     } catch (error) {
@@ -35,3 +35,4 @@ async function inspectTeamTable() {
 }
 
 inspectTeamTable();
+

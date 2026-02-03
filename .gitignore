@@ -29,3 +29,6 @@ pm2-*.log
 # IDE
 .vscode/settings.json
 .idea
+
+# Text logs
+*.txt

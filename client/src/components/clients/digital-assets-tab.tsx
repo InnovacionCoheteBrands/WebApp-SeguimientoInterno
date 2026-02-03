@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Globe, Server, Shield, Mail, AlertTriangle, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Globe, Server, Shield, Mail, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +82,29 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
 
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-    // ... existing useState hooks ...
+    // Helper: Get icon for asset type
+    const getIcon = (type: string) => {
+        switch (type) {
+            case "domain": return <Globe className="size-5 text-blue-500" />;
+            case "hosting": return <Server className="size-5 text-purple-500" />;
+            case "ssl": return <Shield className="size-5 text-green-500" />;
+            case "email": return <Mail className="size-5 text-orange-500" />;
+            default: return <Globe className="size-5" />;
+        }
+    };
+
+    // Helper: Get expiration status badge info
+    const getExpirationStatus = (date: Date | null): { label: string; color: string } | null => {
+        if (!date) return null;
+        const now = new Date();
+        const diffTime = date.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) return { label: `Vencido hace ${Math.abs(diffDays)} días`, color: "text-red-500 border-red-200" };
+        if (diffDays <= 30) return { label: `Vence en ${diffDays} días`, color: "text-red-500 border-red-200" };
+        if (diffDays <= 60) return { label: `Vence en ${diffDays} días`, color: "text-yellow-500 border-yellow-200" };
+        return { label: `Vence en ${diffDays} días`, color: "text-green-500 border-green-200" };
+    };
 
     // Reset form now clears selected files
     const resetForm = () => {
@@ -132,31 +154,22 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
             return;
         }
 
-        const formDataPayload = new FormData();
-        formDataPayload.append('clientId', clientId.toString());
-        formDataPayload.append('assetType', formData.type);
-        formDataPayload.append('name', formData.name);
-        formDataPayload.append('provider', formData.provider);
-        if (formData.cost) formDataPayload.append('cost', formData.cost.toString());
-        formDataPayload.append('autoRenew', String(formData.autoRenew));
-        formDataPayload.append('status', formData.status);
-        if (formData.expirationDate) formDataPayload.append('expirationDate', new Date(formData.expirationDate).toISOString());
-
-        selectedFiles.forEach(file => {
-            formDataPayload.append('files', file);
-        });
+        // Build JSON payload for API
+        const payload: UpdateDigitalAsset = {
+            clientId,
+            assetType: formData.type,
+            name: formData.name,
+            provider: formData.provider || null,
+            cost: formData.cost ? formData.cost.toString() : undefined,
+            autoRenew: formData.autoRenew,
+            status: formData.status,
+            expirationDate: formData.expirationDate ? new Date(formData.expirationDate) : null,
+        };
 
         if (editingAsset) {
-            // For update, we might want to keep existing files.
-            // Currently backend handles appending new files.
-            // If we implemented file deletion from list, we'd pass 'keptFiles' here.
-
-            // To be typesafe with our API wrapper which expects UpdateDigitalAsset | FormData
-            // We cast to any to bypass strict type check for now or update the API signature.
-            // Updated API signature to accept FormData.
-            updateMutation.mutate({ id: editingAsset.id, data: formDataPayload });
+            updateMutation.mutate({ id: editingAsset.id, data: payload });
         } else {
-            createMutation.mutate(formDataPayload as unknown as InsertDigitalAsset); // Cast to satisfy useMutation types, real call handles FormData
+            createMutation.mutate(payload as InsertDigitalAsset);
         }
     };
 
@@ -234,7 +247,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
 
                                         {hasFiles && (
                                             <div className="pl-[3.5rem] flex flex-wrap gap-2">
-                                                {asset.files.map((file: any, index: number) => (
+                                                {asset.files?.map((file: any, index: number) => (
                                                     <a
                                                         key={index}
                                                         href={file.url}

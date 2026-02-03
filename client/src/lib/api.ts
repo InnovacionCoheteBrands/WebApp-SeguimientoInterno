@@ -60,7 +60,14 @@ async function request(url: string, options: RequestInit = {}): Promise<Response
     credentials: options.credentials || "include",
   };
 
-  return fetch(url, fetchOptions);
+  const res = await fetch(url, fetchOptions);
+
+  // 🚨 Intercept 401 Unauthorized globally
+  if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: 401 } }));
+  }
+
+  return res;
 }
 
 export async function fetchCampaigns(): Promise<Campaign[]> {
@@ -989,6 +996,8 @@ import type {
   InsertProjectService,
 } from "@shared/schema";
 
+export type { ServiceCatalog, InsertServiceCatalog, UpdateServiceCatalog, ProjectService };
+
 export async function fetchServiceCatalog(): Promise<ServiceCatalog[]> {
   const res = await request("/api/services");
   if (!res.ok) throw new Error("Failed to fetch service catalog");
@@ -1196,4 +1205,31 @@ export async function deletePoe(id: number): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete POE");
+}
+
+// ===========================================
+// 👥 PROJECT TEAM (New Controller)
+// ===========================================
+
+export async function fetchProjectTeam(projectId: number): Promise<any[]> {
+  const res = await request(`/api/projects/${projectId}/team`);
+  if (!res.ok) throw new Error("Failed to fetch project team");
+  return res.json();
+}
+
+export async function addProjectTeamMember(projectId: number, data: any): Promise<any> {
+  const res = await request(`/api/projects/${projectId}/team`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to add team member");
+  return res.json();
+}
+
+export async function removeProjectTeamMember(assignmentId: number): Promise<void> {
+  const res = await request(`/api/project-team/${assignmentId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to remove team member");
 }

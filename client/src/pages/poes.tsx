@@ -108,7 +108,7 @@ export default function PoesPage() {
         const data = {
             title: formData.get("title") as string,
             description: formData.get("description") as string || null,
-            category: formData.get("category") as string,
+            category: formData.get("category") as typeof POE_CATEGORIES[number],
             fileUrl: formData.get("fileUrl") as string || null,
             version: "1.0",
         };

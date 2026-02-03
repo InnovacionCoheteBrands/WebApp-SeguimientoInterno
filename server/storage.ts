@@ -127,12 +127,15 @@ interface PostgresResult {
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
   updateUserSettings(userId: string, settings: any): Promise<User>;
   /** @deprecated Feature not implemented. Kept for backward compatibility. */
   updateUserWebhook(userId: string, webhookUrl: string): Promise<User>;
   regenerateApiKey(userId: string): Promise<string>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
+  deleteUser(id: string): Promise<boolean>;
 
   getCampaigns(): Promise<Campaign[]>;
   getCampaignById(id: number): Promise<Campaign | undefined>;
@@ -455,6 +458,10 @@ export class DBStorage implements IStorage {
     return user;
   }
 
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.username);
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     try {
       const [user] = await db.insert(users).values(insertUser).returning();
@@ -466,6 +473,29 @@ export class DBStorage implements IStorage {
         stack: error instanceof Error ? error.stack : undefined,
       });
       throw new Error("Error al guardar el usuario en la base de datos");
+    }
+  }
+
+  async updateUser(id: string, user: Partial<User>): Promise<User | undefined> {
+    try {
+      const [updated] = await db.update(users)
+        .set(user)
+        .where(eq(users.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error(`❌ [updateUser] Error al actualizar usuario:`, { id, error });
+      throw new Error("Error al actualizar usuario");
+    }
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error(`❌ [deleteUser] Error al eliminar usuario:`, { id, error });
+      throw new Error("Error al eliminar usuario");
     }
   }
 
@@ -765,7 +795,11 @@ export class DBStorage implements IStorage {
 
   async createTeam(person: InsertTeam): Promise<Team> {
     try {
-      const [newPerson] = await db.insert(team).values(person).returning();
+      // Filter out null values to fix type compatibility with Drizzle
+      const cleanPerson = Object.fromEntries(
+        Object.entries(person).filter(([_, v]) => v !== null)
+      );
+      const [newPerson] = await db.insert(team).values(cleanPerson as InsertTeam).returning();
       return newPerson;
     } catch (error) {
       console.error(`❌ [createTeam] Error al insertar miembro del equipo:`, {
@@ -779,9 +813,13 @@ export class DBStorage implements IStorage {
 
   async updateTeam(id: number, person: UpdateTeam): Promise<Team | undefined> {
     try {
+      // Filter out null values to fix type compatibility with Drizzle
+      const cleanPerson = Object.fromEntries(
+        Object.entries(person).filter(([_, v]) => v !== null)
+      );
       const [updated] = await db
         .update(team)
-        .set(person)
+        .set(cleanPerson)
         .where(eq(team.id, id))
         .returning();
       return updated;

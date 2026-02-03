@@ -62,6 +62,16 @@ const safeString = (maxLength: number = 500) =>
     .transform(sanitizeString);
 
 /**
+ * Safe legacy string schema - allows empty strings for auto-generated fields
+ * Use for fields like 'name' that are auto-generated from other fields
+ */
+const safeLegacyString = (maxLength: number = 500) =>
+  z.string()
+    .max(maxLength, `Máximo ${maxLength} caracteres`)
+    .transform(sanitizeString)
+    .default("");
+
+/**
  * Safe optional string schema with XSS protection
  */
 const safeOptionalString = (maxLength: number = 500) =>
@@ -118,6 +128,7 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  role: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -468,33 +479,54 @@ export type InsertClientDocument = z.infer<typeof insertClientDocumentSchema>;
 
 export const team = pgTable("team", {
   id: serial("id").primaryKey(),
+  // Legacy field (kept for backward compatibility)
   name: text("name").notNull(),
-  role: text("role").notNull(),
-  seniority: text("department").notNull(), // Mapped to existing 'department' column
-  area: text("area"), // New field linked to agency_role_catalog.area
+  // New employee-focused fields
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  email: text("email"),
+  phone: text("phone"),
+  payrollType: text("payroll_type").default("Fija"), // "Fija" or "Variable"
+  startDate: timestamp("start_date"),
+  employeeStatus: text("employee_status").default("Activo"), // "Activo" or "Inactivo"
+  notes: text("notes"),
+  // Legacy agency fields (kept for backward compatibility, made optional)
+  role: text("role").notNull().default(""),
+  seniority: text("department").notNull().default("Junior"), // Mapped to existing 'department' column
+  area: text("area"),
   status: text("status").notNull().default("Available"),
   avatarUrl: text("avatar_url"),
-  workHoursStart: text("work_hours_start").notNull(),
-  workHoursEnd: text("work_hours_end").notNull(),
+  workHoursStart: text("work_hours_start").default("09:00"),
+  workHoursEnd: text("work_hours_end").default("18:00"),
   internalCostHour: numeric("internal_cost_hour").default("0"),
   billableRate: numeric("billable_rate").default("0"),
   monthlySalary: numeric("monthly_salary").default("0"),
   weeklyCapacity: integer("weekly_capacity").default(40),
-  roleCatalogId: integer("role_catalog_id"), // FK to agency_role_catalog (added below, circular dependency handled by drizzle usually or just integer)
-  skills: text("skills"), // JSON string or comma-separated
+  roleCatalogId: integer("role_catalog_id"),
+  skills: text("skills"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertTeamSchema = createInsertSchema(team, {
-  // 🛡️ Secure string fields with XSS protection
-  name: safeString(200),
-  role: safeString(100),
-  seniority: safeString(100),
+  // New employee-focused fields (required for new flow)
+  firstName: safeString(100),
+  lastName: safeString(100),
+  email: z.string().email("Email inválido").max(200),
+  phone: safeString(50),
+  payrollType: z.enum(["Fija", "Variable"]).default("Fija"),
+  startDate: z.coerce.date().optional(),
+  employeeStatus: z.enum(["Activo", "Inactivo"]).default("Activo"),
+  notes: safeOptionalString(1000),
+
+  // Legacy field (will be auto-generated from firstName + lastName if not provided)
+  name: safeLegacyString(200),
+  role: safeLegacyString(100),
+  seniority: safeString(100).default("Junior"),
   area: safeString(100).optional(),
-  status: safeString(50),
+  status: safeString(50).default("Available"),
   avatarUrl: safeOptionalString(500),
-  workHoursStart: safeString(10),
-  workHoursEnd: safeString(10),
+  workHoursStart: safeString(10).default("09:00"),
+  workHoursEnd: safeString(10).default("18:00"),
   skills: safeOptionalString(500),
 
   // 🔢 Positive number coercion for financial fields
@@ -504,7 +536,11 @@ export const insertTeamSchema = createInsertSchema(team, {
 
   // Integer coercion
   weeklyCapacity: z.coerce.number().int().min(0).max(168).default(40),
-  roleCatalogId: z.coerce.number().int().positive().optional().nullable(),
+  // Integer coercion - handle null correctly BEFORE coercion
+  roleCatalogId: z.preprocess(
+    (val) => (val === null || val === "" ? undefined : Number(val)),
+    z.number().int().positive().optional()
+  ),
 }).omit({
   id: true,
   createdAt: true,
@@ -1018,7 +1054,7 @@ export const projects = pgTable("projects", {
   clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   serviceType: text("service_type").notNull(), // "SEO", "Web", "Ads", "General"
-  status: text("status").notNull().default("Planificación"), // "Planificación", "En Curso", "En Revisión", "Bloqueado", "Completado"
+  status: text("status").notNull().default("Planificación"), // "Planificación", "En Desarrollo", "Pausa", "Terminado", "Cancelado"
   health: text("health").notNull().default("green"), // "green", "yellow", "red"
   deadline: timestamp("deadline"),
   progress: integer("progress").notNull().default(0), // Calculated from deliverables
@@ -1030,7 +1066,7 @@ export const projects = pgTable("projects", {
   // ===========================================
   // 🎯 PROJECT LEVEL/CATEGORY (Nuevo Formulario)
   // ===========================================
-  level: text("level").notNull().default("Plata"),  // "Plata", "Oro", "Platino", "Diamante"
+  level: text("level").notNull().default("Plata"),  // "Bronce", "Plata", "Oro", "Diamante"
 
   // ===========================================
   // 💵 FINANCIAL FIELDS (Cotización & Mantenimiento)
@@ -1081,7 +1117,7 @@ export const insertProjectSchema = createInsertSchema(projects, {
   customFields: safeOptionalString(5000),
 
   // 🎯 NEW: Level/Category validation
-  level: z.enum(["Plata", "Oro", "Platino", "Diamante"]).default("Plata"),
+  level: z.enum(["Bronce", "Plata", "Oro", "Diamante"]).default("Plata"),
 
   // 💵 NEW: Financial fields validation
   quotationAmount: optionalPositiveNumericString(),

@@ -28,12 +28,16 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogDescription,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
     Select,
@@ -46,6 +50,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Settings, GripVertical, Info } from "lucide-react";
+import { LEAD_ORIGINS, LEAD_STATUSES } from "@shared/schema";
 import {
     fetchLeads,
     fetchLeadsMetrics,
@@ -55,16 +62,26 @@ import {
     convertLeadToClient,
     type Lead,
 } from "@/lib/api";
-import { LEAD_ORIGINS, LEAD_STATUSES } from "@shared/schema";
-
-// Kanban column configuration based on ORIGIN (Cohete style)
-const KANBAN_COLUMNS = LEAD_ORIGINS;
+import { LeadForm } from "@/components/forms/lead-form";
+// Kanban grouping modes
+type GroupMode = "origin" | "status";
 
 export default function LeadsControl() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
+
+    // Kanban Settings (could be persisted in DB, using local state + persistence for now)
+    const [groupMode, setGroupMode] = useState<GroupMode>(() => {
+        return (localStorage.getItem("kanban_group_mode") as GroupMode) || "origin";
+    });
+
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+        const saved = localStorage.getItem("kanban_active_columns");
+        return saved ? JSON.parse(saved) : (groupMode === "origin" ? [...LEAD_ORIGINS] : [...LEAD_STATUSES]);
+    });
 
     // Fetch all leads
     const { data: leads = [], isLoading } = useQuery({
@@ -78,14 +95,30 @@ export default function LeadsControl() {
         queryFn: fetchLeadsMetrics,
     });
 
-    // Group leads by origin for Kanban
-    const leadsByOrigin = useMemo(() => {
+    // Column definitions based on mode
+    const kanbanColumns = useMemo(() => {
+        const fullList = groupMode === "origin" ? LEAD_ORIGINS : LEAD_STATUSES;
+        // Filter based on user preferences but maintain schema order
+        return fullList.filter(col => visibleColumns.includes(col));
+    }, [groupMode, visibleColumns]);
+
+    // Group leads by chosen mode
+    const groupedLeads = useMemo(() => {
         const grouped: Record<string, Lead[]> = {};
-        KANBAN_COLUMNS.forEach((origin) => {
-            grouped[origin] = leads.filter((lead) => lead.origin === origin);
+        kanbanColumns.forEach((col) => {
+            grouped[col] = leads.filter((lead) =>
+                groupMode === "origin" ? lead.origin === col : lead.status === col
+            );
         });
         return grouped;
-    }, [leads]);
+    }, [leads, kanbanColumns, groupMode]);
+
+    const handleSaveSettings = () => {
+        localStorage.setItem("kanban_group_mode", groupMode);
+        localStorage.setItem("kanban_active_columns", JSON.stringify(visibleColumns));
+        setIsSettingsOpen(false);
+        toast({ title: "Configuración guardada", description: "El tablero Kanban ha sido actualizado." });
+    };
 
     // Create mutation
     const createMutation = useMutation({
@@ -135,22 +168,6 @@ export default function LeadsControl() {
             toast({ title: "Error", description: "No se pudo convertir el lead", variant: "destructive" });
         },
     });
-
-    const handleCreateLead = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const data = {
-            name: formData.get("name") as string,
-            email: formData.get("email") as string || null,
-            phone: formData.get("phone") as string || null,
-            company: formData.get("company") as string || null,
-            origin: formData.get("origin") as string,
-            status: "Nuevo" as const,
-            estimatedValue: formData.get("estimatedValue") as string || null,
-            notes: formData.get("notes") as string || null,
-        };
-        createMutation.mutate(data);
-    };
 
     const handleStatusChange = (leadId: number, newStatus: string) => {
         updateMutation.mutate({ id: leadId, data: { status: newStatus } });
@@ -202,68 +219,109 @@ export default function LeadsControl() {
                     <p className="text-muted-foreground">Gestión de prospectos por origen</p>
                 </div>
 
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Nuevo Lead
-                        </Button>
-                    </DialogTrigger>
+                <div className="flex gap-2">
+                    <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="border-border rounded-sm">
+                                <Settings className="w-4 h-4 mr-2" />
+                                Configurar Kanban
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md rounded-sm">
+                            <DialogHeader>
+                                <DialogTitle>Configuración de Pipeline</DialogTitle>
+                                <DialogDescription>
+                                    Define cómo quieres visualizar y organizar tus prospectos.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-6 py-4">
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-mono uppercase tracking-wider text-muted-foreground">Agrupar por</Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button
+                                            variant={groupMode === 'origin' ? 'default' : 'outline'}
+                                            className="rounded-sm"
+                                            onClick={() => {
+                                                setGroupMode('origin');
+                                                setVisibleColumns([...LEAD_ORIGINS]);
+                                            }}
+                                        >
+                                            Origen (Canal)
+                                        </Button>
+                                        <Button
+                                            variant={groupMode === 'status' ? 'default' : 'outline'}
+                                            className="rounded-sm"
+                                            onClick={() => {
+                                                setGroupMode('status');
+                                                setVisibleColumns([...LEAD_STATUSES]);
+                                            }}
+                                        >
+                                            Estado (Funnel)
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-mono uppercase tracking-wider text-muted-foreground">Columnas Visibles</Label>
+                                    <p className="text-[10px] text-muted-foreground mb-2">Selecciona los estados que quieres ver en el tablero.</p>
+                                    <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto p-1 border border-border rounded-sm bg-muted/20">
+                                        {(groupMode === 'origin' ? LEAD_ORIGINS : LEAD_STATUSES).map((col) => (
+                                            <div key={col} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-sm transition-colors">
+                                                <Checkbox
+                                                    id={`col-${col}`}
+                                                    checked={visibleColumns.includes(col)}
+                                                    onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                            setVisibleColumns([...visibleColumns, col]);
+                                                        } else {
+                                                            if (visibleColumns.length > 1) {
+                                                                setVisibleColumns(visibleColumns.filter(c => c !== col));
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <Label htmlFor={`col-${col}`} className="text-sm cursor-pointer flex-1">{col}</Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleSaveSettings}>Guardar Cambios</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="rounded-sm">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Nuevo Lead
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md rounded-sm">
+                            <DialogHeader>
+                                <DialogTitle>Crear Nuevo Lead</DialogTitle>
+                            </DialogHeader>
+                            <LeadForm open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+                        </DialogContent>
+                    </Dialog>
+                </div>
+
+                {/* Edit Dialog */}
+                <Dialog open={!!editingLead} onOpenChange={(open) => !open && setEditingLead(null)}>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Crear Nuevo Lead</DialogTitle>
+                            <DialogTitle>Editar Lead</DialogTitle>
                         </DialogHeader>
-                        <form onSubmit={handleCreateLead} className="space-y-4">
-                            <div>
-                                <Label htmlFor="name">Nombre *</Label>
-                                <Input id="name" name="name" required placeholder="Juan Pérez" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input id="email" name="email" type="email" placeholder="email@ejemplo.com" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="phone">Teléfono</Label>
-                                    <Input id="phone" name="phone" placeholder="+52 33 1234 5678" />
-                                </div>
-                            </div>
-                            <div>
-                                <Label htmlFor="company">Empresa</Label>
-                                <Input id="company" name="company" placeholder="Nombre de la empresa" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="origin">Origen *</Label>
-                                    <Select name="origin" defaultValue="Otro">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {LEAD_ORIGINS.map((origin) => (
-                                                <SelectItem key={origin} value={origin}>{origin}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label htmlFor="estimatedValue">Valor Estimado</Label>
-                                    <Input id="estimatedValue" name="estimatedValue" type="number" placeholder="$50,000" />
-                                </div>
-                            </div>
-                            <div>
-                                <Label htmlFor="notes">Notas</Label>
-                                <Textarea id="notes" name="notes" placeholder="Notas adicionales..." />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                                    Cancelar
-                                </Button>
-                                <Button type="submit" disabled={createMutation.isPending}>
-                                    {createMutation.isPending ? "Creando..." : "Crear Lead"}
-                                </Button>
-                            </div>
-                        </form>
+                        {editingLead && (
+                            <LeadForm
+                                open={!!editingLead}
+                                onOpenChange={(open) => !open && setEditingLead(null)}
+                                initialData={editingLead}
+                            />
+                        )}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -325,26 +383,34 @@ export default function LeadsControl() {
             </div>
 
             {/* Kanban Board */}
-            <div className="overflow-x-auto pb-4">
+            <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
                 <div className="flex gap-4 min-w-max">
-                    {KANBAN_COLUMNS.map((origin) => (
+                    {kanbanColumns.map((col) => (
                         <div
-                            key={origin}
-                            className={`w-72 flex-shrink-0 rounded-lg border-2 ${getOriginColor(origin)}`}
+                            key={col}
+                            className={`w-72 flex-shrink-0 rounded-lg border-2 ${groupMode === 'origin' ? getOriginColor(col) : 'border-border bg-card/40'}`}
                         >
                             {/* Column Header */}
-                            <div className="p-3 border-b border-white/10">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-sm">{origin}</h3>
-                                    <Badge variant="secondary" className="text-xs">
-                                        {leadsByOrigin[origin]?.length || 0}
-                                    </Badge>
+                            <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <h3 className="font-bold text-xs uppercase tracking-widest text-foreground/80">{col}</h3>
+                                    <div className="flex items-center gap-1.5">
+                                        <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-sm bg-background/50 text-muted-foreground border-border">
+                                            {groupedLeads[col]?.length || 0}
+                                        </Badge>
+                                        <span className="text-[10px] text-muted-foreground font-mono">
+                                            ${(groupedLeads[col]?.reduce((acc, lead) => acc + parseFloat(lead.estimatedValue || "0"), 0) / 1000).toFixed(1)}k
+                                        </span>
+                                    </div>
                                 </div>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground opacity-50 hover:opacity-100">
+                                    <Plus className="size-3" />
+                                </Button>
                             </div>
 
                             {/* Column Body */}
-                            <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
-                                {leadsByOrigin[origin]?.map((lead) => (
+                            <div className="p-2 space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-none">
+                                {groupedLeads[col]?.map((lead) => (
                                     <Card key={lead.id} className="bg-card/80 backdrop-blur-sm hover:bg-card transition-colors">
                                         <CardContent className="p-3 space-y-2">
                                             {/* Lead Name & Actions */}
@@ -431,9 +497,13 @@ export default function LeadsControl() {
                                 ))}
 
                                 {/* Empty State */}
-                                {(!leadsByOrigin[origin] || leadsByOrigin[origin].length === 0) && (
-                                    <div className="text-center py-8 text-muted-foreground text-sm">
-                                        Sin leads
+                                {(!groupedLeads[col] || groupedLeads[col].length === 0) && (
+                                    <div className="text-center py-12 px-4 rounded-md border border-dashed border-border bg-background/20 group">
+                                        <div className="mb-2 p-2 rounded-full bg-muted/30 w-fit mx-auto opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <Info className="size-4 text-muted-foreground" />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground font-medium">Bandeja Vacía</p>
+                                        <p className="text-[10px] text-muted-foreground/60">No hay prospectos en esta etapa.</p>
                                     </div>
                                 )}
                             </div>

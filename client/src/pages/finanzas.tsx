@@ -381,51 +381,111 @@ export default function Finanzas() {
 
                     {/* RESUMEN TAB */}
                     <TabsContent value="resumen" className="space-y-6">
-                        <Card className="bg-card border-border">
-                            <CardHeader>
-                                <CardTitle className="text-lg font-mono uppercase tracking-wider text-foreground">Flujo Anual</CardTitle>
-                                <CardDescription>Comparativa de Ingresos vs Gastos</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-[400px] w-full mt-4">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={chartData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
-                                            <XAxis
-                                                dataKey="month"
-                                                stroke="hsl(var(--muted-foreground))"
-                                                fontSize={12}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                                dy={10}
-                                            />
-                                            <YAxis
-                                                stroke="hsl(var(--muted-foreground))"
-                                                fontSize={12}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                                                tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                            />
-                                            <Tooltip
-                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                contentStyle={{
-                                                    backgroundColor: 'hsl(var(--card))',
-                                                    borderColor: 'hsl(var(--border))',
-                                                    borderRadius: '4px',
-                                                    color: 'hsl(var(--foreground))'
-                                                }}
-                                                formatter={(value: number) => [formatCurrency(value), ""]}
-                                            />
-                                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                                            <Bar dataKey="Ingresos" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} isAnimationActive={settings?.chartAnimations ?? true} />
-                                            <Bar dataKey="Gastos" name="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} isAnimationActive={settings?.chartAnimations ?? true} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-lg font-mono uppercase tracking-wider text-foreground">Flujo Anual</CardTitle>
+                                    <CardDescription>Comparativa de Ingresos vs Gastos</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-[350px] w-full mt-4">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={chartData}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                                                <XAxis
+                                                    dataKey="month"
+                                                    stroke="hsl(var(--muted-foreground))"
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                                                    dy={10}
+                                                />
+                                                <YAxis
+                                                    stroke="hsl(var(--muted-foreground))"
+                                                    fontSize={12}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                                                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                                                />
+                                                <Tooltip
+                                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                                    contentStyle={{
+                                                        backgroundColor: 'hsl(var(--card))',
+                                                        borderColor: 'hsl(var(--border))',
+                                                        borderRadius: '4px',
+                                                        color: 'hsl(var(--foreground))'
+                                                    }}
+                                                    formatter={(value: number) => [formatCurrency(value), ""]}
+                                                />
+                                                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                                <Bar dataKey="Ingresos" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} isAnimationActive={settings?.chartAnimations ?? true} />
+                                                <Bar dataKey="Gastos" name="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={40} isAnimationActive={settings?.chartAnimations ?? true} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <div className="space-y-6">
+                                <Card className="bg-card border-border">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm font-mono uppercase tracking-wider">Ingresos por Categoría</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {Object.entries(summary?.incomeByCategory || {}).length === 0 ? (
+                                            <p className="text-xs text-muted-foreground italic">No hay datos suficientes.</p>
+                                        ) : (
+                                            Object.entries(summary?.incomeByCategory || {})
+                                                .sort(([, a], [, b]) => b - a)
+                                                .map(([cat, val]) => (
+                                                    <div key={cat} className="space-y-1">
+                                                        <div className="flex justify-between text-xs font-mono uppercase">
+                                                            <span>{cat}</span>
+                                                            <span className="text-emerald-400 font-bold">{formatCurrency(val)}</span>
+                                                        </div>
+                                                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-emerald-500 rounded-full"
+                                                                style={{ width: `${(val / (summary?.totalIncome || 1)) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="bg-card border-border">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm font-mono uppercase tracking-wider">Gastos por Categoría</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {Object.entries(summary?.expensesByCategory || {}).length === 0 ? (
+                                            <p className="text-xs text-muted-foreground italic">No hay datos suficientes.</p>
+                                        ) : (
+                                            Object.entries(summary?.expensesByCategory || {})
+                                                .sort(([, a], [, b]) => b - a)
+                                                .map(([cat, val]) => (
+                                                    <div key={cat} className="space-y-1">
+                                                        <div className="flex justify-between text-xs font-mono uppercase">
+                                                            <span>{cat}</span>
+                                                            <span className="text-rose-400 font-bold">{formatCurrency(val)}</span>
+                                                        </div>
+                                                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-rose-500 rounded-full"
+                                                                style={{ width: `${(val / (summary?.totalExpenses || 1)) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </TabsContent>
                 </div>
             </Tabs>

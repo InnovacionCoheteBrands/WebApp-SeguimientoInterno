@@ -7,7 +7,7 @@ import { ContactsTab } from "@/components/clients/contacts-tab";
 import { BillingProfilesTab } from "@/components/clients/billing-profiles-tab";
 import { DigitalAssetsTab } from "@/components/clients/digital-assets-tab";
 import { DocumentsTab } from "@/components/clients/documents-tab";
-import type { ClientAccount } from "@shared/schema";
+import type { ClientAccount } from "@/lib/api";
 
 interface ClientDrawerProps {
     client: ClientAccount | null;
