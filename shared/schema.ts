@@ -512,7 +512,7 @@ export const insertTeamSchema = createInsertSchema(team, {
   firstName: safeString(100),
   lastName: safeString(100),
   email: z.string().email("Email inválido").max(200),
-  phone: safeString(50),
+  phone: safeOptionalString(50),
   payrollType: z.enum(["Fija", "Variable"]).default("Fija"),
   startDate: z.coerce.date().optional(),
   employeeStatus: z.enum(["Activo", "Inactivo"]).default("Activo"),
@@ -521,12 +521,12 @@ export const insertTeamSchema = createInsertSchema(team, {
   // Legacy field (will be auto-generated from firstName + lastName if not provided)
   name: safeLegacyString(200),
   role: safeLegacyString(100),
-  seniority: safeString(100).default("Junior"),
+  seniority: safeOptionalString(100).or(z.literal("")).transform(v => v || "Junior"),
   area: safeString(100).optional(),
   status: safeString(50).default("Available"),
-  avatarUrl: safeOptionalString(500),
-  workHoursStart: safeString(10).default("09:00"),
-  workHoursEnd: safeString(10).default("18:00"),
+  avatarUrl: safeOptionalString(100000), // Base64 images can be large
+  workHoursStart: safeOptionalString(10).or(z.literal("")).transform(v => v || "09:00"),
+  workHoursEnd: safeOptionalString(10).or(z.literal("")).transform(v => v || "18:00"),
   skills: safeOptionalString(500),
 
   // 🔢 Positive number coercion for financial fields

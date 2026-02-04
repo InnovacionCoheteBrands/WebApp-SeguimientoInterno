@@ -168,12 +168,31 @@ export default function Personnel() {
 
   const handleSubmitAssignment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assigningToMember || !assignmentForm.projectId) return;
+    console.log("Submitting Assignment:", { assigningToMember, assignmentForm });
+
+    if (!assigningToMember || !assignmentForm.projectId) {
+      toast({
+        title: "Error de validación",
+        description: "Por favor selecciona un proyecto válido.",
+        variant: "destructive"
+      });
+      console.warn("Validation failed: Mising team member or project ID.");
+      return;
+    }
 
     createAssignmentMutation.mutate({
       teamId: assigningToMember,
       projectId: assignmentForm.projectId,
       hoursAllocated: assignmentForm.hoursAllocated
+    }, {
+      onError: (error) => {
+        console.error("Mutation failed:", error);
+        toast({
+          title: "Error al asignar",
+          description: "Hubo un problema al guardar la asignación. Revisa la consola.",
+          variant: "destructive"
+        });
+      }
     });
   };
 

@@ -871,11 +871,14 @@ export class DBStorage implements IStorage {
       const [newAssignment] = await db.insert(teamAssignments).values(assignment).returning();
       return newAssignment;
     } catch (error) {
-      console.error(`❌ [createTeamAssignment] Error al insertar asignación:`, {
-        input: assignment,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      const errorMsg = `❌ [createTeamAssignment] Error: ${error instanceof Error ? error.message : String(error)}\nStack: ${error instanceof Error ? error.stack : 'N/A'}\nInput: ${JSON.stringify(assignment)}\n\n`;
+      console.error(errorMsg);
+      try {
+        const fs = await import('fs');
+        fs.appendFileSync('debug_error.log', errorMsg);
+      } catch (err) {
+        console.error("Failed to write to log file", err);
+      }
       throw new Error("Error al guardar la asignación del equipo");
     }
   }

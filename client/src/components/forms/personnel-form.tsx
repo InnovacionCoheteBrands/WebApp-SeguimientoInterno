@@ -27,6 +27,7 @@ import { insertTeamSchema, type Team, type AgencyRole } from "@shared/schema";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload } from "lucide-react";
+import { ImageCropperDialog } from "@/components/ui/image-cropper";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -48,6 +49,8 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [cropperOpen, setCropperOpen] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
     const { data: roles = [] } = useQuery({
         queryKey: ["agency-roles"],
@@ -205,11 +208,17 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setAvatarPreview(reader.result as string);
-                form.setValue("avatarUrl", reader.result as string);
+                // Open cropper dialog with the image
+                setImageToCrop(reader.result as string);
+                setCropperOpen(true);
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleCropComplete = (croppedImageBase64: string) => {
+        setAvatarPreview(croppedImageBase64);
+        form.setValue("avatarUrl", croppedImageBase64);
     };
 
     const getInitials = () => {
@@ -221,287 +230,308 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
     const payrollType = form.watch("payrollType");
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
-                {/* Avatar Upload Section */}
-                <div className="flex flex-col items-center gap-3">
-                    <div className="relative group">
-                        <Avatar className="h-24 w-24 border-2 border-border">
-                            {avatarPreview ? (
-                                <AvatarImage src={avatarPreview} />
-                            ) : (
-                                <AvatarFallback className="bg-muted text-muted-foreground text-2xl font-semibold">
-                                    {getInitials()}
-                                </AvatarFallback>
-                            )}
-                        </Avatar>
-                        <label
-                            htmlFor="avatar-upload"
-                            className="absolute bottom-0 right-0 h-8 w-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors"
-                        >
-                            <Upload className="h-4 w-4 text-primary-foreground" />
-                            <input
-                                id="avatar-upload"
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleAvatarUpload}
-                            />
-                        </label>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                        Haz clic en el ícono para subir una foto de perfil
-                    </p>
-                </div>
-
-                {/* Two-column Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Nombre *</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Juan" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="lastName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Apellido *</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Pérez" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email *</FormLabel>
-                                <FormControl>
-                                    <Input type="email" placeholder="juan.perez@empresa.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Teléfono *</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="+52 33 1234 5678" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="monthlySalary"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Sueldo Mensual *</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <Input type="number" placeholder="0" {...field} className="pr-12" />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                            MXN
-                                        </span>
-                                    </div>
-                                </FormControl>
-                                <FormDescription className="text-xs">
-                                    {payrollType === "Fija" ? "Cantidad fija mensual" : "Monto estimado/referencia"}
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="payrollType"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Tipo de Nómina *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || "Fija"}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Fija">💰 Nómina Fija (Mensual fijo)</SelectItem>
-                                        <SelectItem value="Variable">📊 Nómina Variable (Por pago)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormDescription className="text-xs">
-                                    {field.value === "Fija"
-                                        ? "Se paga el mismo monto cada mes"
-                                        : "Se pagan cantidades variables según el trabajo"}
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="startDate"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                                <FormLabel>Fecha de Ingreso *</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "pl-3 text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                            >
-                                                {field.value ? (
-                                                    format(field.value, "dd/MM/yyyy", { locale: es })
-                                                ) : (
-                                                    <span>dd/mm/aaaa</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value || undefined}
-                                            onSelect={field.onChange}
-                                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="employeeStatus"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Estado</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || "Activo"}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Activo">Activo</SelectItem>
-                                        <SelectItem value="Inactivo">Inactivo</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                {/* Rol */}
-                <FormField
-                    control={form.control}
-                    name="roleCatalogId"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Rol</FormLabel>
-                            {roles.length === 0 ? (
-                                <div className="text-center py-6 px-4 border border-dashed border-border rounded-md">
-                                    <p className="text-sm text-muted-foreground mb-1">
-                                        No hay roles disponibles. Crea roles en el catálogo.
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Los roles definen las responsabilidades del empleado
-                                    </p>
-                                </div>
-                            ) : (
-                                <Select
-                                    onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
-                                    value={field.value?.toString() || "none"}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecciona un rol..." />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="none">Sin rol asignado</SelectItem>
-                                        {roles.map((role) => (
-                                            <SelectItem key={role.id} value={role.id.toString()}>
-                                                {role.roleName} - {role.department}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            <FormDescription className="text-xs">
-                                El rol define las actividades y responsabilidades del talento
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+        <>
+            {/* Image Cropper Dialog */}
+            {imageToCrop && (
+                <ImageCropperDialog
+                    open={cropperOpen}
+                    onOpenChange={setCropperOpen}
+                    imageSrc={imageToCrop}
+                    onCropComplete={handleCropComplete}
+                    aspectRatio={1}
                 />
-
-                {/* Notas Adicionales */}
-                <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Notas Adicionales</FormLabel>
-                            <FormControl>
-                                <Textarea
-                                    placeholder="Información adicional sobre el empleado..."
-                                    className="min-h-[100px] resize-none"
-                                    {...field}
-                                    value={field.value || ""}
+            )}
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
+                    {/* Avatar Upload Section */}
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="relative group">
+                            <Avatar className="h-24 w-24 border-2 border-border">
+                                {avatarPreview ? (
+                                    <AvatarImage src={avatarPreview} />
+                                ) : (
+                                    <AvatarFallback className="bg-muted text-muted-foreground text-2xl font-semibold">
+                                        {getInitials()}
+                                    </AvatarFallback>
+                                )}
+                            </Avatar>
+                            <label
+                                htmlFor="avatar-upload"
+                                className="absolute bottom-0 right-0 h-8 w-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors"
+                            >
+                                <Upload className="h-4 w-4 text-primary-foreground" />
+                                <input
+                                    id="avatar-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleAvatarUpload}
                                 />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            </label>
+                        </div>
+                        <p className="text-xs text-muted-foreground text-center">
+                            Haz clic en el ícono para subir una foto de perfil
+                        </p>
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancelar
-                    </Button>
-                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                        {createMutation.isPending || updateMutation.isPending
-                            ? "Guardando..."
-                            : initialData
-                                ? "Guardar Cambios"
-                                : "Crear"}
-                    </Button>
-                </div>
-            </form>
-        </Form>
+                    {/* Two-column Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="firstName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre *</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Juan" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="lastName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Apellido *</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Pérez" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email *</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="juan.perez@empresa.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Teléfono</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="+52 33 1234 5678" {...field} value={field.value || ""} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="monthlySalary"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Sueldo Mensual *</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <Input type="number" placeholder="0" {...field} className="pr-12" />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                                MXN
+                                            </span>
+                                        </div>
+                                    </FormControl>
+                                    <FormDescription className="text-xs">
+                                        {payrollType === "Fija" ? "Cantidad fija mensual" : "Monto estimado/referencia"}
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="payrollType"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Tipo de Nómina *</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || "Fija"}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Fija">💰 Nómina Fija (Mensual fijo)</SelectItem>
+                                            <SelectItem value="Variable">📊 Nómina Variable (Por pago)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription className="text-xs">
+                                        {field.value === "Fija"
+                                            ? "Se paga el mismo monto cada mes"
+                                            : "Se pagan cantidades variables según el trabajo"}
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="startDate"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Fecha de Ingreso *</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className={cn(
+                                                        "pl-3 text-left font-normal",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {field.value ? (
+                                                        format(field.value, "dd/MM/yyyy", { locale: es })
+                                                    ) : (
+                                                        <span>dd/mm/aaaa</span>
+                                                    )}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={field.value || undefined}
+                                                onSelect={field.onChange}
+                                                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="employeeStatus"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Estado</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || "Activo"}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Activo">Activo</SelectItem>
+                                            <SelectItem value="Inactivo">Inactivo</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+
+                    {/* Rol */}
+                    <FormField
+                        control={form.control}
+                        name="roleCatalogId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Rol</FormLabel>
+                                {roles.length === 0 ? (
+                                    <div className="text-center py-6 px-4 border border-dashed border-border rounded-md">
+                                        <p className="text-sm text-muted-foreground mb-1">
+                                            No hay roles disponibles. Crea roles en el catálogo.
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Los roles definen las responsabilidades del empleado
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Select
+                                        onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                                        value={field.value?.toString() || "none"}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecciona un rol..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="none">Sin rol asignado</SelectItem>
+                                            {roles.map((role) => (
+                                                <SelectItem key={role.id} value={role.id.toString()}>
+                                                    {role.roleName} - {role.department}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                <FormDescription className="text-xs">
+                                    El rol define las actividades y responsabilidades del talento
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* Notas Adicionales */}
+                    <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Notas Adicionales</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                        placeholder="Información adicional sobre el empleado..."
+                                        className="min-h-[100px] resize-none"
+                                        {...field}
+                                        value={field.value || ""}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={createMutation.isPending || updateMutation.isPending}
+                            onClick={() => {
+                                console.log("🔘 Submit button clicked");
+                                console.log("📋 Form state:", form.formState);
+                                console.log("❓ Is form valid:", form.formState.isValid);
+                                console.log("🔴 Form errors:", form.formState.errors);
+                            }}
+                        >
+                            {createMutation.isPending || updateMutation.isPending
+                                ? "Guardando..."
+                                : initialData
+                                    ? "Guardar Cambios"
+                                    : "Crear"}
+                        </Button>
+                    </div>
+                </form>
+            </Form>
+        </>
     );
 }

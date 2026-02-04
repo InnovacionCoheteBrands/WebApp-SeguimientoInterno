@@ -90,6 +90,12 @@ router.post("/team/assignments", async (req, res) => {
         res.status(201).json(assignment);
     } catch (error) {
         if (error instanceof z.ZodError) {
+            const errorMsg = `❌ [POST /team/assignments] Validation Error: ${JSON.stringify(error.errors)}\nBody: ${JSON.stringify(req.body)}\n\n`;
+            console.error(errorMsg);
+            try {
+                const fs = await import('fs');
+                fs.appendFileSync('debug_error.log', errorMsg);
+            } catch (e) { /* ignore */ }
             return res.status(400).json({ error: error.errors });
         }
         res.status(500).json({ error: "Failed to create assignment" });
