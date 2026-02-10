@@ -118,7 +118,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
 
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-            <DialogContent className="sm:max-w-5xl border-border bg-card text-foreground rounded-sm h-[80vh] flex flex-col p-0 gap-0">
+            <DialogContent className="sm:max-w-5xl border-border bg-card text-foreground h-[80vh] flex flex-col p-0 gap-0">
                 <DialogHeader className="p-6 border-b border-border">
                     <DialogTitle>Master Service Catalog</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
@@ -136,7 +136,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
                             roles.map(role => (
                                 <div
                                     key={role.id}
-                                    className={`p-3 rounded-sm border cursor-pointer hover:bg-muted transition-colors ${editingRole?.id === role.id ? 'bg-muted border-primary/50' : 'bg-background border-border'}`}
+                                    className={`p-3 border cursor-pointer hover:bg-muted transition-colors ${editingRole?.id === role.id ? 'bg-muted border-primary/50' : 'bg-background border-border'}`}
                                     onClick={() => handleEdit(role)}
                                 >
                                     <div className="flex justify-between items-start mb-1">
@@ -211,7 +211,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
                                     />
                                     <Button type="button" onClick={handleAddActivity} variant="secondary" className="border border-border bg-muted"><Plus className="size-4" /></Button>
                                 </div>
-                                <div className="flex flex-wrap gap-2 p-3 bg-background/50 rounded-sm border border-border min-h-[60px]">
+                                <div className="flex flex-wrap gap-2 p-3 bg-background/50 border border-border min-h-[60px]">
                                     {currentActivities.length === 0 && <span className="text-xs text-muted-foreground italic">No activities defined</span>}
                                     {currentActivities.map(activity => (
                                         <Badge key={activity} className="bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer pr-1" onClick={() => removeActivity(activity)}>

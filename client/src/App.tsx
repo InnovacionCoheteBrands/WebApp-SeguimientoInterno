@@ -27,6 +27,7 @@ const Finanzas = lazy(() => import("@/pages/finanzas"));
 const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
 const AuthPage = lazy(() => import("@/pages/auth"));
+const AuthCallbackPage = lazy(() => import("@/pages/auth-callback"));
 const AgentChat = lazy(() => import("@/components/agent-chat").then(m => ({ default: m.AgentChat })));
 // Cohete Replica Pages
 const LeadsControl = lazy(() => import("@/pages/leads-control"));
@@ -37,11 +38,11 @@ const Usuarios = lazy(() => import("@/pages/usuarios"));
 
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="text-center space-y-4">
-        <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
-          Cargando...
+    <div className="flex items-center justify-center min-h-screen bg-background bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900/20 via-background to-background">
+      <div className="text-center space-y-4 relative z-10">
+        <div className="size-12 border-4 border-primary/50 border-t-primary rounded-full animate-spin mx-auto shadow-[0_0_30px_-5px_hsl(var(--primary)/0.5)]" />
+        <p className="text-sm text-muted-foreground font-display font-bold tracking-widest animate-pulse">
+          Accediendo a Mission Control...
         </p>
       </div>
     </div>
@@ -77,6 +78,7 @@ function Router() {
       <Switch>
         {/* Public Route */}
         <Route path="/auth" component={AuthPage} />
+        <Route path="/auth/callback" component={AuthCallbackPage} />
 
         {/* Protected Routes - use /* to match all including root */}
         <Route>
@@ -91,15 +93,16 @@ function Router() {
               <Route path="/recursos" component={Resources} />
               <Route path="/equipo" component={Team} />
               <Route path="/kpis" component={KPIs} />
-              <Route path="/ads" component={AdsCommandCenter} />
-              <Route path="/ads/command-center" component={AdsCommandCenter} />
+              <Route path="/ads" component={() => <Redirect to="/crm" />} />
+              <Route path="/ads/command-center" component={() => <Redirect to="/crm" />} />
               <Route path="/ads/settings" component={AdsSettings} />
               <Route path="/digital-assets" component={DigitalAssets} />
               <Route path="/finanzas" component={Finanzas} />
               <Route path="/profile" component={Profile} />
               <Route path="/settings" component={Settings} />
               {/* Cohete Replica Routes */}
-              <Route path="/leads" component={LeadsControl} />
+              <Route path="/crm" component={LeadsControl} />
+              <Route path="/leads" component={() => <Redirect to="/crm" />} />
               <Route path="/poes" component={Poes} />
               <Route path="/calendario-pagos" component={PaymentCalendar} />
               <Route path="/control-proyectos" component={ControlProyectos} />

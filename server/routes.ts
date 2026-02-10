@@ -1,6 +1,8 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { type Server } from "http";
 import { createServer } from "http";
+import path from "path";
+import fs from "fs";
 import { setupWebSocket } from "./websocket";
 import authRouter from "./controllers/auth";
 import campaignsRouter from "./controllers/campaigns";
@@ -27,8 +29,22 @@ import poesRouter from "./controllers/poes";
 import projectTeamRouter from "./controllers/project-team";
 import usersRouter from "./controllers/users";
 import { requireAuth } from "./middleware/auth";
+import { setupGoogleAuth } from "./auth-google";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve uploaded files statically
+  const uploadDir = path.join(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  app.use("/uploads", express.static(uploadDir));
+
+  // Debug route to verify API is working
+  app.get("/api/health", (req, res) => {
+    console.log("Health check hit");
+    res.json({ status: "ok" });
+  });
+
   // Public routes (no authentication required)
   app.use("/api/auth", authRouter);
 
@@ -58,6 +74,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", requireAuth, projectTeamRouter);
 
   const httpServer = createServer(app);
+
+  // Setup Google Auth
+  setupGoogleAuth(app);
+
   setupWebSocket(httpServer);
   return httpServer;
 }

@@ -2,9 +2,9 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  // FALLBACK FOR DEBUGGING
+  process.env.DATABASE_URL = "postgresql://postgres:REDACTED_DB_PASSWORD@localhost:4000/mission_control";
+  console.log("⚠️ USING HARDCODED DATABASE_URL FOR DEBUGGING");
 }
 
 import * as schema from "@shared/schema";

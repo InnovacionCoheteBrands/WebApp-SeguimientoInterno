@@ -1,61 +1,55 @@
 /**
- * Control Proyectos - Project Progress Tracking
- * Part of Cohete Brands Replica
- * Shows projects with progress bars and allows progress updates
+ * Control Proyectos - Tabular Progress Tracking View
+ * Matches cohetebrands.web.app/control-proyectos design
+ * Features: Progress bars, tracking table, status badges
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+    Target,
     FolderKanban,
-    Clock,
+    Play,
     CheckCircle2,
-    AlertCircle,
-    Calendar,
-    Building2,
-    MoreVertical,
+    TrendingUp,
+    Search,
     Edit,
-    ExternalLink,
-    Percent,
+    Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { fetchProjects, updateProject, type Project } from "@/lib/api";
-import { Link } from "wouter";
+import { cn } from "@/lib/utils";
 
 export default function ControlProyectos() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+
+    // State
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [progressValue, setProgressValue] = useState(0);
-    const [statusFilter, setStatusFilter] = useState<string>("all");
 
-    // Fetch projects
+    // Fetch data
     const { data: projects = [], isLoading } = useQuery({
         queryKey: ["projects"],
         queryFn: fetchProjects,
@@ -63,87 +57,129 @@ export default function ControlProyectos() {
 
     // Update mutation
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: any }) => updateProject(id, data),
+        mutationFn: ({ id, data }: { id: number; data: { progress?: number; status?: string } }) =>
+            updateProject(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             setSelectedProject(null);
             toast({ title: "Progreso actualizado" });
         },
         onError: () => {
-            toast({ title: "Error", description: "No se pudo actualizar el progreso", variant: "destructive" });
+            toast({
+                title: "Error",
+                description: "No se pudo actualizar el progreso",
+                variant: "destructive",
+            });
         },
     });
 
-    // Filter projects
-    const filteredProjects = projects.filter((p) => {
-        if (statusFilter === "all") return true;
-        return p.status === statusFilter;
-    });
-
-    // Statistics
-    const stats = {
-        total: projects.length,
-        active: projects.filter((p) => p.status === "active").length,
-        completed: projects.filter((p) => p.status === "completed").length,
-        avgProgress: projects.length > 0
-            ? Math.round(projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length)
-            : 0,
+    // Helper functions
+    const parseBudget = (budget: string | number | null | undefined): number => {
+        if (!budget) return 0;
+        const num = typeof budget === "string" ? parseFloat(budget) : budget;
+        return isNaN(num) ? 0 : num;
     };
 
-    const openUpdateModal = (project: Project) => {
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat("es-MX", {
+            style: "currency",
+            currency: "MXN",
+            minimumFractionDigits: 0,
+        }).format(amount);
+    };
+
+    // Map status to display
+    const isActiveStatus = (status: string) =>
+        ["active", "En Curso", "En Desarrollo", "En Revisión"].includes(status);
+    const isCompletedStatus = (status: string) =>
+        ["completed", "Completado", "Terminado"].includes(status);
+
+    // Statistics
+    const stats = useMemo(() => {
+        const activeCount = projects.filter(p => isActiveStatus(p.status)).length;
+        const completedCount = projects.filter(p => isCompletedStatus(p.status)).length;
+        const avgProgress = projects.length > 0
+            ? Math.round(projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length)
+            : 0;
+
+        return {
+            total: projects.length,
+            active: activeCount,
+            completed: completedCount,
+            avgProgress,
+        };
+    }, [projects]);
+
+    // Filter projects
+    const filteredProjects = useMemo(() => {
+        if (!searchTerm) return projects;
+        const search = searchTerm.toLowerCase();
+        return projects.filter((p) =>
+            p.name.toLowerCase().includes(search) ||
+            p.client?.companyName?.toLowerCase().includes(search)
+        );
+    }, [projects, searchTerm]);
+
+    // Handlers
+    const handleEditProgress = (project: Project) => {
         setSelectedProject(project);
         setProgressValue(project.progress || 0);
     };
 
-    const handleProgressUpdate = () => {
+    const handleSaveProgress = () => {
         if (!selectedProject) return;
-
         const newStatus = progressValue === 100 ? "completed" :
             progressValue > 0 ? "active" : "planning";
-
         updateMutation.mutate({
             id: selectedProject.id,
-            data: {
-                progress: progressValue,
-                status: newStatus,
-            },
+            data: { progress: progressValue, status: newStatus },
         });
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "active": return "bg-blue-500";
-            case "completed": return "bg-green-500";
-            case "on_hold": return "bg-yellow-500";
-            case "cancelled": return "bg-red-500";
-            default: return "bg-gray-500";
-        }
+    const getProgressLabel = (progress: number) => {
+        if (progress === 0) return "Sin progreso";
+        if (progress < 25) return "Iniciando";
+        if (progress < 50) return "En proceso";
+        if (progress < 75) return "Avanzado";
+        if (progress < 100) return "Casi listo";
+        return "Completado";
     };
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case "active": return "Activo";
-            case "completed": return "Completado";
-            case "on_hold": return "En Pausa";
-            case "planning": return "Planeación";
-            case "cancelled": return "Cancelado";
-            default: return status;
-        }
+    const getProgressColor = (progress: number) => {
+        if (progress === 0) return "bg-muted";
+        if (progress < 50) return "bg-blue-500";
+        if (progress < 100) return "bg-yellow-500";
+        return "bg-green-500";
     };
 
-    const getHealthIcon = (health: string) => {
-        switch (health) {
-            case "good": return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-            case "at_risk": return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-            case "critical": return <AlertCircle className="w-4 h-4 text-red-500" />;
-            default: return <Clock className="w-4 h-4 text-muted-foreground" />;
+    const getStatusBadge = (status: string) => {
+        if (isCompletedStatus(status)) {
+            return <Badge className="bg-green-500/10 text-green-500 border-green-500/30">Terminado</Badge>;
         }
+        if (status === "on_hold" || status === "Bloqueado") {
+            return <Badge className="bg-red-500/10 text-red-500 border-red-500/30">Pausado</Badge>;
+        }
+        if (status === "planning" || status === "Planificación") {
+            return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/30">Planificación</Badge>;
+        }
+        return <Badge className="bg-green-500/10 text-green-500 border-green-500/30">En Desarrollo</Badge>;
+    };
+
+    const getTypeBadge = (project: Project) => {
+        const level = (project as any).level || "Plata";
+        const colors: Record<string, string> = {
+            Bronce: "bg-orange-500/10 text-orange-500 border-orange-500/30",
+            Plata: "bg-gray-500/10 text-gray-400 border-gray-500/30",
+            Oro: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
+            Diamante: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+        };
+        return <Badge className={colors[level] || colors.Plata}>{level}</Badge>;
     };
 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
         );
     }
@@ -151,29 +187,21 @@ export default function ControlProyectos() {
     return (
         <div className="p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                    <Target className="w-6 h-6 text-primary" />
+                </div>
                 <div>
                     <h1 className="text-3xl font-bold">Control de Proyectos</h1>
-                    <p className="text-muted-foreground">Seguimiento de avance y estado de proyectos</p>
+                    <p className="text-muted-foreground">
+                        Gestiona el progreso y avance de tus proyectos
+                    </p>
                 </div>
-
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filtrar por estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="planning">Planeación</SelectItem>
-                        <SelectItem value="active">Activos</SelectItem>
-                        <SelectItem value="completed">Completados</SelectItem>
-                        <SelectItem value="on_hold">En Pausa</SelectItem>
-                    </SelectContent>
-                </Select>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="bg-card/50 border-border/50">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-primary/10">
@@ -181,16 +209,16 @@ export default function ControlProyectos() {
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">{stats.total}</p>
-                                <p className="text-xs text-muted-foreground">Total</p>
+                                <p className="text-xs text-muted-foreground">Total Proyectos</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-card/50 border-border/50">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-blue-500/10">
-                                <Clock className="w-5 h-5 text-blue-500" />
+                                <Play className="w-5 h-5 text-blue-500" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">{stats.active}</p>
@@ -199,7 +227,7 @@ export default function ControlProyectos() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-card/50 border-border/50">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-green-500/10">
@@ -212,97 +240,129 @@ export default function ControlProyectos() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-card/50 border-border/50">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-yellow-500/10">
-                                <Percent className="w-5 h-5 text-yellow-500" />
+                            <div className="p-2 rounded-lg bg-purple-500/10">
+                                <TrendingUp className="w-5 h-5 text-purple-500" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">{stats.avgProgress}%</p>
-                                <p className="text-xs text-muted-foreground">Avance Promedio</p>
+                                <p className="text-xs text-muted-foreground">Progreso Promedio</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Projects List */}
-            <Card>
+            {/* Search Bar */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Buscar proyecto por nombre o cliente..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-11 bg-card/50"
+                />
+            </div>
+
+            {/* Projects Table */}
+            <Card className="bg-card/50 border-border/50">
                 <CardHeader>
-                    <CardTitle className="text-lg">Proyectos</CardTitle>
+                    <CardTitle className="text-lg font-semibold">Proyectos</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {filteredProjects.length === 0 ? (
-                            <p className="text-center text-muted-foreground py-8">No hay proyectos</p>
-                        ) : (
-                            filteredProjects.map((project) => (
-                                <div
-                                    key={project.id}
-                                    className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                {getHealthIcon(project.health || "unknown")}
-                                                <Link href={`/proyectos/${project.id}`}>
-                                                    <span className="font-medium hover:text-primary cursor-pointer">
-                                                        {project.name}
-                                                    </span>
-                                                </Link>
-                                                <Badge className={`${getStatusColor(project.status)} text-white text-xs`}>
-                                                    {getStatusLabel(project.status)}
-                                                </Badge>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="font-semibold">Proyecto</TableHead>
+                                <TableHead className="font-semibold">Cliente</TableHead>
+                                <TableHead className="font-semibold">Estado</TableHead>
+                                <TableHead className="font-semibold">Tipo</TableHead>
+                                <TableHead className="font-semibold">Progreso</TableHead>
+                                <TableHead className="font-semibold text-right">Cotización</TableHead>
+                                <TableHead className="font-semibold text-right">Mantenimiento</TableHead>
+                                <TableHead className="font-semibold text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredProjects.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                                        No hay proyectos que mostrar
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredProjects.map((project) => (
+                                    <TableRow key={project.id} className="group">
+                                        {/* Project Name */}
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="w-4 h-4 text-muted-foreground" />
+                                                <span className="font-medium">{project.name}</span>
                                             </div>
+                                        </TableCell>
 
-                                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                                                <span className="flex items-center gap-1">
-                                                    <Building2 className="w-3 h-3" />
-                                                    {project.client?.companyName || "Sin cliente"}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="w-3 h-3" />
-                                                    {project.deadline
-                                                        ? new Date(project.deadline).toLocaleDateString("es-MX")
-                                                        : "Sin fecha límite"
-                                                    }
-                                                </span>
+                                        {/* Client */}
+                                        <TableCell className="text-muted-foreground">
+                                            {project.client?.companyName || "—"}
+                                        </TableCell>
+
+                                        {/* Status */}
+                                        <TableCell>{getStatusBadge(project.status)}</TableCell>
+
+                                        {/* Type/Level */}
+                                        <TableCell>{getTypeBadge(project)}</TableCell>
+
+                                        {/* Progress */}
+                                        <TableCell>
+                                            <div className="space-y-1.5 min-w-[120px]">
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="font-medium">{project.progress || 0}%</span>
+                                                </div>
+                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className={cn(
+                                                            "h-full transition-all duration-300 rounded-full",
+                                                            getProgressColor(project.progress || 0)
+                                                        )}
+                                                        style={{ width: `${project.progress || 0}%` }}
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {getProgressLabel(project.progress || 0)}
+                                                </p>
                                             </div>
+                                        </TableCell>
 
-                                            {/* Progress Bar */}
-                                            <div className="flex items-center gap-3">
-                                                <Progress value={project.progress || 0} className="flex-1 h-2" />
-                                                <span className="text-sm font-medium w-12 text-right">
-                                                    {project.progress || 0}%
-                                                </span>
-                                            </div>
-                                        </div>
+                                        {/* Quotation */}
+                                        <TableCell className="text-right font-medium">
+                                            {formatCurrency(parseBudget((project as any).quotationAmount || project.budget))}
+                                        </TableCell>
 
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <MoreVertical className="w-4 h-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => openUpdateModal(project)}>
-                                                    <Edit className="w-4 h-4 mr-2" />
-                                                    Actualizar Progreso
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/proyectos/${project.id}`}>
-                                                        <ExternalLink className="w-4 h-4 mr-2" />
-                                                        Ver Detalle
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                                        {/* Maintenance */}
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {(project as any).monthlyMaintenance
+                                                ? `${formatCurrency(parseBudget((project as any).monthlyMaintenance))}/mes`
+                                                : "—"}
+                                        </TableCell>
+
+                                        {/* Actions */}
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => handleEditProgress(project)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
 
@@ -324,7 +384,9 @@ export default function ControlProyectos() {
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <Label>Porcentaje de Avance</Label>
-                                    <span className="text-2xl font-bold text-primary">{progressValue}%</span>
+                                    <span className="text-2xl font-bold text-primary">
+                                        {progressValue}%
+                                    </span>
                                 </div>
                                 <Slider
                                     value={[progressValue]}
@@ -343,15 +405,23 @@ export default function ControlProyectos() {
                             </div>
 
                             <div className="p-3 rounded-lg bg-muted/50">
-                                <p className="text-xs text-muted-foreground mb-1">Estado Resultante</p>
-                                <Badge className={`${getStatusColor(
-                                    progressValue === 100 ? "completed" :
-                                        progressValue > 0 ? "active" : "planning"
-                                )} text-white`}>
-                                    {getStatusLabel(
-                                        progressValue === 100 ? "completed" :
-                                            progressValue > 0 ? "active" : "planning"
+                                <p className="text-xs text-muted-foreground mb-1">
+                                    Estado Resultante
+                                </p>
+                                <Badge
+                                    className={cn(
+                                        progressValue === 100
+                                            ? "bg-green-500 text-white"
+                                            : progressValue > 0
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-muted text-muted-foreground"
                                     )}
+                                >
+                                    {progressValue === 100
+                                        ? "Completado"
+                                        : progressValue > 0
+                                            ? "En Curso"
+                                            : "Planificación"}
                                 </Badge>
                             </div>
 
@@ -365,7 +435,7 @@ export default function ControlProyectos() {
                                 </Button>
                                 <Button
                                     className="flex-1"
-                                    onClick={handleProgressUpdate}
+                                    onClick={handleSaveProgress}
                                     disabled={updateMutation.isPending}
                                 >
                                     {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}

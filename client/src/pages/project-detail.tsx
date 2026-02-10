@@ -201,7 +201,7 @@ export default function ProjectDetail() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <Link href="/proyectos">
-                            <Button variant="outline" size="icon" className="rounded-sm h-11 w-11">
+                            <Button variant="outline" size="icon" className="rounded-full h-11 w-11">
                                 <ArrowLeft className="size-5" />
                             </Button>
                         </Link>
@@ -210,7 +210,7 @@ export default function ProjectDetail() {
                                 <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">
                                     {project.name}
                                 </h1>
-                                <Badge className={`rounded-sm ${healthStyle.bg} ${healthStyle.text} border-0`}>
+                                <Badge className={`rounded-full ${healthStyle.bg} ${healthStyle.text} border-0`}>
                                     {healthStyle.label}
                                 </Badge>
                             </div>
@@ -219,7 +219,7 @@ export default function ProjectDetail() {
                                     {project.client.companyName}
                                 </span>
                                 <span className="text-muted-foreground">•</span>
-                                <Badge variant="outline" className="rounded-sm font-mono text-xs">
+                                <Badge variant="outline" className="rounded-full font-mono text-xs">
                                     <ServiceIcon className="size-3 mr-1" />
                                     {project.serviceType}
                                 </Badge>
@@ -227,13 +227,13 @@ export default function ProjectDetail() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="rounded-sm font-mono font-normal">
+                        <Badge variant="outline" className="rounded-full font-mono font-normal">
                             {project.status}
                         </Badge>
                         {project.deadline && (
                             <Badge
                                 variant="outline"
-                                className={`rounded-sm font-mono ${isOverdue ? "text-rose-500 border-rose-500/50" : ""}`}
+                                className={`rounded-full font-mono ${isOverdue ? "text-rose-500 border-rose-500/50" : ""}`}
                             >
                                 <Calendar className="size-3 mr-1" />
                                 {format(new Date(project.deadline), "dd MMM yyyy", { locale: es })}
@@ -245,13 +245,14 @@ export default function ProjectDetail() {
                 {/* KPI Cards Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Budget Card */}
-                    <Card className="rounded-sm border-l-4 border-l-primary">
-                        <CardHeader className="pb-2">
+                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardHeader className="pb-2 pl-6">
                             <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
                                 Presupuesto
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pl-6">
                             <div className="text-2xl font-display font-bold">
                                 {formatCurrency(financial.budget)}
                             </div>
@@ -259,13 +260,14 @@ export default function ProjectDetail() {
                     </Card>
 
                     {/* Actual Cost Card */}
-                    <Card className="rounded-sm border-l-4 border-l-blue-500">
-                        <CardHeader className="pb-2">
+                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardHeader className="pb-2 pl-6">
                             <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
                                 Costo Real
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pl-6">
                             <div className="text-2xl font-display font-bold">
                                 {formatCurrency(financial.actualCost)}
                             </div>
@@ -277,8 +279,9 @@ export default function ProjectDetail() {
                     </Card>
 
                     {/* Margin Card */}
-                    <Card className={`rounded-sm border-l-4 ${isPositiveMargin ? "border-l-emerald-500" : "border-l-rose-500"}`}>
-                        <CardHeader className="pb-2">
+                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+                        <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent ${isPositiveMargin ? "via-emerald-500" : "via-rose-500"} to-transparent opacity-70 group-hover:opacity-100 transition-opacity`} />
+                        <CardHeader className="pb-2 pl-6">
                             <CardDescription className="font-mono text-[10px] uppercase tracking-wider flex items-center gap-2">
                                 Margen Bruto
                                 {isPositiveMargin ? (
@@ -288,7 +291,7 @@ export default function ProjectDetail() {
                                 )}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pl-6">
                             <div className={`text-3xl font-display font-bold ${isPositiveMargin ? "text-emerald-500" : "text-rose-500"}`}>
                                 {formatCurrency(financial.margin)}
                             </div>
@@ -299,13 +302,14 @@ export default function ProjectDetail() {
                     </Card>
 
                     {/* Progress Card */}
-                    <Card className="rounded-sm border-l-4 border-l-violet-500">
-                        <CardHeader className="pb-2">
+                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-violet-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardHeader className="pb-2 pl-6">
                             <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
                                 Progreso General
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pl-6">
                             <div className="text-2xl font-display font-bold">
                                 {project.progress}%
                             </div>
@@ -324,12 +328,12 @@ export default function ProjectDetail() {
                     )}
 
                     {/* Deliverables Panel - Takes 2 columns */}
-                    <Card className="lg:col-span-2 rounded-sm relative overflow-hidden">
+                    <Card className="lg:col-span-2 rounded-[2rem] relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-sm bg-primary/10 border border-primary/20">
+                                    <div className="p-2 rounded-full bg-primary/10 border border-primary/20">
                                         <Target className="size-5 text-primary" />
                                     </div>
                                     <div>
@@ -352,7 +356,7 @@ export default function ProjectDetail() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {deliverables.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground border border-dashed rounded-sm">
+                                <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl">
                                     No hay entregables definidos
                                 </div>
                             ) : (
@@ -364,11 +368,11 @@ export default function ProjectDetail() {
                                     return (
                                         <div
                                             key={deliverable.id}
-                                            className={`flex items-start gap-3 p-3 rounded-sm border transition-all ${deliverable.completed
-                                                    ? "bg-muted/30 border-muted"
-                                                    : isBlocking
-                                                        ? "bg-rose-500/5 border-rose-500/50 animate-pulse-border"
-                                                        : "bg-card border-border hover:border-primary/50"
+                                            className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${deliverable.completed
+                                                ? "bg-muted/30 border-muted"
+                                                : isBlocking
+                                                    ? "bg-rose-500/5 border-rose-500/50 animate-pulse-border"
+                                                    : "bg-card border-border hover:border-primary/50"
                                                 }`}
                                         >
                                             {/* Checkbox - disabled if requires file and no attachment */}
@@ -422,7 +426,7 @@ export default function ProjectDetail() {
 
                                                     {/* Blocking warning badge */}
                                                     {isBlocking && (
-                                                        <Badge variant="destructive" className="text-[10px] rounded-sm">
+                                                        <Badge variant="destructive" className="text-[10px] rounded-full">
                                                             <AlertTriangle className="size-3 mr-1" />
                                                             Evidencia Requerida
                                                         </Badge>
@@ -459,9 +463,9 @@ export default function ProjectDetail() {
                                                             <TooltipTrigger asChild>
                                                                 <button
                                                                     onClick={() => triggerFileUpload(deliverable.id)}
-                                                                    className={`p-1 rounded-sm transition-colors ${isBlocking
-                                                                            ? "text-rose-500 hover:bg-rose-500/10"
-                                                                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                                    className={`p-1 rounded-full transition-colors ${isBlocking
+                                                                        ? "text-rose-500 hover:bg-rose-500/10"
+                                                                        : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                                                                         }`}
                                                                 >
                                                                     <Paperclip className="size-5" />
@@ -494,11 +498,11 @@ export default function ProjectDetail() {
                     {/* Right Column - Team & Service Info */}
                     <div className="space-y-6">
                         {/* Team Panel */}
-                        <Card className="rounded-sm relative overflow-hidden">
+                        <Card className="rounded-[2rem] relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500 to-blue-500/0 opacity-50" />
                             <CardHeader>
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-sm bg-blue-500/10 border border-blue-500/20">
+                                    <div className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20">
                                         <Users className="size-5 text-blue-500" />
                                     </div>
                                     <div>
@@ -513,7 +517,7 @@ export default function ProjectDetail() {
                             </CardHeader>
                             <CardContent>
                                 {teamAssignments.length === 0 ? (
-                                    <div className="text-center py-6 text-muted-foreground border border-dashed rounded-sm">
+                                    <div className="text-center py-6 text-muted-foreground border border-dashed rounded-xl">
                                         Sin equipo asignado
                                     </div>
                                 ) : (
@@ -558,11 +562,11 @@ export default function ProjectDetail() {
 
                         {/* Service Specific Card */}
                         {serviceFields && (
-                            <Card className="rounded-sm relative overflow-hidden">
+                            <Card className="rounded-[2rem] relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500/0 via-violet-500 to-violet-500/0 opacity-50" />
                                 <CardHeader>
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-sm bg-violet-500/10 border border-violet-500/20">
+                                        <div className="p-2 rounded-full bg-violet-500/10 border border-violet-500/20">
                                             <ServiceIcon className="size-5 text-violet-500" />
                                         </div>
                                         <div>
@@ -586,7 +590,7 @@ export default function ProjectDetail() {
                                                     <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Keywords Objetivo</div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(serviceFields.keywords as string[]).map((keyword: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-sm">
+                                                            <Badge key={i} variant="secondary" className="rounded-full">
                                                                 {keyword}
                                                             </Badge>
                                                         ))}
@@ -614,7 +618,7 @@ export default function ProjectDetail() {
                                                     <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Tecnologías</div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(serviceFields.technologies as string[]).map((tech: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-sm">
+                                                            <Badge key={i} variant="secondary" className="rounded-full">
                                                                 <Code className="size-3 mr-1" />
                                                                 {tech}
                                                             </Badge>
@@ -643,7 +647,7 @@ export default function ProjectDetail() {
                                                     <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Plataformas</div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(serviceFields.platforms as string[]).map((platform: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-sm">
+                                                            <Badge key={i} variant="secondary" className="rounded-full">
                                                                 {platform}
                                                             </Badge>
                                                         ))}
@@ -675,7 +679,7 @@ export default function ProjectDetail() {
 
                         {/* Description */}
                         {project.description && (
-                            <Card className="rounded-sm">
+                            <Card className="rounded-[2rem]">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm font-display uppercase tracking-tight text-muted-foreground">
                                         Descripción

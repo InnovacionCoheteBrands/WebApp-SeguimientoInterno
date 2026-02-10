@@ -202,8 +202,13 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                                 return (
                                     <div
                                         key={asset.id}
-                                        className="flex flex-col p-4 border border-border rounded-sm bg-card hover:bg-muted/50 transition-colors gap-3"
+                                        className="flex flex-col p-4 border border-border rounded-[2rem] bg-card hover:bg-muted/50 transition-colors gap-3 relative overflow-hidden group"
                                     >
+                                        {/* Neon Side Stripe based on expiration */}
+                                        <div className={`absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-transparent ${expiration?.color.includes('red') ? 'via-red-500' :
+                                            expiration?.color.includes('yellow') ? 'via-yellow-500' :
+                                                'via-green-500'
+                                            } to-transparent opacity-70 group-hover:opacity-100 transition-opacity`} />
                                         <div className="flex items-center justify-between w-full">
                                             <div className="flex items-center gap-4">
                                                 <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -212,7 +217,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <p className="font-medium">{asset.name}</p>
-                                                        <Badge variant="outline" className="text-[10px] uppercase rounded-sm">
+                                                        <Badge variant="outline" className="text-[10px] uppercase rounded-full">
                                                             {asset.assetType}
                                                         </Badge>
                                                     </div>
@@ -224,7 +229,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 {expiration && (
-                                                    <Badge variant="outline" className={`text-xs rounded-sm font-normal ${expiration.color}`}>
+                                                    <Badge variant="outline" className={`text-xs rounded-full font-normal ${expiration.color}`}>
                                                         {expiration.label}
                                                     </Badge>
                                                 )}

@@ -287,16 +287,17 @@ export default function Finanzas() {
 
                         {/* Monthly Receivables (Cuentas por Cobrar) */}
                         {monthlyReceivables.length > 0 && (
-                            <Card className="border-l-4 border-l-emerald-500 bg-card/40 border-y-border border-r-border">
-                                <CardHeader className="pb-2">
+                            <Card className="rounded-[2rem] bg-card/40 border-y-border border-r-border relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-emerald-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                                <CardHeader className="pb-2 pl-6">
                                     <div className="flex items-center gap-2">
                                         <CalendarClock className="h-4 w-4 text-emerald-500" />
                                         <CardTitle className="text-sm">Por Cobrar este Mes</CardTitle>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-2">
+                                <CardContent className="space-y-2 pl-6">
                                     {monthlyReceivables.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center p-2 bg-background border border-border rounded-sm">
+                                        <div key={item.id} className="flex justify-between items-center p-2 bg-background border border-border rounded-xl">
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-sm text-foreground">{item.name}</span>
                                                 <span className="text-[10px] text-muted-foreground uppercase">{item.category}</span>
@@ -305,7 +306,7 @@ export default function Finanzas() {
                                                 <span className="font-mono font-bold text-emerald-400">{formatCurrency(Number(item.amount))}</span>
                                                 <Button
                                                     size="sm" variant="ghost"
-                                                    className="text-[10px] h-6 hover:bg-emerald-500/10 hover:text-emerald-400"
+                                                    className="text-[10px] h-6 hover:bg-emerald-500/10 hover:text-emerald-400 rounded-full"
                                                     onClick={() => markAsPaidMutation.mutate(item.id)}
                                                     disabled={markAsPaidMutation.isPending}
                                                 >
@@ -340,16 +341,17 @@ export default function Finanzas() {
 
                         {/* Monthly Payables (Obligaciones) */}
                         {monthlyPayables.length > 0 && (
-                            <Card className="border-l-4 border-l-rose-500 bg-card/40 border-y-border border-r-border">
-                                <CardHeader className="pb-2">
+                            <Card className="rounded-[2rem] bg-card/40 border-y-border border-r-border relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-rose-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                                <CardHeader className="pb-2 pl-6">
                                     <div className="flex items-center gap-2">
                                         <CalendarClock className="h-4 w-4 text-rose-500" />
                                         <CardTitle className="text-sm">Obligaciones del Mes</CardTitle>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-2">
+                                <CardContent className="space-y-2 pl-6">
                                     {monthlyPayables.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center p-2 bg-background border border-border rounded-sm">
+                                        <div key={item.id} className="flex justify-between items-center p-2 bg-background border border-border rounded-xl">
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-sm text-foreground">{item.name}</span>
                                                 <span className="text-[10px] text-muted-foreground uppercase">{item.category}</span>
@@ -358,7 +360,7 @@ export default function Finanzas() {
                                                 <span className="font-mono font-bold text-rose-400">{formatCurrency(Number(item.amount))}</span>
                                                 <Button
                                                     size="sm" variant="ghost"
-                                                    className="text-[10px] h-6 hover:bg-rose-500/10 hover:text-rose-400"
+                                                    className="text-[10px] h-6 hover:bg-rose-500/10 hover:text-rose-400 rounded-full"
                                                     onClick={() => markAsPaidMutation.mutate(item.id)}
                                                     disabled={markAsPaidMutation.isPending}
                                                 >

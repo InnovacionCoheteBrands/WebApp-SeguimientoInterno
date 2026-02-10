@@ -104,4 +104,4 @@ app.use((req, res, next) => {
     log(`serving on ${host}:${port}`);
   });
 })();
-// Force reload - Schema fix applied: team table structure synchronized.
+// Force reload: Avatar upload debugging

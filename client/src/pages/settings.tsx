@@ -170,7 +170,7 @@ const Settings = memo(function Settings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <Button variant="ghost" size="icon" className="rounded-sm" data-testid="button-back">
+                <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-back">
                   <ArrowLeft className="size-5" />
                 </Button>
               </Link>
@@ -184,7 +184,7 @@ const Settings = memo(function Settings() {
             <Button
               onClick={handleSave}
               disabled={!hasChanges || saveMutation.isPending}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
               data-testid="button-save-settings"
             >
               <Save className="size-4 mr-2" />
@@ -203,7 +203,7 @@ const Settings = memo(function Settings() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-primary/10 border border-primary/20">
+                <div className="p-2 rounded-full bg-primary/10 border border-primary/20">
                   <Globe className="size-5 text-primary" />
                 </div>
                 <div>
@@ -221,7 +221,7 @@ const Settings = memo(function Settings() {
                   value={localSettings.theme}
                   onValueChange={(value) => updateSetting("theme", value as ThemeSetting)}
                 >
-                  <SelectTrigger className="rounded-sm" data-testid="select-theme">
+                  <SelectTrigger className="rounded-xl" data-testid="select-theme">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,7 +270,7 @@ const Settings = memo(function Settings() {
                   value={localSettings.language}
                   onValueChange={(value) => updateSetting("language", value as LanguageSetting)}
                 >
-                  <SelectTrigger className="rounded-sm" data-testid="select-language">
+                  <SelectTrigger className="rounded-xl" data-testid="select-language">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -289,7 +289,7 @@ const Settings = memo(function Settings() {
                   value={localSettings.timezone}
                   onValueChange={(value) => updateSetting("timezone", value)}
                 >
-                  <SelectTrigger className="rounded-sm" data-testid="select-timezone">
+                  <SelectTrigger className="rounded-xl" data-testid="select-timezone">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -310,7 +310,7 @@ const Settings = memo(function Settings() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500 to-blue-500/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-blue-500/10 border border-blue-500/20">
+                <div className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20">
                   <Bell className="size-5 text-blue-500" />
                 </div>
                 <div>
@@ -383,7 +383,7 @@ const Settings = memo(function Settings() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-green-500/0 via-green-500 to-green-500/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-green-500/10 border border-green-500/20">
+                <div className="p-2 rounded-full bg-green-500/10 border border-green-500/20">
                   <Eye className="size-5 text-green-500" />
                 </div>
                 <div>
@@ -401,7 +401,7 @@ const Settings = memo(function Settings() {
                   value={localSettings.refreshRate}
                   onValueChange={(value) => updateSetting("refreshRate", value)}
                 >
-                  <SelectTrigger className="rounded-sm" data-testid="select-refresh-rate">
+                  <SelectTrigger className="rounded-xl" data-testid="select-refresh-rate">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -433,7 +433,7 @@ const Settings = memo(function Settings() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-orange-500/10 border border-orange-500/20">
+                <div className="p-2 rounded-full bg-orange-500/10 border border-orange-500/20">
                   <Plug className="size-5 text-orange-500" />
                 </div>
                 <div>
@@ -454,14 +454,14 @@ const Settings = memo(function Settings() {
                       value={localSettings.apiKey || ""}
                       readOnly
                       placeholder="No API Key generated"
-                      className="rounded-sm font-mono text-sm"
+                      className="rounded-xl font-mono text-sm"
                       data-testid="input-api-key"
                     />
                     <Button
                       onClick={handleGenerateApiKey}
                       disabled={regenerateKeyMutation.isPending}
                       variant="outline"
-                      className="rounded-sm"
+                      className="rounded-full"
                       data-testid="button-regenerate-api-key"
                     >
                       {regenerateKeyMutation.isPending ? "Generating..." : "Regenerate"}
@@ -480,7 +480,7 @@ const Settings = memo(function Settings() {
                     value={localSettings.webhookUrl || ""}
                     onChange={(e) => updateSetting("webhookUrl", e.target.value)}
                     placeholder="https://your-domain.com/webhook"
-                    className="rounded-sm opacity-50 cursor-not-allowed"
+                    className="rounded-xl opacity-50 cursor-not-allowed"
                     data-testid="input-webhook-url"
                     disabled
                   />

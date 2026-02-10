@@ -80,28 +80,30 @@ const DigitalAssetsPage = memo(function DigitalAssetsPage() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="rounded-sm border-l-4 border-l-red-500 shadow-sm">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="size-10 rounded-full bg-red-100 flex items-center justify-center">
-                                <AlertTriangle className="size-5 text-red-600" />
+                    <Card className="rounded-[2rem] relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardContent className="p-4 pl-6 flex items-center gap-4">
+                            <div className="size-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                                <AlertTriangle className="size-5 text-red-600 dark:text-red-400" />
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground font-mono uppercase">Vencen en 30 días</p>
-                                <p className="text-2xl font-bold">
+                                <p className="text-2xl font-bold font-display">
                                     {expiringAssets.filter(a => a.expirationDate && getDaysRemaining(a.expirationDate.toString()) <= 30).length}
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-sm border-l-4 border-l-yellow-500 shadow-sm">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="size-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                                <Calendar className="size-5 text-yellow-600" />
+                    <Card className="rounded-[2rem] relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-yellow-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardContent className="p-4 pl-6 flex items-center gap-4">
+                            <div className="size-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                                <Calendar className="size-5 text-yellow-600 dark:text-yellow-400" />
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground font-mono uppercase">Vencen en 60 días</p>
-                                <p className="text-2xl font-bold">
+                                <p className="text-2xl font-bold font-display">
                                     {expiringAssets.filter(a => {
                                         if (!a.expirationDate) return false;
                                         const days = getDaysRemaining(a.expirationDate.toString());
@@ -112,28 +114,30 @@ const DigitalAssetsPage = memo(function DigitalAssetsPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-sm border-l-4 border-l-blue-500 shadow-sm">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="size-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <RefreshCw className="size-5 text-blue-600" />
+                    <Card className="rounded-[2rem] relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardContent className="p-4 pl-6 flex items-center gap-4">
+                            <div className="size-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                                <RefreshCw className="size-5 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground font-mono uppercase">Auto-Renovación</p>
-                                <p className="text-2xl font-bold">
+                                <p className="text-2xl font-bold font-display">
                                     {expiringAssets.filter(a => a.autoRenew).length}
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-sm border-l-4 border-l-purple-500 shadow-sm">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="size-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                <Layers className="size-5 text-purple-600" />
+                    <Card className="rounded-[2rem] relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-purple-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                        <CardContent className="p-4 pl-6 flex items-center gap-4">
+                            <div className="size-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                                <Layers className="size-5 text-purple-600 dark:text-purple-400" />
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground font-mono uppercase">Total en Riesgo</p>
-                                <p className="text-2xl font-bold">{expiringAssets.length}</p>
+                                <p className="text-2xl font-bold font-display">{expiringAssets.length}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -169,13 +173,16 @@ const DigitalAssetsPage = memo(function DigitalAssetsPage() {
                             return (
                                 <Card
                                     key={asset.id}
-                                    className={`rounded-sm border-l-4 transition-all hover:shadow-md ${isUrgent ? "border-l-red-500 bg-red-50/50 dark:bg-red-950/20" : "border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20"
-                                        }`}
+                                    className="rounded-[2rem] relative overflow-hidden group transition-all hover:shadow-md"
                                 >
-                                    <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent ${isUrgent ? 'via-red-500' : 'via-yellow-500'} to-transparent opacity-70 group-hover:opacity-100 transition-opacity`} />
+                                    <CardContent className="p-4 pl-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <Badge variant="outline" className={`text-xs ${isUrgent ? 'text-red-500 border-red-200' : 'text-yellow-600 border-yellow-200'}`}>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`text-xs rounded-full ${isUrgent ? 'text-red-500 border-red-200' : 'text-yellow-600 border-yellow-200'}`}
+                                                >
                                                     {days < 0 ? `Venció hace ${Math.abs(days)} días` : `Vence en ${days} días`}
                                                 </Badge>
                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -200,7 +207,7 @@ const DigitalAssetsPage = memo(function DigitalAssetsPage() {
 
                                         <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0 pl-8 sm:pl-0">
                                             <Link href={`/clientes/${asset.clientId}`}>
-                                                <Button variant="outline" size="sm" className="rounded-sm w-full sm:w-auto bg-background">
+                                                <Button variant="outline" size="sm" className="rounded-full w-full sm:w-auto bg-background hover:bg-muted">
                                                     Gestionar
                                                     <ExternalLink className="size-3 ml-2" />
                                                 </Button>

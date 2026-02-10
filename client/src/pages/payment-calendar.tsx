@@ -205,7 +205,7 @@ export default function PaymentCalendar() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10">
+                            <div className="p-2 rounded-full bg-primary/10">
                                 <DollarSign className="w-5 h-5 text-primary" />
                             </div>
                             <div>
@@ -219,7 +219,7 @@ export default function PaymentCalendar() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-green-500/10">
+                            <div className="p-2 rounded-full bg-green-500/10">
                                 <Check className="w-5 h-5 text-green-500" />
                             </div>
                             <div>
@@ -233,7 +233,7 @@ export default function PaymentCalendar() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-yellow-500/10">
+                            <div className="p-2 rounded-full bg-yellow-500/10">
                                 <Clock className="w-5 h-5 text-yellow-500" />
                             </div>
                             <div>
@@ -262,9 +262,9 @@ export default function PaymentCalendar() {
                         {calendarDays.map((dayData, index) => (
                             <div
                                 key={index}
-                                className={`min-h-24 p-1 rounded-lg border transition-colors ${dayData.day
-                                        ? "bg-card hover:bg-accent/50 cursor-pointer"
-                                        : "bg-muted/30"
+                                className={`min-h-24 p-1 rounded-2xl border transition-colors ${dayData.day
+                                    ? "bg-card hover:bg-accent/50 cursor-pointer"
+                                    : "bg-muted/30"
                                     } ${dayData.day === new Date().getDate() &&
                                         currentDate.getMonth() === new Date().getMonth() &&
                                         currentDate.getFullYear() === new Date().getFullYear()
@@ -280,9 +280,9 @@ export default function PaymentCalendar() {
                                                 <div
                                                     key={payment.id}
                                                     onClick={() => setSelectedPayment(payment)}
-                                                    className={`text-[10px] p-1 rounded truncate cursor-pointer transition-colors ${payment.type === "maintenance"
-                                                            ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
-                                                            : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                                    className={`text-[10px] p-1 rounded-full truncate cursor-pointer transition-colors ${payment.type === "maintenance"
+                                                        ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                                        : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
                                                         } ${payment.status === "overdue" ? "bg-red-500/20 text-red-400" : ""}`}
                                                 >
                                                     {formatCurrency(payment.amount)}
@@ -315,11 +315,11 @@ export default function PaymentCalendar() {
                             monthPayments.map((payment) => (
                                 <div
                                     key={payment.id}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/50 hover:bg-accent/50 transition-colors cursor-pointer"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-card border border-border/50 hover:bg-accent/50 transition-colors cursor-pointer"
                                     onClick={() => setSelectedPayment(payment)}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${payment.type === "maintenance" ? "bg-blue-500/10" : "bg-green-500/10"
+                                        <div className={`p-2 rounded-full ${payment.type === "maintenance" ? "bg-blue-500/10" : "bg-green-500/10"
                                             }`}>
                                             {payment.type === "maintenance" ? (
                                                 <CalendarIcon className="w-4 h-4 text-blue-500" />
@@ -357,7 +357,7 @@ export default function PaymentCalendar() {
                     {selectedPayment && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className={`p-3 rounded-xl ${selectedPayment.type === "maintenance" ? "bg-blue-500/10" : "bg-green-500/10"
+                                <div className={`p-3 rounded-full ${selectedPayment.type === "maintenance" ? "bg-blue-500/10" : "bg-green-500/10"
                                     }`}>
                                     {selectedPayment.type === "maintenance" ? (
                                         <CalendarIcon className="w-6 h-6 text-blue-500" />
@@ -372,17 +372,17 @@ export default function PaymentCalendar() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 rounded-lg bg-muted/50">
+                                <div className="p-3 rounded-xl bg-muted/50">
                                     <p className="text-xs text-muted-foreground">Monto</p>
                                     <p className="text-xl font-bold">{formatCurrency(selectedPayment.amount)}</p>
                                 </div>
-                                <div className="p-3 rounded-lg bg-muted/50">
+                                <div className="p-3 rounded-xl bg-muted/50">
                                     <p className="text-xs text-muted-foreground">Fecha de Vencimiento</p>
                                     <p className="font-medium">{selectedPayment.dueDate.toLocaleDateString("es-MX")}</p>
                                 </div>
                             </div>
 
-                            <div className="p-3 rounded-lg bg-muted/50">
+                            <div className="p-3 rounded-xl bg-muted/50">
                                 <p className="text-xs text-muted-foreground">Tipo</p>
                                 <Badge variant={selectedPayment.type === "maintenance" ? "secondary" : "default"}>
                                     {selectedPayment.type === "maintenance" ? "Mantenimiento Mensual" : "Pago de Proyecto"}

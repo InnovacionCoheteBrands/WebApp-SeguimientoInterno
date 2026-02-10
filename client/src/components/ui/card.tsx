@@ -7,10 +7,10 @@ const Card = React.forwardRef<
 >(({ className, status, children, ...props }, ref) => {
   const statusGradients = {
     default: "",
-    success: "from-transparent via-green-500 to-transparent",
-    warning: "from-transparent via-amber-500 to-transparent",
-    error: "from-transparent via-red-500 to-transparent",
-    info: "from-transparent via-blue-500 to-transparent",
+    success: "from-green-500/20 via-green-500/5 to-transparent",
+    warning: "from-amber-500/20 via-amber-500/5 to-transparent",
+    error: "from-red-500/20 via-red-500/5 to-transparent",
+    info: "from-blue-500/20 via-blue-500/5 to-transparent",
   }
 
   const gradientClass = status ? statusGradients[status] : ""
@@ -19,14 +19,22 @@ const Card = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "bg-card text-card-foreground shadow-none border border-border/50 relative overflow-hidden",
+        // Base Glassmorphism & Geometry
+        "rounded-[2rem] border border-white/5 bg-card/60 backdrop-blur-xl text-card-foreground shadow-2xl relative overflow-hidden transition-all duration-300",
+        // Hover Effects
+        "hover:border-white/10 hover:shadow-[0_0_40px_-10px_rgba(0,0,0,0.5)]",
         className
       )}
       {...props}
     >
+      {/* Subtle Gradient Overlay for Status */}
       {status && gradientClass && (
-        <div className={cn("absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r opacity-70", gradientClass)} />
+        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50 pointer-events-none", gradientClass)} />
       )}
+
+      {/* Shine Effect */}
+      <div className="absolute -inset-[100%] top-0 block h-[200%] w-[50%] -rotate-45 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
       {children}
     </div>
   )
@@ -39,7 +47,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-4 sm:p-6", className)}
+    className={cn("flex flex-col space-y-1.5 p-6 sm:p-8", className)}
     {...props}
   />
 ))
@@ -51,7 +59,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("font-display text-lg leading-none tracking-wide uppercase", className)}
+    className={cn("font-display text-xl leading-none tracking-tight text-white", className)}
     {...props}
   />
 ))
@@ -63,7 +71,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-xs text-muted-foreground font-mono uppercase tracking-wider", className)}
+    className={cn("text-sm text-muted-foreground font-light leading-relaxed", className)}
     {...props}
   />
 ))
@@ -73,7 +81,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-4 sm:p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-6 sm:p-8 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -83,7 +91,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-4 sm:p-6 pt-0", className)}
+    className={cn("flex items-center p-6 sm:p-8 pt-0", className)}
     {...props}
   />
 ))

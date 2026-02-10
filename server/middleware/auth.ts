@@ -8,15 +8,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-// Extend Express Request type to include user
+// Extend Express.User type (used by Passport) so req.user has JWT claims
 declare global {
     namespace Express {
-        interface Request {
-            user?: {
-                id: string;
-                username: string;
-                role: string;
-            };
+        interface User {
+            id: string;
+            username: string;
+            role: string;
         }
     }
 }

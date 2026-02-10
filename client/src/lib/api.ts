@@ -63,8 +63,12 @@ async function request(url: string, options: RequestInit = {}): Promise<Response
   const res = await fetch(url, fetchOptions);
 
   // 🚨 Intercept 401 Unauthorized globally
+  // Skip dispatching on auth pages to prevent logout cascade during OAuth callback flow
   if (res.status === 401) {
-    window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: 401 } }));
+    const isAuthPage = window.location.pathname.startsWith('/auth');
+    if (!isAuthPage) {
+      window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: 401 } }));
+    }
   }
 
   return res;

@@ -1,985 +1,147 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  BarChart3,
-  Activity,
   Users,
-  Gauge,
-  AlertCircle,
-  Plus,
-  CheckCircle2,
-  MoreVertical,
-  Edit,
-  Trash2,
-  TrendingUp
+  Target,
+  Briefcase,
+  Wallet,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
-import { MobileFAB } from "@/components/mobile-fab";
-import { MetricsCarousel } from "@/components/metrics-carousel";
-import { CompactCampaignCard } from "@/components/compact-campaign-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  QuickActions,
+  KpiCard,
+  CrmWidget,
+  ProjectsWidget,
+  FinanceWidget,
+  HrWidget
+} from "@/components/dashboard-widgets";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchCampaigns, createCampaign, updateCampaign, deleteCampaign } from "@/lib/api";
-import { insertCampaignSchema, type InsertCampaign, type Campaign } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
-import { Label } from "@/components/ui/label";
-import { useWebSocket } from "@/hooks/use-websocket";
+  fetchLeads,
+  fetchLeadsMetrics,
+  fetchProjects,
+  fetchFinancialSummary,
+  fetchTeam
+} from "@/lib/api";
 import { useSystemSettings } from "@/hooks/use-system-settings";
-import { useNotifications } from "@/hooks/use-notifications";
+import { formatCurrency } from "@/lib/format-currency";
 
 export default function Dashboard() {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [editCampaign, setEditCampaign] = useState<Partial<InsertCampaign>>({});
-  const [progressValue, setProgressValue] = useState(0);
-  const [telemetryData, setTelemetryData] = useState<Array<{ name: string, value: number }>>([
-    { name: "00:00", value: 40 },
-    { name: "04:00", value: 30 },
-    { name: "08:00", value: 65 },
-    { name: "12:00", value: 85 },
-    { name: "16:00", value: 55 },
-    { name: "20:00", value: 70 },
-    { name: "23:59", value: 60 },
-  ]);
-  const [systemMetrics, setSystemMetrics] = useState<any>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-
-  const [newCampaign, setNewCampaign] = useState<InsertCampaign>({
-    campaignCode: "",
-    name: "",
-    clientName: "",
-    channel: "",
-    status: "Planning",
-    progress: 0,
-    priority: "Medium",
-    budget: 0,
-    spend: 0,
-  });
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { isConnected, lastMessage } = useWebSocket("/ws");
   const { data: settings } = useSystemSettings();
 
-  // Enable in-app notifications based on settings
-  useNotifications(lastMessage);
-
-  const { data: campaigns = [], isLoading } = useQuery({
-    queryKey: ["campaigns"],
-    queryFn: fetchCampaigns,
+  // --- Data Fetching ---
+  const { data: leadsMetrics, isLoading: loadingLeads } = useQuery({
+    queryKey: ["leads-metrics"],
+    queryFn: fetchLeadsMetrics,
   });
 
-  const createCampaignMutation = useMutation({
-    mutationFn: createCampaign,
-    onSuccess: async (newCampaign) => {
-      queryClient.setQueryData(["campaigns"], (oldCampaigns: Campaign[] = []) => {
-        return [...oldCampaigns, newCampaign];
-      });
-      setCreateDialogOpen(false);
-      setNewCampaign({
-        campaignCode: "",
-        name: "",
-        clientName: "",
-        channel: "",
-        status: "Planning",
-        progress: 0,
-        priority: "Medium",
-        budget: 0,
-        spend: 0,
-      });
-      toast({
-        title: "Campaña Creada",
-        description: "La nueva campaña ha sido registrada exitosamente.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo crear la campaña. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    },
+  const { data: leads } = useQuery({
+    queryKey: ["leads"],
+    queryFn: fetchLeads,
   });
 
-  const updateCampaignMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => updateCampaign(id, data),
-    onSuccess: async (updatedCampaign) => {
-      queryClient.setQueryData(["campaigns"], (oldCampaigns: Campaign[] = []) => {
-        return oldCampaigns.map((campaign) =>
-          campaign.id === updatedCampaign.id ? updatedCampaign : campaign
-        );
-      });
-      setEditDialogOpen(false);
-      setProgressDialogOpen(false);
-      toast({
-        title: "Campaña Actualizada",
-        description: "La campaña ha sido actualizada exitosamente.",
-      });
-    },
+  const { data: projects, isLoading: loadingProjects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: fetchProjects,
   });
 
-  const deleteCampaignMutation = useMutation({
-    mutationFn: deleteCampaign,
-    onSuccess: async (data, variables) => {
-      queryClient.setQueryData(["campaigns"], (oldCampaigns: Campaign[] = []) => {
-        return oldCampaigns.filter((campaign) => campaign.id !== variables);
-      });
-      setDeleteDialogOpen(false);
-      toast({
-        title: "Campaña Eliminada",
-        description: "La campaña ha sido eliminada del sistema.",
-      });
-    },
+  const { data: financialSummary, isLoading: loadingFinance } = useQuery({
+    queryKey: ["financial-summary"],
+    queryFn: () => fetchFinancialSummary(),
   });
 
-  const handleCreateCampaign = useCallback(() => {
-    // 🛡️ Validate with shared schema (XSS protection + positive numbers)
-    const result = insertCampaignSchema.safeParse(newCampaign);
-    if (!result.success) {
-      const firstError = result.error.errors[0];
-      toast({
-        title: "Error de Validación",
-        description: firstError.message || "Por favor verifique los datos ingresados.",
-        variant: "destructive",
-      });
-      return;
-    }
-    createCampaignMutation.mutate(result.data as InsertCampaign);
-  }, [newCampaign, createCampaignMutation, toast]);
+  const { data: team, isLoading: loadingTeam } = useQuery({
+    queryKey: ["team"],
+    queryFn: fetchTeam,
+  });
 
-  const handleEditCampaign = useCallback(() => {
-    if (!selectedCampaign) return;
+  // --- Derived Metrics ---
+  const activeLeadsCount = leadsMetrics?.total || 0;
+  // If we had a specific "active" field in metrics we'd use it, otherwise total is a decent proxy for now
 
-    // 🛡️ Preparar datos con campos numéricos procesados
-    const dataToValidate = {
-      ...editCampaign,
-      budget: Number(editCampaign.budget) || 0,
-      spend: Number(editCampaign.spend) || 0,
-      progress: selectedCampaign.progress, // Mantener progreso actual
-    };
+  const activeProjectsCount = projects?.filter(p => p.status === "Active" || p.status === "In Progress").length || 0;
+  const totalProjectsValue = projects?.reduce((acc, curr) => acc + (Number(curr.budget) || 0), 0) || 0;
 
-    // 🛡️ Validación con schema compartido (XSS + números positivos)
-    const result = insertCampaignSchema.safeParse(dataToValidate);
+  const activeEmployeesCount = team?.length || 0;
 
-    if (!result.success) {
-      const firstError = result.error.errors[0];
-      toast({
-        title: "Error de Validación",
-        description: firstError.message || "Por favor verifique los datos ingresados.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // ✅ Usar datos transformados por Zod (sanitizados y validados)
-    updateCampaignMutation.mutate({
-      id: selectedCampaign.id,
-      data: result.data,
-    });
-  }, [selectedCampaign, editCampaign, updateCampaignMutation, toast]);
-
-  const handleUpdateProgress = useCallback(() => {
-    if (!selectedCampaign) return;
-
-    // 🛡️ Guardia de rango: asegurar progreso entre 0 y 100
-    const validatedProgress = Math.min(100, Math.max(0, Math.round(progressValue)));
-
-    if (validatedProgress !== progressValue) {
-      toast({
-        title: "Valor Ajustado",
-        description: `El progreso fue ajustado a ${validatedProgress}% (rango válido: 0-100)`,
-      });
-    }
-
-    updateCampaignMutation.mutate({
-      id: selectedCampaign.id,
-      data: { progress: validatedProgress },
-    });
-  }, [selectedCampaign, progressValue, updateCampaignMutation, toast]);
-
-  const handleDeleteCampaign = useCallback(() => {
-    if (!selectedCampaign) return;
-    deleteCampaignMutation.mutate(selectedCampaign.id);
-  }, [selectedCampaign, deleteCampaignMutation]);
-
-  const openEditDialog = useCallback((campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setEditCampaign({
-      campaignCode: campaign.campaignCode,
-      name: campaign.name,
-      clientName: campaign.clientName,
-      channel: campaign.channel,
-      priority: campaign.priority,
-      status: campaign.status,
-      budget: campaign.budget,
-      spend: campaign.spend,
-    });
-    setEditDialogOpen(true);
-  }, []);
-
-  const openProgressDialog = useCallback((campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setProgressValue(campaign.progress);
-    setProgressDialogOpen(true);
-  }, []);
-
-  const openDeleteDialog = useCallback((campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setDeleteDialogOpen(true);
-  }, []);
-
-  const handleCompleteCampaign = useCallback((id: number) => {
-    updateCampaignMutation.mutate({
-      id,
-      data: { status: "Completed", progress: 100 },
-    });
-  }, [updateCampaignMutation]);
-
-  useEffect(() => {
-    if (lastMessage) {
-      if (lastMessage.type === "telemetry") {
-        setTelemetryData((prev) => {
-          const newData = [...prev, {
-            name: lastMessage.data.name,
-            value: lastMessage.data.value
-          }];
-          return newData.slice(-24);
-        });
-      } else if (lastMessage.type === "campaign_update") {
-        queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-      } else if (lastMessage.type === "metrics_update") {
-        setSystemMetrics(lastMessage.data);
-      }
-    }
-  }, [lastMessage, queryClient]);
-
-
-  const activeCampaigns = useMemo(() => {
-    let filtered = campaigns.filter(c => c.status === "Active" || c.status === "In Progress" || c.status === "Planning");
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(c => c.status === statusFilter);
-    }
-
-    if (priorityFilter !== "all") {
-      filtered = filtered.filter(c => c.priority === priorityFilter);
-    }
-
-    return filtered;
-  }, [campaigns, statusFilter, priorityFilter]);
-
-  const operationalCount = useMemo(() =>
-    campaigns.filter(c => c.status === "Active").length,
-    [campaigns]
-  );
+  const balance = financialSummary?.netProfit || 0;
+  const income = financialSummary?.totalIncome || 0;
+  const expenses = financialSummary?.totalExpenses || 0;
 
   return (
-    <>
-      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="space-y-8">
 
-        <MetricsCarousel
-          clientStatus={{ operational: operationalCount, total: campaigns.length }}
-          team={{ active: systemMetrics?.activeTeam?.value ? parseInt(systemMetrics.activeTeam.value.replace(/,/g, '')) : 1284, trend: systemMetrics?.activeTeam?.trend || "+12%" }}
-          systemLoad={{ percent: systemMetrics?.utilizationRate?.value ? parseInt(systemMetrics.utilizationRate.value) : 42, status: systemMetrics?.utilizationRate?.trendLabel || "optimized" }}
-          threatLevel={{ level: systemMetrics?.urgencyLevel?.value || "LOW", incidents: systemMetrics?.urgencyLevel?.trend ? parseInt(systemMetrics.urgencyLevel.trend) : 0 }}
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-foreground">Dashboard Principal</h1>
+          <p className="text-muted-foreground font-mono text-sm">Resumen general de operaciones</p>
+        </div>
+
+        {/* Quick Actions Bar */}
+        <QuickActions />
+      </div>
+
+      {/* Top Metrics Row (KPI Cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          title="Balance Total"
+          value={formatCurrency(balance)}
+          subValue={`Ing: ${formatCurrency(income)} | Gas: ${formatCurrency(expenses)}`}
+          icon={Wallet}
+          trend={balance >= 0 ? "+ Rentable" : "- Déficit"}
+          trendUp={balance >= 0}
+          color="green"
         />
-
-        <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatusCard
-            title="Estado de Clientes"
-            value={systemMetrics?.clientStatus?.value || `${operationalCount}/${campaigns.length}`}
-            label={systemMetrics?.clientStatus?.label || "Activos"}
-            icon={BarChart3}
-            trend={systemMetrics?.clientStatus?.trend || `+${operationalCount}`}
-            trendLabel={systemMetrics?.clientStatus?.trendLabel || "campañas activas"}
-            color="green"
-          />
-          <StatusCard
-            title="Equipo Activo"
-            value={systemMetrics?.activeTeam?.value || "1,284"}
-            label={systemMetrics?.activeTeam?.label || "En Servicio"}
-            icon={Users}
-            trend={systemMetrics?.activeTeam?.trend || "+12%"}
-            trendLabel={systemMetrics?.activeTeam?.trendLabel || "vs último turno"}
-            color="blue"
-          />
-          <StatusCard
-            title="Utilización"
-            value={systemMetrics?.utilizationRate?.value || "42%"}
-            label={systemMetrics?.utilizationRate?.label || "Capacidad Usada"}
-            icon={Gauge}
-            trend={systemMetrics?.utilizationRate?.trend || "-5%"}
-            trendLabel={systemMetrics?.utilizationRate?.trendLabel || "optimizado"}
-            success={systemMetrics?.utilizationRate?.success !== undefined ? systemMetrics.utilizationRate.success : true}
-            color="orange"
-          />
-          <StatusCard
-            title="Nivel de Urgencia"
-            value={systemMetrics?.urgencyLevel?.value || "BAJO"}
-            label={systemMetrics?.urgencyLevel?.label || "Controlado"}
-            icon={AlertCircle}
-            trend={systemMetrics?.urgencyLevel?.trend || "0"}
-            trendLabel={systemMetrics?.urgencyLevel?.trendLabel || "incidentes"}
-            color="red"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <Card className="lg:col-span-2 border-border bg-card rounded-sm">
-            <CardHeader className="p-3 sm:p-4 pb-2">
-              <CardTitle className="text-base sm:text-lg font-display flex items-center justify-between text-foreground">
-                <span>Análisis de Rendimiento</span>
-                <Badge variant="outline" className="rounded-sm font-mono font-normal text-amber-500 border-amber-500/30 bg-amber-500/10 text-xs">EN VIVO</Badge>
-              </CardTitle>
-              <CardDescription className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Datos en tiempo real</CardDescription>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-4 pt-0">
-              <div className="h-[320px] sm:h-[380px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={telemetryData}>
-                    <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(43 100% 50%)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(43 100% 50%)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      fontFamily="var(--font-mono)"
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      fontFamily="var(--font-mono)"
-                      tickFormatter={(value) => `${value}%`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        borderColor: 'hsl(var(--border))',
-                        borderRadius: '2px',
-                        fontFamily: 'var(--font-mono)',
-                        color: 'hsl(var(--foreground))'
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorValue)"
-                      isAnimationActive={settings?.chartAnimations ?? true}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card rounded-sm flex flex-col">
-            <CardHeader className="p-4 sm:p-6">
-              <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
-                <div>
-                  <CardTitle className="text-base sm:text-lg font-display">Campañas Activas</CardTitle>
-                  <CardDescription className="font-mono text-xs uppercase tracking-wider">Cola de Prioridad</CardDescription>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-status-filter">
-                      <SelectValue placeholder="Estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Planning">Planeación</SelectItem>
-                      <SelectItem value="Active">Activa</SelectItem>
-                      <SelectItem value="In Progress">En Progreso</SelectItem>
-                      <SelectItem value="Paused">Pausada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="flex-1 sm:w-[100px] h-11 text-xs rounded-sm border-border" data-testid="select-priority-filter">
-                      <SelectValue placeholder="Prioridad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="High">Alta</SelectItem>
-                      <SelectItem value="Medium">Media</SelectItem>
-                      <SelectItem value="Low">Baja</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-auto p-4 sm:p-6 pt-0">
-              {isLoading ? (
-                <div className="text-center text-muted-foreground py-8">Cargando campañas...</div>
-              ) : activeCampaigns.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <p className="mb-2">No hay campañas activas</p>
-                  <p className="text-xs">Crea una nueva campaña para comenzar</p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3 md:hidden">
-                    {activeCampaigns.slice(0, 6).map((campaign) => (
-                      <CompactCampaignCard
-                        key={campaign.id}
-                        id={campaign.id}
-                        campaignCode={campaign.campaignCode}
-                        name={campaign.name}
-                        status={campaign.status}
-                        priority={campaign.priority}
-                        progress={campaign.progress}
-                        createdAt={campaign.createdAt ? new Date(campaign.createdAt).toISOString() : ""}
-                        updatedAt={campaign.updatedAt ? new Date(campaign.updatedAt).toISOString() : ""}
-                        onMenuClick={() => {
-                          setSelectedCampaign(campaign);
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="hidden md:block space-y-3">
-                    {activeCampaigns.slice(0, 4).map((campaign) => {
-                      const statusGradient =
-                        campaign.status === "Active" ? "from-transparent via-green-500 to-transparent" :
-                          campaign.status === "In Progress" ? "from-transparent via-blue-500 to-transparent" :
-                            campaign.status === "Planning" ? "from-transparent via-amber-500 to-transparent" : "from-transparent via-muted-foreground/30 to-transparent";
-
-                      const statusTextColor =
-                        campaign.status === "Active" ? "text-green-500" :
-                          campaign.status === "In Progress" ? "text-blue-500" :
-                            campaign.status === "Planning" ? "text-amber-500" : "text-muted-foreground";
-
-                      return (
-                        <div key={campaign.id} className={`group flex flex-row items-center justify-between p-3 rounded-sm border border-border bg-card hover:border-amber-500/50 transition-all gap-3 relative overflow-hidden`} data-testid={`campaign-card-${campaign.id}`}>
-                          {/* Status Accent Line */}
-                          <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${statusGradient} opacity-70`} />
-
-                          <div className="space-y-1 flex-1 w-full sm:w-auto pl-2">
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider" data-testid={`campaign-code-${campaign.id}`}>{campaign.campaignCode}</span>
-                              <Badge variant="outline" className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-background/50 ${statusTextColor}`}>
-                                {campaign.status}
-                              </Badge>
-                            </div>
-                            <p className="font-medium text-sm text-primary" data-testid={`campaign-name-${campaign.id}`}>{campaign.name}</p>
-                          </div>
-
-                          <div className="flex items-center gap-4 w-full sm:w-auto">
-                            <div className="hidden lg:block text-right">
-                              <span className={`text-[10px] uppercase font-mono ${campaign.priority === "High" ? "text-red-400" :
-                                campaign.priority === "Medium" ? "text-primary" : "text-blue-400"
-                                }`}>
-                                {campaign.priority} Priority
-                              </span>
-                            </div>
-
-                            <div className="flex-1 sm:w-24">
-                              <div className="flex justify-between text-[10px] mb-1 font-mono text-muted-foreground">
-                                <span>PROG</span>
-                                <span data-testid={`campaign-progress-${campaign.id}`}>{campaign.progress}%</span>
-                              </div>
-                              <Progress value={campaign.progress} className="h-1 bg-muted" indicatorClassName={campaign.progress === 100 ? "bg-green-500" : "bg-primary"} />
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" data-testid={`button-menu-${campaign.id}`}>
-                                  <MoreVertical className="size-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-card border-border">
-                                <DropdownMenuItem onClick={() => openEditDialog(campaign)} data-testid={`menu-edit-${campaign.id}`}>
-                                  <Edit className="size-3 mr-2" />
-                                  Editar Campaña
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => openProgressDialog(campaign)} data-testid={`menu-progress-${campaign.id}`}>
-                                  <TrendingUp className="size-3 mr-2 text-primary" />
-                                  Actualizar Progreso
-                                </DropdownMenuItem>
-                                {campaign.status !== "Completed" && (
-                                  <DropdownMenuItem onClick={() => handleCompleteCampaign(campaign.id)} data-testid={`menu-complete-${campaign.id}`}>
-                                    <CheckCircle2 className="size-3 mr-2" />
-                                    Marcar Completada
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator className="bg-border" />
-                                <DropdownMenuItem
-                                  onClick={() => openDeleteDialog(campaign)}
-                                  className="text-destructive focus:text-destructive"
-                                  data-testid={`menu-delete-${campaign.id}`}
-                                >
-                                  <Trash2 className="size-3 mr-2" />
-                                  Eliminar Campaña
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-              {activeCampaigns.length > 4 && (
-                <Button variant="outline" className="w-full mt-4 rounded-sm border-dashed border-border hover:bg-muted hover:text-primary font-mono text-xs uppercase h-11">
-                  Ver Todas las Campañas ({activeCampaigns.length})
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
-          <InfoWidget title="Condiciones del Mercado" value="Estable" subtitle="Visibilidad 100%" />
-          <InfoWidget title="Latencia de Red" value="24ms" subtitle="Nodo: Alpha" />
-          <InfoWidget title="Reservas de Presupuesto" value="98.4%" subtitle="Estado: Óptimo" />
-        </div>
-
+        <KpiCard
+          title="Leads Activos"
+          value={activeLeadsCount.toString()}
+          subValue={`Valor Est: ${formatCurrency(leadsMetrics?.avgValue ? leadsMetrics.avgValue * activeLeadsCount : 0)}`}
+          icon={Target}
+          trend="+ Nuevo Hoy"
+          trendUp={true}
+          color="blue"
+        />
+        <KpiCard
+          title="Proyectos Activos"
+          value={activeProjectsCount.toString()}
+          subValue={`Cotización: ${formatCurrency(totalProjectsValue)}`}
+          icon={Briefcase}
+          color="amber"
+          trend="En tiempo"
+          trendUp={true}
+        />
+        <KpiCard
+          title="Empleados"
+          value={activeEmployeesCount.toString()}
+          subValue="Nómina calc. pendiente"
+          icon={Users}
+          color="purple"
+          trend="Estable"
+          trendUp={true}
+        />
       </div>
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-lg sm:text-xl">Crear Nueva Campaña</DialogTitle>
-            <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-              Inicializar parámetros de campaña
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="campaign-code" className="text-xs font-mono uppercase">Código de Campaña</Label>
-              <Input
-                id="campaign-code"
-                placeholder="CMP-XXX"
-                value={newCampaign.campaignCode}
-                onChange={(e) => setNewCampaign({ ...newCampaign, campaignCode: e.target.value })}
-                className="rounded-sm border-border bg-background h-11"
-                data-testid="input-campaign-code"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="campaign-name" className="text-xs font-mono uppercase">Nombre de Campaña</Label>
-              <Input
-                id="campaign-name"
-                placeholder="Ingresa el nombre de la campaña"
-                value={newCampaign.name}
-                onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
-                className="rounded-sm border-border bg-background h-11"
-                data-testid="input-campaign-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="client-name" className="text-xs font-mono uppercase">Cliente</Label>
-              <Input
-                id="client-name"
-                placeholder="Nombre del cliente"
-                value={newCampaign.clientName}
-                onChange={(e) => setNewCampaign({ ...newCampaign, clientName: e.target.value })}
-                className="rounded-sm border-border bg-background h-11"
-                data-testid="input-client-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="channel" className="text-xs font-mono uppercase">Canal</Label>
-              <Select value={newCampaign.channel} onValueChange={(val) => setNewCampaign({ ...newCampaign, channel: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-channel">
-                  <SelectValue placeholder="Selecciona un canal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Meta">Meta</SelectItem>
-                  <SelectItem value="Google Ads">Google Ads</SelectItem>
-                  <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                  <SelectItem value="Email">Email</SelectItem>
-                  <SelectItem value="TikTok">TikTok</SelectItem>
-                  <SelectItem value="Twitter">Twitter</SelectItem>
-                  <SelectItem value="Otros">Otros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="budget" className="text-xs font-mono uppercase">Presupuesto</Label>
-                <Input
-                  id="budget"
-                  type="number"
-                  placeholder="0"
-                  value={newCampaign.budget}
-                  onChange={(e) => setNewCampaign({ ...newCampaign, budget: parseInt(e.target.value) || 0 })}
-                  className="rounded-sm border-border bg-background h-11"
-                  data-testid="input-budget"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="spend" className="text-xs font-mono uppercase">Gasto Actual</Label>
-                <Input
-                  id="spend"
-                  type="number"
-                  placeholder="0"
-                  value={newCampaign.spend}
-                  onChange={(e) => setNewCampaign({ ...newCampaign, spend: parseInt(e.target.value) || 0 })}
-                  className="rounded-sm border-border bg-background h-11"
-                  data-testid="input-spend"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="priority" className="text-xs font-mono uppercase">Nivel de Prioridad</Label>
-              <Select value={newCampaign.priority} onValueChange={(val) => setNewCampaign({ ...newCampaign, priority: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Low">Baja</SelectItem>
-                  <SelectItem value="Medium">Media</SelectItem>
-                  <SelectItem value="High">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status" className="text-xs font-mono uppercase">Estado</Label>
-              <Select value={newCampaign.status} onValueChange={(val) => setNewCampaign({ ...newCampaign, status: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Planning">Planeación</SelectItem>
-                  <SelectItem value="Active">Activa</SelectItem>
-                  <SelectItem value="In Progress">En Progreso</SelectItem>
-                  <SelectItem value="Paused">Pausada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-sm h-11" data-testid="button-cancel">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleCreateCampaign}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-              disabled={createCampaignMutation.isPending}
-              data-testid="button-submit-campaign"
-            >
-              {createCampaignMutation.isPending ? "Creando..." : "Crear Campaña"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Editar Campaña</DialogTitle>
-            <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-              Actualizar parámetros de campaña
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Código de Campaña</Label>
-              <Input
-                value={editCampaign.campaignCode || ""}
-                onChange={(e) => setEditCampaign({ ...editCampaign, campaignCode: e.target.value })}
-                className="rounded-sm border-border bg-background h-11"
-                data-testid="input-edit-code"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Nombre de Campaña</Label>
-              <Input
-                value={editCampaign.name || ""}
-                onChange={(e) => setEditCampaign({ ...editCampaign, name: e.target.value })}
-                className="rounded-sm border-border bg-background h-11"
-                data-testid="input-edit-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Cliente</Label>
-              <Input
-                value={editCampaign.clientName || ""}
-                onChange={(e) => setEditCampaign({ ...editCampaign, clientName: e.target.value })}
-                className="rounded-sm border-border bg-background h-11"
-                data-testid="input-edit-client"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Canal</Label>
-              <Select value={editCampaign.channel} onValueChange={(val) => setEditCampaign({ ...editCampaign, channel: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-channel">
-                  <SelectValue placeholder="Selecciona un canal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Meta">Meta</SelectItem>
-                  <SelectItem value="Google Ads">Google Ads</SelectItem>
-                  <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                  <SelectItem value="Email">Email</SelectItem>
-                  <SelectItem value="TikTok">TikTok</SelectItem>
-                  <SelectItem value="Twitter">Twitter</SelectItem>
-                  <SelectItem value="Otros">Otros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-mono uppercase">Presupuesto</Label>
-                <Input
-                  type="number"
-                  value={editCampaign.budget || 0}
-                  onChange={(e) => setEditCampaign({ ...editCampaign, budget: parseInt(e.target.value) || 0 })}
-                  className="rounded-sm border-border bg-background h-11"
-                  data-testid="input-edit-budget"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-mono uppercase">Gasto Actual</Label>
-                <Input
-                  type="number"
-                  value={editCampaign.spend || 0}
-                  onChange={(e) => setEditCampaign({ ...editCampaign, spend: parseInt(e.target.value) || 0 })}
-                  className="rounded-sm border-border bg-background h-11"
-                  data-testid="input-edit-spend"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Prioridad</Label>
-              <Select value={editCampaign.priority} onValueChange={(val) => setEditCampaign({ ...editCampaign, priority: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Low">Baja</SelectItem>
-                  <SelectItem value="Medium">Media</SelectItem>
-                  <SelectItem value="High">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase">Estado</Label>
-              <Select value={editCampaign.status} onValueChange={(val) => setEditCampaign({ ...editCampaign, status: val })}>
-                <SelectTrigger className="rounded-sm border-border bg-background h-11" data-testid="select-edit-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Planning">Planeación</SelectItem>
-                  <SelectItem value="Active">Activa</SelectItem>
-                  <SelectItem value="In Progress">En Progreso</SelectItem>
-                  <SelectItem value="Paused">Pausada</SelectItem>
-                  <SelectItem value="Completed">Completada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-sm h-11">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleEditCampaign}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-              disabled={updateCampaignMutation.isPending}
-              data-testid="button-save-edit"
-            >
-              {updateCampaignMutation.isPending ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Actualizar Progreso de Campaña</DialogTitle>
-            <DialogDescription className="font-mono text-xs uppercase tracking-wider">
-              Ajustar porcentaje de completación
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 py-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center gap-4">
-                <div className="flex-1">
-                  <Label className="text-xs font-mono uppercase">Progreso</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={progressValue}
-                    onChange={(e) => {
-                      const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                      setProgressValue(val);
-                    }}
-                    className="w-20 rounded-sm border-border bg-background text-center font-display font-bold h-11"
-                    data-testid="input-progress"
-                  />
-                  <span className="text-xl font-display font-bold text-primary">%</span>
-                </div>
-              </div>
-              <Slider
-                value={[progressValue]}
-                onValueChange={(val) => setProgressValue(val[0])}
-                max={100}
-                step={5}
-                className="w-full"
-                data-testid="slider-progress"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                <span>0%</span>
-                <span>25%</span>
-                <span>50%</span>
-                <span>75%</span>
-                <span>100%</span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProgressDialogOpen(false)} className="rounded-sm h-11">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleUpdateProgress}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11"
-              disabled={updateCampaignMutation.isPending}
-              data-testid="button-save-progress"
-            >
-              {updateCampaignMutation.isPending ? "Actualizando..." : "Actualizar Progreso"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-display text-xl">Confirmar Eliminación de Campaña</AlertDialogTitle>
-            <AlertDialogDescription className="font-mono text-xs">
-              ¿Estás seguro de que deseas eliminar la campaña <span className="text-primary font-bold">{selectedCampaign?.campaignCode}</span>?
-              Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteCampaign}
-              className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
-            >
-              {deleteCampaignMutation.isPending ? "Eliminando..." : "Eliminar Campaña"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <MobileFAB onClick={() => setCreateDialogOpen(true)} />
-    </>
-  );
-}
-
-
-function StatusCard({ title, value, label, icon: Icon, trend, trendLabel, success, color = "primary" }: any) {
-  const accentColor =
-    color === "green" ? "bg-green-500" :
-      color === "blue" ? "bg-blue-500" :
-        color === "orange" ? "bg-amber-500" :
-          color === "red" ? "bg-red-500" : "bg-amber-500";
-
-  const gradientColor =
-    color === "green" ? "from-green-500/0 via-green-500 to-green-500/0" :
-      color === "blue" ? "from-blue-500/0 via-blue-500 to-blue-500/0" :
-        color === "orange" ? "from-amber-500/0 via-amber-500 to-amber-500/0" :
-          color === "red" ? "from-red-500/0 via-red-500 to-red-500/0" : "from-amber-500/0 via-amber-500 to-amber-500/0";
-
-  const iconColor =
-    color === "green" ? "text-green-500" :
-      color === "blue" ? "text-blue-500" :
-        color === "orange" ? "text-amber-500" :
-          color === "red" ? "text-red-500" : "text-amber-500";
-
-  return (
-    <Card className="border-border bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-      <div className={`absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r ${gradientColor} opacity-50 group-hover:opacity-100 transition-opacity`} />
-      <CardContent className="p-3 sm:p-6">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">{title}</span>
-          <Icon className={`size-4 ${iconColor} opacity-70 group-hover:opacity-100 transition-opacity`} />
+      {/* Main Grid Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-auto">
+        {/* CRM Widget */}
+        <div className="min-h-[300px]">
+          <CrmWidget data={{ leads, metrics: leadsMetrics }} loading={loadingLeads} />
         </div>
-        <div className="space-y-1">
-          <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground">{value}</h3>
-          <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
-        </div>
-        <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
-          <span className={`${success || trend.startsWith("+") ? "text-green-400" : "text-amber-500"}`}>{trend}</span>
-          <span className="text-muted-foreground ml-2">{trendLabel}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-function InfoWidget({ title, value, subtitle }: any) {
-  return (
-    <div className="border border-border bg-card p-4 rounded-sm flex items-center justify-between shadow-sm relative overflow-hidden">
-      {/* Small left accent */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[2px] bg-gradient-to-b from-transparent via-amber-500/50 to-transparent" />
-      <div>
-        <p className="text-[10px] font-mono uppercase text-muted-foreground mb-1">{title}</p>
-        <p className="font-display font-medium text-lg text-foreground">{value}</p>
-      </div>
-      <div className="text-right">
-        <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden mb-1">
-          <div className="h-full bg-amber-500 w-[70%] animate-pulse"></div>
+        {/* Projects Widget */}
+        <div className="min-h-[300px]">
+          <ProjectsWidget data={projects?.filter(p => p.status === "Active" || p.status === "In Progress")} loading={loadingProjects} />
         </div>
-        <p className="text-[10px] text-muted-foreground">{subtitle}</p>
+
+        {/* Finance Widget */}
+        <div className="min-h-[300px]">
+          <FinanceWidget data={financialSummary} loading={loadingFinance} />
+        </div>
+
+        {/* HR Widget */}
+        <div className="min-h-[300px]">
+          <HrWidget data={team} loading={loadingTeam} />
+        </div>
       </div>
     </div>
   );

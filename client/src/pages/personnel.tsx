@@ -207,14 +207,14 @@ export default function Personnel() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="outline" size="icon" className="rounded-sm border-border bg-card/50 hover:bg-muted">
+              <Button variant="outline" size="icon" className="rounded-full border-border bg-card/50 hover:bg-muted">
                 <ArrowLeft className="size-4" />
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Strategic Talent Hub</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-mono tracking-wider">
+                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-mono tracking-wider rounded-full">
                   RESOURCE INTELLIGENCE
                 </Badge>
                 <span className="text-xs text-muted-foreground font-mono">CAPACITY: {stats.totalCapacity}h / WEEK</span>
@@ -232,7 +232,7 @@ export default function Personnel() {
             </Button>
             <Button
               onClick={() => handleOpenTeamDialog()}
-              className="bg-primary text-primary-foreground font-medium hover:bg-primary/90 rounded-sm"
+              className="bg-primary text-primary-foreground font-medium hover:bg-primary/90 rounded-full"
             >
               <Plus className="size-4 mr-2" />
               Add Talent
@@ -242,7 +242,7 @@ export default function Personnel() {
 
         {/* Top Stats - Financial Tickers */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
@@ -255,7 +255,7 @@ export default function Personnel() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
@@ -268,7 +268,7 @@ export default function Personnel() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
@@ -281,7 +281,7 @@ export default function Personnel() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border rounded-sm relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
@@ -296,7 +296,7 @@ export default function Personnel() {
         </div>
 
         {/* Smart Filters */}
-        <Card className="bg-card/50 border-border rounded-sm">
+        <Card className="bg-card/50 border-border rounded-2xl">
           <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -304,11 +304,11 @@ export default function Personnel() {
                 placeholder="Filter by Name, Skill (e.g. React, Copy)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background border-border rounded-sm h-10 focus-visible:ring-primary/20"
+                className="pl-10 bg-background border-border rounded-full h-10 focus-visible:ring-primary/20"
               />
             </div>
             <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-full md:w-[200px] h-10 bg-background border-border rounded-sm">
+              <SelectTrigger className="w-full md:w-[200px] h-10 bg-background border-border rounded-full">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
@@ -336,7 +336,7 @@ export default function Personnel() {
           {filteredTeam.map((member) => (
             <Card
               key={member.id}
-              className={`bg-card border-border hover:border-muted-foreground/30 transition-all group relative overflow-hidden rounded-sm
+              className={`bg-card border-border hover:border-muted-foreground/30 transition-all group relative overflow-hidden rounded-[2rem]
                   ${member.utilizationRate >= 95 ? 'hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 'hover:shadow-[0_0_20px_rgba(34,197,94,0.1)]'}
                 `}
             >
@@ -351,7 +351,7 @@ export default function Personnel() {
                 {/* Header */}
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 rounded-sm border border-border">
+                    <Avatar className="h-10 w-10 rounded-full border border-border">
                       <AvatarFallback className="bg-muted text-muted-foreground font-mono">{getInitials(member.name)}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -359,7 +359,7 @@ export default function Personnel() {
                       <p className="text-xs text-muted-foreground">{member.role}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className={`rounded-sm text-[10px] font-mono
+                  <Badge variant="outline" className={`rounded-full text-[10px] font-mono
                          ${member.seniority === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
                       `}>
                     {member.area ? `${member.area} • ` : ''}{member.seniority}
@@ -377,7 +377,7 @@ export default function Personnel() {
                   </div>
                   <Progress
                     value={member.utilizationRate}
-                    className="h-1.5 bg-muted rounded-sm"
+                    className="h-1.5 bg-muted rounded-full"
                     indicatorClassName={
                       member.utilizationRate >= 95 ? 'bg-red-500' :
                         member.utilizationRate >= 75 ? 'bg-yellow-500' : 'bg-green-500'
@@ -392,7 +392,7 @@ export default function Personnel() {
                 {member.skills && (
                   <div className="flex flex-wrap gap-1">
                     {member.skills.split(',').slice(0, 3).map(skill => (
-                      <Badge key={skill} variant="secondary" className="text-[9px] h-4 rounded-sm bg-muted text-muted-foreground hover:text-foreground border-0">
+                      <Badge key={skill} variant="secondary" className="text-[9px] h-4 rounded-full bg-muted text-muted-foreground hover:text-foreground border-0">
                         {skill.trim()}
                       </Badge>
                     ))}
@@ -401,11 +401,11 @@ export default function Personnel() {
 
                 {/* Financial Stats (Director/Lead View) */}
                 <div className="pt-3 border-t border-border grid grid-cols-2 gap-2">
-                  <div className="bg-background/50 p-2 rounded-sm border border-border/50">
+                  <div className="bg-background/50 p-2 rounded-xl border border-border/50">
                     <p className="text-[9px] text-muted-foreground uppercase">Cost/Hr</p>
                     <p className="text-xs font-mono text-foreground/80">${member.internalCostHour}</p>
                   </div>
-                  <div className="bg-background/50 p-2 rounded-sm border border-border/50">
+                  <div className="bg-background/50 p-2 rounded-xl border border-border/50">
                     <p className="text-[9px] text-muted-foreground uppercase">Billable</p>
                     <p className="text-xs font-mono text-primary">${member.billableRate}</p>
                   </div>
@@ -416,7 +416,7 @@ export default function Personnel() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-7 text-xs border-border text-foreground/80 hover:bg-muted hover:text-foreground rounded-sm"
+                    className="flex-1 h-7 text-xs border-border text-foreground/80 hover:bg-muted hover:text-foreground rounded-full"
                     onClick={() => {
                       setAssigningToMember(member.id);
                       setIsAssignmentDialogOpen(true);
@@ -439,7 +439,7 @@ export default function Personnel() {
 
           {/* Empty State */}
           {filteredTeam.length === 0 && (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-border rounded-sm">
+            <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-border rounded-xl">
               <Users className="size-8 text-muted-foreground/30 mb-2" />
               <p className="text-muted-foreground">No matching talent found</p>
             </div>
@@ -451,7 +451,7 @@ export default function Personnel() {
       {/* --- DIALOGS --- */}
 
       <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] border-border bg-card text-foreground rounded-sm flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] border-border bg-card text-foreground rounded-[2rem] flex flex-col">
           <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingMember ? "Edit Strategic Asset" : "Onboard New Talent"}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -470,7 +470,7 @@ export default function Personnel() {
 
       {/* Assignment Dialog */}
       <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
-        <DialogContent className="sm:max-w-lg border-border bg-card text-foreground rounded-sm">
+        <DialogContent className="sm:max-w-lg border-border bg-card text-foreground rounded-[2rem]">
           <DialogHeader className="px-8 pt-8 pb-4">
             <DialogTitle>Assign Capacity</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -482,7 +482,7 @@ export default function Personnel() {
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Project Strategy</Label>
                 <Select value={assignmentForm.projectId.toString()} onValueChange={v => setAssignmentForm({ ...assignmentForm, projectId: parseInt(v) })}>
-                  <SelectTrigger className="bg-background border-border rounded-sm">
+                  <SelectTrigger className="bg-background border-border rounded-full">
                     <SelectValue placeholder="Select Project..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -500,7 +500,7 @@ export default function Personnel() {
                     type="number" min="0" max="168"
                     value={assignmentForm.hoursAllocated}
                     onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: parseInt(e.target.value) })}
-                    className="bg-background border-border rounded-sm"
+                    className="bg-background border-border rounded-full"
                   />
                   <span className="text-xs text-muted-foreground font-mono">HRS/WK</span>
                 </div>
@@ -508,8 +508,8 @@ export default function Personnel() {
             </DialogBody>
 
             <DialogFooter className="px-8 py-6">
-              <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-muted rounded-sm">Cancel</Button>
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">Confirm Allocation</Button>
+              <Button type="button" variant="ghost" onClick={() => setIsAssignmentDialogOpen(false)} className="hover:bg-muted rounded-full">Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full">Confirm Allocation</Button>
             </DialogFooter>
           </form>
         </DialogContent>

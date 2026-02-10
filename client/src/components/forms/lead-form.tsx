@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createLead, updateLead, type Lead } from "@/lib/api";
-import { insertLeadSchema, LEAD_ORIGINS } from "@shared/schema";
+import { insertLeadSchema, LEAD_ORIGINS, LEAD_PRIORITIES } from "@shared/schema";
 import { useEffect } from "react";
 
 interface LeadFormProps {
@@ -48,6 +48,7 @@ export function LeadForm({ open, onOpenChange, initialData }: LeadFormProps) {
             estimatedValue: "",
             notes: "",
             status: "Nuevo",
+            priority: "Media",
         },
     });
 
@@ -63,6 +64,7 @@ export function LeadForm({ open, onOpenChange, initialData }: LeadFormProps) {
                     estimatedValue: initialData.estimatedValue || "",
                     notes: initialData.notes || "",
                     status: initialData.status as any,
+                    priority: initialData.priority as any || "Media",
                 });
             } else {
                 form.reset({
@@ -74,6 +76,7 @@ export function LeadForm({ open, onOpenChange, initialData }: LeadFormProps) {
                     estimatedValue: "",
                     notes: "",
                     status: "Nuevo",
+                    priority: "Media",
                 });
             }
         }
@@ -210,6 +213,29 @@ export function LeadForm({ open, onOpenChange, initialData }: LeadFormProps) {
                         )}
                     />
                 </div>
+
+                <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Prioridad</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {LEAD_PRIORITIES.map((priority) => (
+                                        <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <FormField
                     control={form.control}

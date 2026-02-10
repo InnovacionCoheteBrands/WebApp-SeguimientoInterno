@@ -2,8 +2,40 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { hashPassword } from "../utils/crypto";
+import { upload } from "../middleware/upload";
 
 const router = Router();
+
+/**
+ * POST /api/users/me/avatar
+ * Upload user avatar
+ */
+router.post("/me/avatar", upload.single("avatar"), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const avatarUrl = `/uploads/${req.file.filename}`;
+
+        // Update user avatar in database
+        const updatedUser = await storage.updateUser(req.user.id, { avatarUrl });
+
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Return the new avatar URL
+        res.json({ avatarUrl });
+    } catch (error) {
+        console.error("Error uploading avatar:", error);
+        res.status(500).json({ error: "Failed to upload avatar" });
+    }
+});
 
 // Validation schemas
 const updateUserSchema = z.object({

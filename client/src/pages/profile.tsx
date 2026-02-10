@@ -1,5 +1,5 @@
-import { memo, useState } from "react";
-import { ArrowLeft, User, Lock, Save } from "lucide-react";
+import { memo, useState, useRef, ChangeEvent } from "react";
+import { ArrowLeft, User, Lock, Save, Camera, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -8,52 +8,193 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import ReactCrop, { type Crop, centerCrop, makeAspectCrop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 interface Profile {
-  name: string;
+  id: string;
+  username: string;
   email: string;
   role: string;
-  clearance: string;
-  initials: string;
+  avatarUrl?: string; // Add avatarUrl
+  // These fields are not in the DB schema yet, but were in the mock. 
+  // We'll keep them optional or read-only/mocked where data is missing.
+  clearance?: string;
+  initials?: string;
+  name?: string;
 }
 
-const defaultProfile: Profile = {
-  name: "Cmdr. Shepard",
-  email: "shepard@cohetebrands.com",
-  role: "Director de Marketing",
-  clearance: "Level 5",
-  initials: "CM",
-};
+// Canvas utility for cropping
+function centerAspectCrop(
+  mediaWidth: number,
+  mediaHeight: number,
+  aspect: number,
+) {
+  return centerCrop(
+    makeAspectCrop(
+      {
+        unit: '%',
+        width: 90,
+      },
+      aspect,
+      mediaWidth,
+      mediaHeight,
+    ),
+    mediaWidth,
+    mediaHeight,
+  )
+}
 
 const ProfilePage = memo(function ProfilePage() {
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile>(() => {
-    const saved = localStorage.getItem("cohete-brands-profile");
-    if (saved) {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+
+  // -- Data Fetching --
+  const { data: user, isLoading } = useQuery<Profile>({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch profile');
+      return res.json();
+    },
+    enabled: !!token
+  });
+
+  // -- Avatar Upload State --
+  const [imgSrc, setImgSrc] = useState('');
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // -- Mutation --
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (blob: Blob) => {
+      const formData = new FormData();
+      formData.append('avatar', blob, 'avatar.jpg');
+
+      const res = await fetch('/api/users/me/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }, // Don't set Content-Type for FormData
+        body: formData
+      });
+
+      if (!res.ok) throw new Error('Failed to upload avatar');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      setIsCropDialogOpen(false);
+      setImgSrc('');
+      toast({
+        title: "Avatar Updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload avatar. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // -- Handlers --
+
+  const onSelectFile = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      // Limit file size (e.g. 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      setCrop(undefined); // Reset crop
+      const reader = new FileReader();
+      reader.addEventListener('load', () =>
+        setImgSrc(reader.result?.toString() || ''),
+      );
+      reader.readAsDataURL(file);
+      setIsCropDialogOpen(true);
+    }
+  }
+
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    setCrop(centerAspectCrop(width, height, 1)); // 1:1 aspect ratio
+  }
+
+  const getCroppedImg = async (image: HTMLImageElement, crop: PixelCrop): Promise<Blob> => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0, 0,
+      crop.width,
+      crop.height,
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (!blob) {
+          reject(new Error('Canvas is empty'));
+          return;
+        }
+        resolve(blob);
+      }, 'image/jpeg', 0.9); // Quality 0.9
+    });
+  }
+
+  const handleUpload = async () => {
+    if (completedCrop && imgRef.current) {
       try {
-        return { ...defaultProfile, ...JSON.parse(saved) };
+        const blob = await getCroppedImg(imgRef.current, completedCrop);
+        uploadAvatarMutation.mutate(blob);
       } catch (e) {
-        console.error("Failed to load profile:", e);
+        console.error(e);
       }
     }
-    return defaultProfile;
-  });
-  const [hasChanges, setHasChanges] = useState(false);
+  }
 
+  // Placeholder save handler (frontend only for other fields for now as per requirement focus on avatar)
+  // Real implementation would handle PATCH /api/users/:id
   const handleSave = () => {
-    localStorage.setItem("cohete-brands-profile", JSON.stringify(profile));
-    setHasChanges(false);
     toast({
-      title: "Profile Saved",
-      description: "Your personal information has been updated successfully",
+      title: "Not Implemented",
+      description: "Profile updates other than avatar are pending implementation.",
     });
   };
 
-  const updateProfile = <K extends keyof Profile>(key: K, value: Profile[K]) => {
-    setProfile(prev => ({ ...prev, [key]: value }));
-    setHasChanges(true);
-  };
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading profile...</div>;
+
+  const userInitials = user?.username?.slice(0, 2).toUpperCase() || "??";
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,7 +204,7 @@ const ProfilePage = memo(function ProfilePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <Button variant="ghost" size="icon" className="rounded-sm" data-testid="button-back">
+                <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-back">
                   <ArrowLeft className="size-5" />
                 </Button>
               </Link>
@@ -76,8 +217,8 @@ const ProfilePage = memo(function ProfilePage() {
             </div>
             <Button
               onClick={handleSave}
-              disabled={!hasChanges}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={true} // Disabled as we only focused on avatar
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
               data-testid="button-save-profile"
             >
               <Save className="size-4 mr-2" />
@@ -96,7 +237,7 @@ const ProfilePage = memo(function ProfilePage() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-primary/10 border border-primary/20">
+                <div className="p-2 rounded-full bg-primary/10 border border-primary/20">
                   <User className="size-5 text-primary" />
                 </div>
                 <div>
@@ -109,21 +250,33 @@ const ProfilePage = memo(function ProfilePage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
-                <Avatar className="size-20 border-2 border-primary/20">
-                  <AvatarFallback className="bg-muted text-2xl font-display font-bold text-muted-foreground">
-                    {profile.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <Label htmlFor="initials" className="text-xs font-mono uppercase text-muted-foreground">Avatar Initials</Label>
-                  <Input
-                    id="initials"
-                    value={profile.initials}
-                    onChange={(e) => updateProfile("initials", e.target.value.toUpperCase().slice(0, 2))}
-                    className="rounded-sm border-border bg-background mt-1 max-w-[100px]"
-                    maxLength={2}
-                    data-testid="input-initials"
+                <div className="relative group">
+                  <Avatar className="size-24 border-2 border-primary/20 cursor-pointer transition-opacity group-hover:opacity-80" onClick={() => fileInputRef.current?.click()}>
+                    {user?.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} className="object-cover" />
+                    ) : null}
+                    <AvatarFallback className="bg-muted text-2xl font-display font-bold text-muted-foreground">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                    <Camera className="size-6 text-foreground bg-background/50 rounded-full p-1" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={onSelectFile}
                   />
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <h3 className="text-lg font-bold">{user?.username}</h3>
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="size-4 mr-2" />
+                    Change Avatar
+                  </Button>
                 </div>
               </div>
 
@@ -131,13 +284,12 @@ const ProfilePage = memo(function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-xs font-mono uppercase text-muted-foreground">Full Name</Label>
+                  <Label htmlFor="username" className="text-xs font-mono uppercase text-muted-foreground">Username</Label>
                   <Input
-                    id="name"
-                    value={profile.name}
-                    onChange={(e) => updateProfile("name", e.target.value)}
-                    className="rounded-sm border-border bg-background"
-                    data-testid="input-name"
+                    id="username"
+                    value={user?.username || ''}
+                    disabled
+                    className="rounded-xl border-border bg-muted/50"
                   />
                 </div>
 
@@ -145,11 +297,9 @@ const ProfilePage = memo(function ProfilePage() {
                   <Label htmlFor="email" className="text-xs font-mono uppercase text-muted-foreground">Email Address</Label>
                   <Input
                     id="email"
-                    type="email"
-                    value={profile.email}
-                    onChange={(e) => updateProfile("email", e.target.value)}
-                    className="rounded-sm border-border bg-background"
-                    data-testid="input-email"
+                    value={user?.email || ''}
+                    disabled
+                    className="rounded-xl border-border bg-muted/50"
                   />
                 </div>
 
@@ -157,30 +307,16 @@ const ProfilePage = memo(function ProfilePage() {
                   <Label htmlFor="role" className="text-xs font-mono uppercase text-muted-foreground">Role / Position</Label>
                   <Input
                     id="role"
-                    value={profile.role}
-                    onChange={(e) => updateProfile("role", e.target.value)}
-                    className="rounded-sm border-border bg-background"
-                    data-testid="input-role"
+                    value={user?.role || ''}
+                    disabled
+                    className="rounded-xl border-border bg-muted/50"
                   />
                 </div>
 
+                {/* Placeholder for fields technically not in DB User model yet but required by UI design */}
                 <div className="space-y-2">
                   <Label htmlFor="clearance" className="text-xs font-mono uppercase text-muted-foreground">Clearance Level</Label>
-                  <Select
-                    value={profile.clearance}
-                    onValueChange={(value) => updateProfile("clearance", value)}
-                  >
-                    <SelectTrigger className="rounded-sm border-border bg-background" data-testid="select-clearance">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Level 1">Level 1 - Basic</SelectItem>
-                      <SelectItem value="Level 2">Level 2 - Standard</SelectItem>
-                      <SelectItem value="Level 3">Level 3 - Advanced</SelectItem>
-                      <SelectItem value="Level 4">Level 4 - Classified</SelectItem>
-                      <SelectItem value="Level 5">Level 5 - Top Secret</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input value="Level 5" disabled className="rounded-xl border-border bg-muted/50" />
                 </div>
               </div>
             </CardContent>
@@ -191,7 +327,7 @@ const ProfilePage = memo(function ProfilePage() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500/0 via-red-500 to-red-500/0 opacity-50" />
             <CardHeader className="p-4 sm:p-6 pb-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-sm bg-red-500/10 border border-red-500/20">
+                <div className="p-2 rounded-full bg-red-500/10 border border-red-500/20">
                   <Lock className="size-5 text-red-500" />
                 </div>
                 <div>
@@ -203,13 +339,13 @@ const ProfilePage = memo(function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 rounded-sm bg-background/50 border border-border">
+              <div className="p-4 rounded-xl bg-background/50 border border-border">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Authentication system is not yet configured. Password management will be available once user authentication is implemented.
+                  Password management is available via the admin portal or by contacting support.
                 </p>
                 <Button
                   variant="outline"
-                  className="rounded-sm w-full border-border hover:bg-muted"
+                  className="rounded-full w-full border-border hover:bg-muted"
                   disabled
                   data-testid="button-change-password"
                 >
@@ -222,6 +358,38 @@ const ProfilePage = memo(function ProfilePage() {
 
         </div>
       </div>
+
+      {/* Crop Dialog */}
+      <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crop Profile Picture</DialogTitle>
+            <DialogDescription>
+              Adjust the cropping area to frame your profile picture.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center p-4">
+            {imgSrc && (
+              <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={1}
+                circularCrop
+              >
+                <img ref={imgRef} alt="Crop me" src={imgSrc} onLoad={onImageLoad} style={{ maxHeight: '400px' }} />
+              </ReactCrop>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsCropDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpload} disabled={!completedCrop || uploadAvatarMutation.isPending}>
+              {uploadAvatarMutation.isPending ? "Uploading..." : "Save Avatar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 });

@@ -8,7 +8,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
 import { hashPassword, verifyPassword } from '../utils/crypto';
-import { generateToken } from '../middleware/auth';
+import { generateToken, requireAuth } from '../middleware/auth';
+import passport from 'passport';
 
 const router = Router();
 
@@ -160,6 +161,80 @@ router.post('/refresh', async (req, res) => {
         error: 'NotImplemented',
         message: 'Token refresh not yet implemented. Please log in again.'
     });
+});
+
+/**
+ * GET /api/auth/google
+ * Initiate Google OAuth flow
+ */
+router.get('/google', (req, res, next) => {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.BASE_URL) {
+        return res.status(503).json({
+            error: 'ServiceUnavailable',
+            message: 'Google OAuth is not configured. Please contact your administrator.',
+            details: 'Missing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or BASE_URL environment variables.'
+        });
+    }
+    passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
+
+/**
+ * GET /api/auth/google/callback
+ * Handle Google OAuth callback
+ */
+router.get('/google/callback', (req, res, next) => {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.BASE_URL) {
+        return res.redirect('/auth?error=GoogleOAuthNotConfigured');
+    }
+
+    passport.authenticate('google', {
+        failureRedirect: '/auth?error=GoogleAuthFailed',
+        session: false
+    }, (err: any, user: any, info: any) => {
+        if (err || !user) {
+            console.error('[Google OAuth] Authentication failed:', err || info);
+            return res.redirect('/auth?error=GoogleAuthFailed');
+        }
+
+        // Generate JWT
+        const token = generateToken({
+            id: user.id,
+            username: user.username,
+            role: user.role || 'user'
+        });
+
+        // Redirect to frontend with token
+        res.redirect(`/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            avatarUrl: user.avatarUrl
+        }))}`);
+    })(req, res, next);
+});
+
+/**
+ * GET /api/auth/me
+ * Get current authenticated user
+ */
+router.get('/me', requireAuth, async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+    } catch (error) {
+        console.error('Error fetching current user:', error);
+        res.status(500).json({ error: 'Failed to fetch user' });
+    }
 });
 
 export default router;

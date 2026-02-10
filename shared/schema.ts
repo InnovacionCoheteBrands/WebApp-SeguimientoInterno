@@ -118,6 +118,10 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").default("user").notNull(),
+  // Google OAuth fields
+  googleId: text("google_id").unique(),
+  email: text("email").unique(),
+  avatarUrl: text("avatar_url"),
   // Settings & Integrations
   settings: text("settings").default("{}"), // JSON string for preferences
   apiKey: text("api_key"),
@@ -129,6 +133,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   role: true,
+  googleId: true,
+  email: true,
+  avatarUrl: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -1390,6 +1397,12 @@ export const LEAD_STATUSES = [
   "Descartado",
 ] as const;
 
+export const LEAD_PRIORITIES = [
+  "Baja",
+  "Media",
+  "Alta",
+] as const;
+
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
 
@@ -1420,6 +1433,8 @@ export const leads = pgTable("leads", {
 
   notes: text("notes"),
   tags: text("tags"),  // JSON array for custom tags
+  services: text("services"), // JSON array or semi-colon separated services of interest
+  priority: text("priority").notNull().default("Media"), // From LEAD_PRIORITIES
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -1437,6 +1452,8 @@ export const insertLeadSchema = createInsertSchema(leads, {
   lostReason: safeOptionalString(500),
   notes: safeOptionalString(2000),
   tags: safeOptionalString(500),  // JSON array
+  services: safeOptionalString(500), // JSON array or text
+  priority: z.enum(LEAD_PRIORITIES).default("Media"),
 
   // 🔢 Number validation
   estimatedValue: optionalPositiveNumericString(),

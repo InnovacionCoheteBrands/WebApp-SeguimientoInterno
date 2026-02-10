@@ -51,8 +51,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Settings, GripVertical, Info } from "lucide-react";
-import { LEAD_ORIGINS, LEAD_STATUSES } from "@shared/schema";
+import { Settings, GripVertical, Info, MessageCircle, BarChart3 } from "lucide-react";
+import { LEAD_ORIGINS, LEAD_STATUSES, LEAD_PRIORITIES } from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     fetchLeads,
     fetchLeadsMetrics,
@@ -72,10 +73,12 @@ export default function LeadsControl() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
+    const [showActiveOnly, setShowActiveOnly] = useState(true); // New state for filtering active leads
+    const [searchTerm, setSearchTerm] = useState(""); // New state for search
 
     // Kanban Settings (could be persisted in DB, using local state + persistence for now)
     const [groupMode, setGroupMode] = useState<GroupMode>(() => {
-        return (localStorage.getItem("kanban_group_mode") as GroupMode) || "origin";
+        return (localStorage.getItem("kanban_group_mode") as GroupMode) || "status"; // Default to 'status'
     });
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
@@ -95,6 +98,21 @@ export default function LeadsControl() {
         queryFn: fetchLeadsMetrics,
     });
 
+    // Filter leads based on search term and active status
+    const filteredLeads = useMemo(() => {
+        return leads?.filter((lead) => {
+            const matchesSearch =
+                lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                lead.company?.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const isClosed = lead.status === "Ganado" || lead.status === "Perdido" || lead.status === "Descartado";
+            const matchesActive = showActiveOnly ? !isClosed : true;
+
+            return matchesSearch && matchesActive;
+        });
+    }, [leads, searchTerm, showActiveOnly]);
+
     // Column definitions based on mode
     const kanbanColumns = useMemo(() => {
         const fullList = groupMode === "origin" ? LEAD_ORIGINS : LEAD_STATUSES;
@@ -106,12 +124,12 @@ export default function LeadsControl() {
     const groupedLeads = useMemo(() => {
         const grouped: Record<string, Lead[]> = {};
         kanbanColumns.forEach((col) => {
-            grouped[col] = leads.filter((lead) =>
+            grouped[col] = filteredLeads.filter((lead) => // Use filteredLeads here
                 groupMode === "origin" ? lead.origin === col : lead.status === col
             );
         });
         return grouped;
-    }, [leads, kanbanColumns, groupMode]);
+    }, [filteredLeads, kanbanColumns, groupMode]); // Dependency on filteredLeads
 
     const handleSaveSettings = () => {
         localStorage.setItem("kanban_group_mode", groupMode);
@@ -188,17 +206,33 @@ export default function LeadsControl() {
 
     const getOriginColor = (origin: string) => {
         switch (origin) {
-            case "Referido": return "border-green-400 bg-green-900/20";
-            case "Instagram": return "border-pink-400 bg-pink-900/20";
-            case "TikTok": return "border-cyan-400 bg-cyan-900/20";
-            case "Landing Page": return "border-blue-400 bg-blue-900/20";
-            case "LinkedIn": return "border-sky-400 bg-sky-900/20";
-            case "YouTube": return "border-red-400 bg-red-900/20";
-            case "Evento": return "border-yellow-400 bg-yellow-900/20";
-            case "Campañas": return "border-purple-400 bg-purple-900/20";
-            case "Google": return "border-amber-400 bg-amber-900/20";
-            case "Facebook": return "border-indigo-400 bg-indigo-900/20";
-            default: return "border-gray-400 bg-gray-900/20";
+            case "Referido": return "from-green-500/50 to-emerald-500/10";
+            case "Instagram": return "from-pink-500/50 to-rose-500/10";
+            case "TikTok": return "from-cyan-500/50 to-blue-500/10";
+            case "Landing Page": return "from-blue-500/50 to-indigo-500/10";
+            case "LinkedIn": return "from-sky-500/50 to-blue-500/10";
+            case "YouTube": return "from-red-500/50 to-orange-500/10";
+            case "Evento": return "from-yellow-500/50 to-amber-500/10";
+            case "Campañas": return "from-purple-500/50 to-violet-500/10";
+            case "Google": return "from-amber-500/50 to-yellow-500/10";
+            case "Facebook": return "from-indigo-500/50 to-blue-500/10";
+            default: return "from-gray-500/50 to-slate-500/10";
+        }
+    };
+
+    const getOriginSolidColor = (origin: string) => {
+        switch (origin) {
+            case "Referido": return "bg-green-500";
+            case "Instagram": return "bg-pink-500";
+            case "TikTok": return "bg-cyan-500";
+            case "Landing Page": return "bg-blue-500";
+            case "LinkedIn": return "bg-sky-500";
+            case "YouTube": return "bg-red-500";
+            case "Evento": return "bg-yellow-500";
+            case "Campañas": return "bg-purple-500";
+            case "Google": return "bg-amber-500";
+            case "Facebook": return "bg-indigo-500";
+            default: return "bg-gray-500";
         }
     };
 
@@ -215,16 +249,23 @@ export default function LeadsControl() {
             {/* Header with Metrics */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Leads Control</h1>
-                    <p className="text-muted-foreground">Gestión de prospectos por origen</p>
+                    <h1 className="text-3xl font-bold">CRM</h1>
+                    <p className="text-muted-foreground">Centro de comando de prospectos y ventas</p>
                 </div>
 
                 <div className="flex gap-2">
+                    <Button
+                        variant={showActiveOnly ? "secondary" : "ghost"}
+                        className="rounded-sm"
+                        onClick={() => setShowActiveOnly(!showActiveOnly)}
+                    >
+                        {showActiveOnly ? "Activos" : "Todos"}
+                    </Button>
                     <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="border-border rounded-sm">
                                 <Settings className="w-4 h-4 mr-2" />
-                                Configurar Kanban
+                                Vista
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-md rounded-sm">
@@ -235,30 +276,22 @@ export default function LeadsControl() {
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-6 py-4">
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-mono uppercase tracking-wider text-muted-foreground">Agrupar por</Label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Button
-                                            variant={groupMode === 'origin' ? 'default' : 'outline'}
-                                            className="rounded-sm"
-                                            onClick={() => {
-                                                setGroupMode('origin');
-                                                setVisibleColumns([...LEAD_ORIGINS]);
-                                            }}
-                                        >
-                                            Origen (Canal)
-                                        </Button>
-                                        <Button
-                                            variant={groupMode === 'status' ? 'default' : 'outline'}
-                                            className="rounded-sm"
-                                            onClick={() => {
-                                                setGroupMode('status');
-                                                setVisibleColumns([...LEAD_STATUSES]);
-                                            }}
-                                        >
-                                            Estado (Funnel)
-                                        </Button>
-                                    </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="group-mode" className="text-right">
+                                        Agrupar por
+                                    </Label>
+                                    <Select value={groupMode} onValueChange={(v: 'status' | 'origin') => {
+                                        setGroupMode(v);
+                                        setVisibleColumns(v === 'origin' ? [...LEAD_ORIGINS] : [...LEAD_STATUSES]);
+                                    }}>
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="status">Estado (Funnel)</SelectItem>
+                                            <SelectItem value="origin">Origen (Canal)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="space-y-3">
@@ -388,112 +421,162 @@ export default function LeadsControl() {
                     {kanbanColumns.map((col) => (
                         <div
                             key={col}
-                            className={`w-72 flex-shrink-0 rounded-lg border-2 ${groupMode === 'origin' ? getOriginColor(col) : 'border-border bg-card/40'}`}
+                            className="w-80 flex-shrink-0 flex flex-col"
                         >
-                            {/* Column Header */}
-                            <div className="p-3 border-b border-white/10 flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold text-xs uppercase tracking-widest text-foreground/80">{col}</h3>
-                                    <div className="flex items-center gap-1.5">
-                                        <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-sm bg-background/50 text-muted-foreground border-border">
+                            {/* Premium Minimal Column Header */}
+                            <div className="relative p-4 rounded-t-xl bg-[#09090b] border border-white/5 border-b-0 group-header">
+                                {/* The 'Flare' - Top Gradient Line */}
+                                <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${groupMode === 'origin' ? getOriginColor(col) : getStatusColor(col).replace('bg-', 'from-').replace('500', '500/80') + ' to-transparent'}`} />
+
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        {/* Status Dot */}
+                                        <div className={`size-2 rounded-full ${groupMode === 'origin' ? getOriginSolidColor(col) : getStatusColor(col)} shadow-[0_0_8px_rgba(255,255,255,0.3)]`} />
+                                        <h3 className="font-display font-medium text-sm text-foreground/90 tracking-wide">{col}</h3>
+                                        <Badge variant="outline" className="ml-1 text-[10px] h-4 px-1.5 rounded-full bg-white/5 border-white/10 text-muted-foreground">
                                             {groupedLeads[col]?.length || 0}
                                         </Badge>
-                                        <span className="text-[10px] text-muted-foreground font-mono">
-                                            ${(groupedLeads[col]?.reduce((acc, lead) => acc + parseFloat(lead.estimatedValue || "0"), 0) / 1000).toFixed(1)}k
-                                        </span>
                                     </div>
+                                    <span className="text-[10px] font-mono text-muted-foreground/60 tracking-wider">
+                                        ${(groupedLeads[col]?.reduce((acc, lead) => acc + parseFloat(lead.estimatedValue || "0"), 0) / 1000).toFixed(1)}k
+                                    </span>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground opacity-50 hover:opacity-100">
-                                    <Plus className="size-3" />
-                                </Button>
                             </div>
 
-                            {/* Column Body */}
-                            <div className="p-2 space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-none">
+                            {/* Column Body - Transparent/Subtle */}
+                            <div className="flex-1 p-2 space-y-3 bg-[#09090b]/50 border border-white/5 border-t-0 rounded-b-xl max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-none">
                                 {groupedLeads[col]?.map((lead) => (
-                                    <Card key={lead.id} className="bg-card/80 backdrop-blur-sm hover:bg-card transition-colors">
-                                        <CardContent className="p-3 space-y-2">
-                                            {/* Lead Name & Actions */}
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <p className="font-medium text-sm">{lead.name}</p>
-                                                    {lead.company && (
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                            <Building2 className="w-3 h-3" />
-                                                            {lead.company}
-                                                        </p>
+                                    <div key={lead.id} className="group/card relative">
+                                        {/* Card Flare Effect (Hover) */}
+                                        <div className={`absolute -inset-[1px] rounded-[1.5rem] bg-gradient-to-b ${groupMode === 'origin' ? getOriginColor(col) : 'from-white/10 to-transparent'} opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 blur-sm`} />
+
+                                        <Card className="relative bg-zinc-900/90 hover:bg-zinc-800 transition-colors border-white/10 shadow-md group-hover/card:translate-x-1 duration-300 overflow-hidden rounded-[1.5rem]">
+                                            {/* Neon Side Stripe */}
+                                            <div className={`absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-transparent ${lead.priority === 'Alta' ? 'via-red-500' :
+                                                lead.priority === 'Media' ? 'via-amber-500' :
+                                                    'via-blue-500'
+                                                } to-transparent opacity-70 group-hover/card:opacity-100 transition-opacity`} />
+
+                                            <CardContent className="p-4 pl-5 space-y-3">
+                                                {/* Lead Name & Actions */}
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <p className="font-medium text-sm">{lead.name}</p>
+                                                        {lead.company && (
+                                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                <Building2 className="w-3 h-3" />
+                                                                {lead.company}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                                <MoreVertical className="w-4 h-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => setEditingLead(lead)}>
+                                                                <Edit className="w-4 h-4 mr-2" />
+                                                                Editar
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => convertMutation.mutate(lead.id)}
+                                                                disabled={lead.status === "Ganado"}
+                                                            >
+                                                                <UserPlus className="w-4 h-4 mr-2" />
+                                                                Convertir a Cliente
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => deleteMutation.mutate(lead.id)}
+                                                                className="text-destructive"
+                                                            >
+                                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                                Eliminar
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+
+                                                {/* Contact Info - Compact */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    {lead.email && (
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/60 group-hover/card:text-muted-foreground transition-colors truncate">
+                                                            <Mail className="size-3 flex-shrink-0" />
+                                                            <span className="truncate">{lead.email}</span>
+                                                        </div>
+                                                    )}
+                                                    {lead.phone && (
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/60 group-hover/card:text-muted-foreground transition-colors">
+                                                            <Phone className="size-3 flex-shrink-0" />
+                                                            <span>{lead.phone}</span>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                            <MoreVertical className="w-4 h-4" />
+
+                                                {/* Status & Value */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Select
+                                                            value={lead.status}
+                                                            onValueChange={(value) => handleStatusChange(lead.id, value)}
+                                                        >
+                                                            <SelectTrigger className="h-6 text-xs w-auto">
+                                                                <Badge className={`${getStatusColor(lead.status)} text-white text-xs`}>
+                                                                    {lead.status}
+                                                                </Badge>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {LEAD_STATUSES.map((status) => (
+                                                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {lead.priority && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`text-[10px] h-4 px-1 ${lead.priority === 'Alta' ? 'border-red-500 text-red-500 bg-red-500/10' :
+                                                                    lead.priority === 'Media' ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' :
+                                                                        'border-gray-400 text-gray-400 bg-gray-400/10'
+                                                                    }`}
+                                                            >
+                                                                {lead.priority}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {lead.estimatedValue && (
+                                                        <span className="text-xs font-medium text-green-400">
+                                                            ${Number(lead.estimatedValue).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Quick Actions */}
+                                                <div className="flex items-center gap-1 pt-1 border-t border-border/50">
+                                                    {lead.phone && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-green-500 hover:bg-green-500/10"
+                                                            onClick={() => window.open(`https://wa.me/${lead.phone?.replace(/\D/g, '')}`, '_blank')}
+                                                        >
+                                                            <MessageCircle className="w-3.5 h-3.5" />
                                                         </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => setEditingLead(lead)}>
-                                                            <Edit className="w-4 h-4 mr-2" />
-                                                            Editar
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() => convertMutation.mutate(lead.id)}
-                                                            disabled={lead.status === "Ganado"}
+                                                    )}
+                                                    {lead.email && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-blue-500 hover:bg-blue-500/10"
+                                                            onClick={() => window.open(`mailto:${lead.email}`, '_blank')}
                                                         >
-                                                            <UserPlus className="w-4 h-4 mr-2" />
-                                                            Convertir a Cliente
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() => deleteMutation.mutate(lead.id)}
-                                                            className="text-destructive"
-                                                        >
-                                                            <Trash2 className="w-4 h-4 mr-2" />
-                                                            Eliminar
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-
-                                            {/* Contact Info */}
-                                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                                {lead.email && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Mail className="w-3 h-3" />
-                                                        {lead.email.split("@")[0]}...
-                                                    </span>
-                                                )}
-                                                {lead.phone && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Phone className="w-3 h-3" />
-                                                        {lead.phone}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Status & Value */}
-                                            <div className="flex items-center justify-between">
-                                                <Select
-                                                    value={lead.status}
-                                                    onValueChange={(value) => handleStatusChange(lead.id, value)}
-                                                >
-                                                    <SelectTrigger className="h-6 text-xs w-auto">
-                                                        <Badge className={`${getStatusColor(lead.status)} text-white text-xs`}>
-                                                            {lead.status}
-                                                        </Badge>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {LEAD_STATUSES.map((status) => (
-                                                            <SelectItem key={status} value={status}>{status}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                {lead.estimatedValue && (
-                                                    <span className="text-xs font-medium text-green-400">
-                                                        ${Number(lead.estimatedValue).toLocaleString()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                                            <Mail className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
                                 ))}
 
                                 {/* Empty State */}
@@ -511,6 +594,6 @@ export default function LeadsControl() {
                     ))}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

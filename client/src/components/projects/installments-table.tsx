@@ -146,7 +146,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
         if (status === "collected") {
             return (
-                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs rounded-sm">
+                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs rounded-full">
                     <CheckCircle className="size-3 mr-1" />
                     Pagado
                 </Badge>
@@ -155,7 +155,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
         if (status === "cancelled") {
             return (
-                <Badge variant="outline" className="bg-muted text-muted-foreground text-xs rounded-sm">
+                <Badge variant="outline" className="bg-muted text-muted-foreground text-xs rounded-full">
                     Cancelado
                 </Badge>
             );
@@ -163,7 +163,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
         if (isOverdue) {
             return (
-                <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20 text-xs rounded-sm">
+                <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20 text-xs rounded-full">
                     <AlertTriangle className="size-3 mr-1" />
                     Vencido
                 </Badge>
@@ -171,7 +171,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
         }
 
         return (
-            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs rounded-sm">
+            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs rounded-full">
                 <Clock className="size-3 mr-1" />
                 Pendiente
             </Badge>
@@ -180,7 +180,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
     return (
         <>
-            <div className="rounded-sm border border-border bg-card">
+            <div className="rounded-[2rem] border border-border bg-card">
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-semibold">Calendario de Pagos</h3>
@@ -267,7 +267,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-2xl rounded-sm">
+                <DialogContent className="sm:max-w-2xl rounded-[2rem]">
                     <DialogHeader>
                         <DialogTitle>{editingInstallment ? "Editar Parcialidad" : "Nueva Parcialidad"}</DialogTitle>
                         <DialogDescription>
@@ -329,7 +329,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                                         variant={formData.status === "pending" ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => setFormData({ ...formData, status: "pending" })}
-                                        className="flex-1 rounded-sm"
+                                        className="flex-1 rounded-full"
                                     >
                                         Pendiente
                                     </Button>
@@ -338,7 +338,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                                         variant={formData.status === "collected" ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => setFormData({ ...formData, status: "collected" })}
-                                        className={`flex-1 rounded-sm ${formData.status === "collected" ? "bg-green-600 hover:bg-green-700" : ""}`}
+                                        className={`flex-1 rounded-full ${formData.status === "collected" ? "bg-green-600 hover:bg-green-700" : ""}`}
                                     >
                                         Pagado
                                     </Button>
@@ -347,7 +347,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                                         variant={formData.status === "cancelled" ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => setFormData({ ...formData, status: "cancelled" })}
-                                        className="flex-1 rounded-sm"
+                                        className="flex-1 rounded-full"
                                     >
                                         Cancelado
                                     </Button>
@@ -356,10 +356,10 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                         )}
 
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-sm">
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-full">
                                 Cancelar
                             </Button>
-                            <Button type="submit" className="rounded-sm" disabled={createMutation.isPending || updateMutation.isPending}>
+                            <Button type="submit" className="rounded-full" disabled={createMutation.isPending || updateMutation.isPending}>
                                 {editingInstallment ? "Actualizar" : "Crear"}
                             </Button>
                         </DialogFooter>
@@ -369,7 +369,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
             {/* Delete Confirmation */}
             <AlertDialog open={deleteInstallmentId !== null} onOpenChange={() => setDeleteInstallmentId(null)}>
-                <AlertDialogContent className="rounded-sm">
+                <AlertDialogContent className="rounded-[2rem]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Eliminar Parcialidad</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -377,10 +377,10 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-sm">Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => deleteInstallmentId && deleteMutation.mutate(deleteInstallmentId)}
-                            className="rounded-sm bg-destructive text-destructive-foreground"
+                            className="rounded-full bg-destructive text-destructive-foreground"
                         >
                             Eliminar
                         </AlertDialogAction>

@@ -184,8 +184,15 @@ function RecurringItem({ item, onEdit, onDelete }: { item: RecurringTransaction,
     const isNextSoon = item.nextExecutionDate ? new Date(item.nextExecutionDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : false;
 
     return (
-        <Card className="hover:bg-muted/30 transition-colors border-l-4" style={{ borderLeftColor: item.isActive ? (item.type === 'Ingreso' ? '#16a34a' : '#dc2626') : '#94a3b8' }}>
-            <div className="flex items-center p-4 gap-4">
+        <Card className="hover:bg-muted/30 transition-colors relative overflow-hidden group rounded-[2rem]">
+            {/* Neon Side Stripe */}
+            <div
+                className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity"
+                style={{
+                    backgroundImage: `linear-gradient(to bottom, transparent, ${item.isActive ? (item.type === 'Ingreso' ? '#16a34a' : '#dc2626') : '#94a3b8'}, transparent)`
+                }}
+            />
+            <div className="flex items-center p-4 pl-6 gap-4">
                 <div className="p-2 rounded-full bg-background border shadow-sm">
                     {item.type === 'Ingreso' ? <Briefcase className="h-5 w-5 text-green-600" /> : <Building2 className="h-5 w-5 text-red-600" />}
                 </div>
@@ -193,7 +200,7 @@ function RecurringItem({ item, onEdit, onDelete }: { item: RecurringTransaction,
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-sm truncate">{item.name}</h4>
-                        {!item.isActive && <Badge variant="secondary" className="text-xs">Inactivo</Badge>}
+                        {!item.isActive && <Badge variant="secondary" className="text-xs rounded-full">Inactivo</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3">
                         <span className="flex items-center gap-1">
@@ -218,10 +225,10 @@ function RecurringItem({ item, onEdit, onDelete }: { item: RecurringTransaction,
                 </div>
 
                 <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(item)} className="rounded-full">
                         <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onDelete}>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full" onClick={onDelete}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>

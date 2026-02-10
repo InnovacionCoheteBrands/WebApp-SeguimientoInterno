@@ -148,7 +148,7 @@ const FleetTracking = memo(function FleetTracking() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <Link href="/">
-              <Button variant="outline" size="icon" className="rounded-sm h-11 w-11" data-testid="button-back">
+              <Button variant="outline" size="icon" className=" h-11 w-11" data-testid="button-back">
                 <ArrowLeft className="size-5" />
               </Button>
             </Link>
@@ -160,12 +160,12 @@ const FleetTracking = memo(function FleetTracking() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            <Badge variant="outline" className="rounded-sm font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs sm:text-sm">
+            <Badge variant="outline" className=" font-mono font-normal text-primary border-primary/30 bg-primary/5 text-xs sm:text-sm">
               {clientAccounts.length} CLIENTES
             </Badge>
             <Button
               onClick={() => handleOpenDialog()}
-              className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-3 sm:px-4 flex-1 sm:flex-initial"
+              className=" bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-3 sm:px-4 flex-1 sm:flex-initial"
               data-testid="button-new-client"
             >
               <Plus className="size-5 sm:size-4 sm:mr-2" />
@@ -181,14 +181,14 @@ const FleetTracking = memo(function FleetTracking() {
             <Card
               key={account.id}
               status={account.status === "Active" ? "success" : account.status === "Paused" ? "warning" : "default"}
-              className="bg-card border-border rounded-sm cursor-pointer"
+              className="bg-card border-border cursor-pointer"
               onClick={() => handleOpenDrawer(account)}
             >
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-2">
                   <Badge
                     variant="outline"
-                    className={`rounded-sm text-[9px] h-4 px-1 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
+                    className={` text-[9px] h-4 px-1 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
                       account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
                       }`}
                   >
@@ -237,7 +237,7 @@ const FleetTracking = memo(function FleetTracking() {
             <Card
               key={account.id}
               status={account.status === "Active" ? "success" : account.status === "Paused" ? "warning" : "default"}
-              className="bg-card border-border rounded-sm hover:border-muted-foreground/30 transition-all group relative overflow-hidden cursor-pointer"
+              className="bg-card border-border hover:border-muted-foreground/30 transition-all group relative overflow-hidden cursor-pointer"
               data-testid={`client-card-${account.id}`}
               onClick={() => handleOpenDrawer(account)}
             >
@@ -251,7 +251,7 @@ const FleetTracking = memo(function FleetTracking() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`rounded-sm text-[10px] h-5 px-1.5 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
+                    className={` text-[10px] h-5 px-1.5 font-normal border-transparent bg-background ${account.status === "Active" ? "text-green-500" :
                       account.status === "Paused" ? "text-yellow-500" : "text-muted-foreground"
                       }`}
                     data-testid={`client-status-${account.id}`}
@@ -316,7 +316,7 @@ const FleetTracking = memo(function FleetTracking() {
                 </div>
 
                 {account.nextMilestone && (
-                  <div className="px-3 py-2 bg-background/50 rounded-sm border border-border">
+                  <div className="px-3 py-2 bg-background/50 border border-border">
                     <div className="flex items-center gap-2 text-xs">
                       <Target className="size-3 text-primary" />
                       <span className="font-mono text-muted-foreground truncate">
@@ -331,7 +331,7 @@ const FleetTracking = memo(function FleetTracking() {
                     variant="outline"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); handleOpenDialog(account); }}
-                    className="flex-1 rounded-sm h-8 text-xs border-dashed border-border hover:border-primary/50 hover:bg-muted hover:text-primary"
+                    className="flex-1 h-8 text-xs border-dashed border-border hover:border-primary/50 hover:bg-muted hover:text-primary"
                     data-testid={`button-edit-client-${account.id}`}
                   >
                     <Pencil className="size-3 mr-1.5" />
@@ -341,7 +341,7 @@ const FleetTracking = memo(function FleetTracking() {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); setDeleteClientId(account.id); }}
-                    className="rounded-sm h-8 w-8 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                    className=" h-8 w-8 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
                     data-testid={`button-delete-client-${account.id}`}
                   >
                     <Trash2 className="size-3.5" />
@@ -353,11 +353,11 @@ const FleetTracking = memo(function FleetTracking() {
         </div>
 
         {clientAccounts.length === 0 && (
-          <Card className="border-border bg-card/50 rounded-sm">
+          <Card className="border-border bg-card/50">
             <CardContent className="p-12 text-center">
               <Building2 className="size-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">No hay clientes registrados actualmente</p>
-              <Button onClick={() => handleOpenDialog()} className="rounded-sm">
+              <Button onClick={() => handleOpenDialog()} className="">
                 <Plus className="size-4 mr-2" />
                 Crear Primer Cliente
               </Button>
@@ -373,7 +373,7 @@ const FleetTracking = memo(function FleetTracking() {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-5xl rounded-sm max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader className="px-10 pt-10 pb-6">
             <DialogTitle>{editingAccount ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
             <DialogDescription>
@@ -491,14 +491,14 @@ const FleetTracking = memo(function FleetTracking() {
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
-                className="rounded-sm h-11"
+                className=" h-11"
                 data-testid="button-cancel"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                className="rounded-sm h-11"
+                className=" h-11"
                 disabled={createMutation.isPending || updateMutation.isPending}
                 data-testid="button-submit"
               >
@@ -510,7 +510,7 @@ const FleetTracking = memo(function FleetTracking() {
       </Dialog>
 
       <AlertDialog open={deleteClientId !== null} onOpenChange={() => setDeleteClientId(null)}>
-        <AlertDialogContent className="rounded-sm">
+        <AlertDialogContent className="">
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar Cliente</AlertDialogTitle>
             <AlertDialogDescription>
@@ -518,10 +518,10 @@ const FleetTracking = memo(function FleetTracking() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-sm" data-testid="button-cancel-delete">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="" data-testid="button-cancel-delete">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteClientId && deleteMutation.mutate(deleteClientId)}
-              className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className=" bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="button-confirm-delete"
             >
               Eliminar

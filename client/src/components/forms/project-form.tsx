@@ -53,7 +53,6 @@ interface ProjectFormProps {
 
 const formSchema = insertProjectSchema;
 const PROJECT_LEVELS = ["Bronce", "Plata", "Oro", "Diamante"];
-const STATUS_OPTIONS = ["Planificación", "En Desarrollo", "Pausa", "Terminado", "Cancelado"];
 
 export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProps) {
     const { toast } = useToast();
@@ -74,7 +73,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
             clientId: 0,
             name: "",
             serviceType: "General",
-            status: "Planificación",
+            status: "planning",
             health: "green",
             progress: 0,
             description: "",
@@ -122,7 +121,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                     clientId: 0,
                     name: "",
                     serviceType: "General",
-                    status: "Planificación",
+                    status: "planning",
                     health: "green",
                     progress: 0,
                     description: "",
@@ -258,9 +257,15 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                                 <FormField control={form.control} name="status" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Estado del Proyecto *</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || "Planificación"}>
+                                        <Select onValueChange={field.onChange} value={field.value || "planning"}>
                                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                            <SelectContent>{STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                            <SelectContent>
+                                                <SelectItem value="planning">Planificación</SelectItem>
+                                                <SelectItem value="active">En Desarrollo</SelectItem>
+                                                <SelectItem value="on_hold">Pausa</SelectItem>
+                                                <SelectItem value="completed">Terminado</SelectItem>
+                                                <SelectItem value="cancelled">Cancelado</SelectItem>
+                                            </SelectContent>
                                         </Select>
                                         <FormMessage />
                                     </FormItem>
@@ -361,7 +366,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                             </div>
 
                             {/* Payment Segmentation */}
-                            <div className="border rounded-md p-4 bg-muted/20">
+                            <div className="border rounded-xl p-4 bg-muted/20">
                                 <div className="flex justify-between items-center mb-4">
                                     <h4 className="font-semibold text-sm">Segmentación de Pagos</h4>
                                     <div className="text-xs text-muted-foreground">Fracciona los pagos en fechas específicas</div>
@@ -398,7 +403,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                             <h3 className="text-lg font-medium pt-4 border-t">Equipo de Trabajo</h3>
                             <div className="space-y-4">
                                 <div className="text-sm font-medium">Selección de Miembros</div>
-                                <ScrollArea className="h-[200px] border rounded-md p-4">
+                                <ScrollArea className="h-[200px] border rounded-xl p-4">
                                     {team.map((member) => (
                                         <div key={member.id} className="flex items-center space-x-2 py-2 border-b last:border-0">
                                             <Checkbox
@@ -425,7 +430,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                             <h3 className="text-lg font-medium pt-4 border-t">Servicios Incluidos</h3>
                             <div className="space-y-4">
                                 <div className="text-sm font-medium">Catálogo de Servicios</div>
-                                <ScrollArea className="h-[200px] border rounded-md p-4">
+                                <ScrollArea className="h-[200px] border rounded-xl p-4">
                                     {services.length === 0 ? (
                                         <div className="text-center text-muted-foreground py-8">No hay servicios disponibles.</div>
                                     ) : (
