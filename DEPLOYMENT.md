@@ -179,14 +179,26 @@ DATABASE_URL="postgresql://postgres:tu-password@db.rdhpjmjfdrpyirnuxdrm.supabase
 # Server Configuration
 PORT=5000
 HOST=0.0.0.0
+BASE_URL="https://tu-dominio.com"
 NODE_ENV=production
+LOG_LEVEL=info
 
 # Session Secret (generar con: openssl rand -base64 32)
 SESSION_SECRET="tu-clave-secreta-generada-aleatoriamente"
 
+# JWT (obligatorio para autenticacion)
+JWT_SECRET="tu-jwt-secret-de-minimo-32-caracteres"
+
+# Cifrado de API keys (obligatorio en produccion)
+ENCRYPTION_KEY="tu-clave-hex-de-64-caracteres"
+
 # AI Integration (Opcional)
 AI_INTEGRATIONS_OPENAI_API_KEY="sk-..."
 AI_INTEGRATIONS_OPENAI_BASE_URL="https://api.openai.com/v1"
+
+# Google OAuth (Opcional)
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
 ```
 
 ### 4. Push del Schema de Base de Datos

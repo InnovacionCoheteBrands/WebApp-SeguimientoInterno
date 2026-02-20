@@ -287,7 +287,7 @@ export default function Finanzas() {
 
                         {/* Monthly Receivables (Cuentas por Cobrar) */}
                         {monthlyReceivables.length > 0 && (
-                            <Card className="rounded-[2rem] bg-card/40 border-y-border border-r-border relative overflow-hidden group">
+                            <Card className="rounded-[2rem] bg-card/40 border-border relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-emerald-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
                                 <CardHeader className="pb-2 pl-6">
                                     <div className="flex items-center gap-2">
@@ -341,7 +341,7 @@ export default function Finanzas() {
 
                         {/* Monthly Payables (Obligaciones) */}
                         {monthlyPayables.length > 0 && (
-                            <Card className="rounded-[2rem] bg-card/40 border-y-border border-r-border relative overflow-hidden group">
+                            <Card className="rounded-[2rem] bg-card/40 border-border relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-rose-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
                                 <CardHeader className="pb-2 pl-6">
                                     <div className="flex items-center gap-2">

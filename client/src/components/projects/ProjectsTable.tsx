@@ -84,8 +84,8 @@ export function ProjectsTable({
     }
 
     return (
-        <div className="rounded-lg border border-border/50 overflow-hidden">
-            <Table>
+        <div className="rounded-lg border border-border/50 overflow-hidden overflow-x-auto">
+            <Table className="min-w-[800px]">
                 <TableHeader>
                     <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableHead className="font-semibold">Proyecto</TableHead>

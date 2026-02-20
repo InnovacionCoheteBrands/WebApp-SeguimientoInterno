@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertBillingProfileSchema, updateBillingProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -10,13 +11,13 @@ router.get("/clients/:clientId/billing-profiles", async (req, res) => {
     try {
         const clientId = parseInt(req.params.clientId);
         if (isNaN(clientId)) {
-            return res.status(400).json({ error: "ID de cliente inválido" });
+            return res.status(400).json({ error: "ID de cliente invÃƒÂ¡lido" });
         }
         const profiles = await storage.getBillingProfilesByClientId(clientId);
         res.json(profiles);
     } catch (error) {
-        console.error("Error fetching billing profiles:", error);
-        res.status(500).json({ error: "Error al obtener perfiles de facturación" });
+        logger.error({ err: error }, "Error fetching billing profiles:");
+        res.status(500).json({ error: "Error al obtener perfiles de facturaciÃƒÂ³n" });
     }
 });
 
@@ -26,12 +27,12 @@ router.get("/billing-profiles/:id", async (req, res) => {
         const id = parseInt(req.params.id);
         const profile = await storage.getBillingProfileById(id);
         if (!profile) {
-            return res.status(404).json({ error: "Perfil de facturación no encontrado" });
+            return res.status(404).json({ error: "Perfil de facturaciÃƒÂ³n no encontrado" });
         }
         res.json(profile);
     } catch (error) {
-        console.error("Error fetching billing profile:", error);
-        res.status(500).json({ error: "Error al obtener perfil de facturación" });
+        logger.error({ err: error }, "Error fetching billing profile:");
+        res.status(500).json({ error: "Error al obtener perfil de facturaciÃƒÂ³n" });
     }
 });
 
@@ -45,8 +46,8 @@ router.post("/billing-profiles", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error creating billing profile:", error);
-        res.status(500).json({ error: "Error al crear perfil de facturación" });
+        logger.error({ err: error }, "Error creating billing profile:");
+        res.status(500).json({ error: "Error al crear perfil de facturaciÃƒÂ³n" });
     }
 });
 
@@ -57,15 +58,15 @@ router.patch("/billing-profiles/:id", async (req, res) => {
         const validatedData = updateBillingProfileSchema.parse(req.body);
         const profile = await storage.updateBillingProfile(id, validatedData);
         if (!profile) {
-            return res.status(404).json({ error: "Perfil de facturación no encontrado" });
+            return res.status(404).json({ error: "Perfil de facturaciÃƒÂ³n no encontrado" });
         }
         res.json(profile);
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error updating billing profile:", error);
-        res.status(500).json({ error: "Error al actualizar perfil de facturación" });
+        logger.error({ err: error }, "Error updating billing profile:");
+        res.status(500).json({ error: "Error al actualizar perfil de facturaciÃƒÂ³n" });
     }
 });
 
@@ -75,12 +76,12 @@ router.delete("/billing-profiles/:id", async (req, res) => {
         const id = parseInt(req.params.id);
         const deleted = await storage.deleteBillingProfile(id);
         if (!deleted) {
-            return res.status(404).json({ error: "Perfil de facturación no encontrado" });
+            return res.status(404).json({ error: "Perfil de facturaciÃƒÂ³n no encontrado" });
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting billing profile:", error);
-        res.status(500).json({ error: "Error al eliminar perfil de facturación" });
+        logger.error({ err: error }, "Error deleting billing profile:");
+        res.status(500).json({ error: "Error al eliminar perfil de facturaciÃƒÂ³n" });
     }
 });
 

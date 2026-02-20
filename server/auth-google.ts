@@ -3,6 +3,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 import { generateToken } from './middleware/auth';
+import { hashPassword } from './utils/crypto';
 import type { Express } from 'express';
 
 
@@ -47,10 +48,11 @@ export function setupGoogleAuth(app: Express) {
 
                 // 3. Create new user
                 const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+                const hashedPassword = await hashPassword(randomPassword);
 
                 const newUser = await storage.createUser({
                     username: email,
-                    password: randomPassword,
+                    password: hashedPassword,
                     role: 'user',
                     googleId,
                     avatarUrl,

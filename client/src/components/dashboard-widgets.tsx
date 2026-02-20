@@ -39,7 +39,7 @@ export function QuickActions() {
     ];
 
     return (
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2">
             {actions.map((action, index) => (
                 <Button
                     key={index}
@@ -247,7 +247,7 @@ export function ProjectsWidget({ data, loading }: WidgetProps) {
                             <div className="space-y-3 mt-2">
                                 {data?.slice(0, 3).map((proj: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between text-sm">
-                                        <span className="text-foreground/80 truncate max-w-[120px]">{proj.name}</span>
+                                        <span className="text-foreground/80 truncate max-w-[180px]">{proj.name}</span>
                                         <Badge variant="outline" className="text-[10px] h-5 border-border text-muted-foreground">{getStatusLabel(proj.status)}</Badge>
                                     </div>
                                 ))}

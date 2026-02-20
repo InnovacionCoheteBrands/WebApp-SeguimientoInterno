@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import {
     insertTransactionSchema,
     updateTransactionSchema,
@@ -16,7 +17,7 @@ router.get("/transactions", async (req, res) => {
         const transactions = await storage.getTransactions();
         res.json(transactions);
     } catch (error) {
-        console.error("❌ Error fetching transactions:", error);
+        logger.error({ err: error }, "Failed to fetch transactions");
         res.status(500).json({ error: "Failed to fetch transactions" });
     }
 });
@@ -36,25 +37,23 @@ router.get("/transactions/:id", async (req, res) => {
 
 router.post("/transactions", async (req, res) => {
     try {
-        console.log("📥 POST /transactions - Body received:", JSON.stringify(req.body, null, 2));
 
         const validatedData = insertTransactionSchema.parse(req.body);
-        console.log("✅ Validation passed:", JSON.stringify(validatedData, null, 2));
 
         const transaction = await storage.createTransaction(validatedData);
         res.status(201).json(transaction);
     } catch (error) {
-        console.error("❌ Error creating transaction:");
+        logger.error({ err: error }, "Failed to create transaction");
         if (error instanceof z.ZodError) {
-            console.error("   Zod validation errors:", JSON.stringify(error.errors, null, 2));
+            logger.error({ err: JSON.stringify(error.errors, null, 2) }, "   Zod validation errors:");
             return res.status(400).json({ error: error.errors });
         }
         // Log the actual database/ORM error
         if (error instanceof Error) {
-            console.error("   Error message:", error.message);
-            console.error("   Error stack:", error.stack);
+            logger.error({ err: error.message }, "   Error message:");
+            logger.error({ err: error.stack }, "   Error stack:");
         }
-        console.error("   Full error:", error);
+        logger.error({ err: error }, "   Full error:");
         res.status(500).json({
             error: "Failed to create transaction",
             details: error instanceof Error ? error.message : "Unknown error"
@@ -99,7 +98,7 @@ router.get("/finance/summary", async (req, res) => {
         const summary = await storage.getFinancialSummary(startDate, endDate);
         res.json(summary);
     } catch (error) {
-        console.error("Failed to fetch financial summary:", error);
+        logger.error({ err: error }, "Failed to fetch financial summary:");
         res.status(500).json({ error: "Failed to fetch financial summary" });
     }
 });
@@ -142,9 +141,9 @@ router.post("/recurring-transactions", async (req, res) => {
         const recurring = await storage.createRecurringTransaction(validatedData);
         res.status(201).json(recurring);
     } catch (error) {
-        console.error("❌ Error creating recurring transaction:", error);
+        logger.error({ err: error }, "Failed to create recurring transaction");
         if (error instanceof z.ZodError) {
-            console.error("Zod validation errors:", JSON.stringify(error.errors, null, 2));
+            logger.error({ err: JSON.stringify(error.errors, null, 2) }, "Zod validation errors:");
             return res.status(400).json({ error: error.errors });
         }
         res.status(500).json({ error: "Failed to create recurring transaction" });
@@ -193,7 +192,7 @@ router.post("/recurring-transactions/:id/execute", async (req, res) => {
         const transaction = await storage.executeRecurringTransaction(id);
         res.status(201).json(transaction);
     } catch (error) {
-        console.error("Failed to execute recurring transaction:", error);
+        logger.error({ err: error }, "Failed to execute recurring transaction:");
         res.status(500).json({ error: "Failed to execute recurring transaction" });
     }
 });
@@ -204,7 +203,7 @@ router.post("/recurring-transactions/execute-pending", async (req, res) => {
         const transactions = await storage.executePendingRecurringTransactions();
         res.status(201).json({ count: transactions.length, transactions });
     } catch (error) {
-        console.error("Failed to execute pending recurring transactions:", error);
+        logger.error({ err: error }, "Failed to execute pending recurring transactions:");
         res.status(500).json({ error: "Failed to execute pending recurring transactions" });
     }
 });
@@ -218,7 +217,7 @@ router.get("/finance/obligations/payables", async (req, res) => {
         const payables = await storage.getMonthlyAccountsPayable(year, month);
         res.json(payables);
     } catch (error) {
-        console.error("Failed to fetch monthly payables:", error);
+        logger.error({ err: error }, "Failed to fetch monthly payables:");
         res.status(500).json({ error: "Failed to fetch monthly payables" });
     }
 });
@@ -231,7 +230,7 @@ router.get("/finance/obligations/receivables", async (req, res) => {
         const receivables = await storage.getMonthlyAccountsReceivable(year, month);
         res.json(receivables);
     } catch (error) {
-        console.error("Failed to fetch monthly receivables:", error);
+        logger.error({ err: error }, "Failed to fetch monthly receivables:");
         res.status(500).json({ error: "Failed to fetch monthly receivables" });
     }
 });
@@ -244,7 +243,7 @@ router.post("/finance/obligations/:id/pay", async (req, res) => {
         const transaction = await storage.markObligationAsPaid(templateId, paidDate);
         res.status(201).json(transaction);
     } catch (error) {
-        console.error("Failed to mark obligation as paid:", error);
+        logger.error({ err: error }, "Failed to mark obligation as paid:");
         res.status(500).json({ error: error instanceof Error ? error.message : "Failed to mark obligation as paid" });
     }
 });
@@ -258,7 +257,7 @@ router.post("/finance/obligations/:id/unpay", async (req, res) => {
         // 1. Delete the linked transaction from this month
         const deleted = await storage.deleteTransactionByRecurringTemplateId(templateId);
         if (deleted) {
-            console.log(`[Unpay] Deleted linked transaction for template ${templateId}`);
+            logger.info({ templateId }, "Reverted payment for template");
         }
 
         // 2. Reset the template's lastExecutionDate so it reappears in obligations
@@ -274,7 +273,7 @@ router.post("/finance/obligations/:id/unpay", async (req, res) => {
             recurring
         });
     } catch (error) {
-        console.error("Failed to unpay obligation:", error);
+        logger.error({ err: error }, "Failed to unpay obligation:");
         res.status(500).json({ error: "Failed to revert payment status" });
     }
 });

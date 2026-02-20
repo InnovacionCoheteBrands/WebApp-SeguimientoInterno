@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertInstallmentSchema, updateInstallmentSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -10,12 +11,12 @@ router.get("/projects/:projectId/installments", async (req, res) => {
     try {
         const projectId = parseInt(req.params.projectId);
         if (isNaN(projectId)) {
-            return res.status(400).json({ error: "ID de proyecto inválido" });
+            return res.status(400).json({ error: "ID de proyecto invÃƒÂ¡lido" });
         }
         const installments = await storage.getInstallmentsByProjectId(projectId);
         res.json(installments);
     } catch (error) {
-        console.error("Error fetching installments:", error);
+        logger.error({ err: error }, "Error fetching installments:");
         res.status(500).json({ error: "Error al obtener parcialidades" });
     }
 });
@@ -25,12 +26,12 @@ router.post("/projects/:projectId/installments/generate", async (req, res) => {
     try {
         const projectId = parseInt(req.params.projectId);
         if (isNaN(projectId)) {
-            return res.status(400).json({ error: "ID de proyecto inválido" });
+            return res.status(400).json({ error: "ID de proyecto invÃƒÂ¡lido" });
         }
         const installments = await storage.generateInstallmentsForProject(projectId);
         res.status(201).json(installments);
     } catch (error) {
-        console.error("Error generating installments:", error);
+        logger.error({ err: error }, "Error generating installments:");
         res.status(500).json({ error: "Error al generar parcialidades" });
     }
 });
@@ -45,7 +46,7 @@ router.get("/installments/:id", async (req, res) => {
         }
         res.json(installment);
     } catch (error) {
-        console.error("Error fetching installment:", error);
+        logger.error({ err: error }, "Error fetching installment:");
         res.status(500).json({ error: "Error al obtener parcialidad" });
     }
 });
@@ -60,7 +61,7 @@ router.post("/installments", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error creating installment:", error);
+        logger.error({ err: error }, "Error creating installment:");
         res.status(500).json({ error: "Error al crear parcialidad" });
     }
 });
@@ -79,7 +80,7 @@ router.patch("/installments/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error updating installment:", error);
+        logger.error({ err: error }, "Error updating installment:");
         res.status(500).json({ error: "Error al actualizar parcialidad" });
     }
 });
@@ -94,7 +95,7 @@ router.delete("/installments/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting installment:", error);
+        logger.error({ err: error }, "Error deleting installment:");
         res.status(500).json({ error: "Error al eliminar parcialidad" });
     }
 });

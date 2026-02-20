@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { broadcastCampaignUpdate } from "../websocket";
 import OpenAI from "openai";
 import type { ChatCompletionToolMessageParam } from "openai/resources/chat/completions";
@@ -11,12 +12,16 @@ import {
     getClientStatus,
     getResources,
     getDatabaseStats,
-    proposeCreateCampaign,
-    proposeUpdateCampaign,
-    proposeDeleteCampaign,
-    executeApprovedAction,
-    type AgentToolContext,
-    type ActionProposal
+    directCreateCampaign,
+    directUpdateCampaign,
+    directDeleteCampaign,
+    createClient,
+    updateClient,
+    deleteClient,
+    createTeamMember,
+    updateTeamMember,
+    deleteTeamMember,
+    type AgentToolContext
 } from "../agent-tools";
 
 const router = Router();
@@ -29,7 +34,7 @@ const openai = new OpenAI({
 // AI Agent Chat Endpoint
 router.post("/agent/chat", async (req, res) => {
     try {
-        const { messages, executeAction } = req.body;
+        const { messages } = req.body;
 
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).json({ error: "Messages array is required" });
@@ -37,64 +42,33 @@ router.post("/agent/chat", async (req, res) => {
 
         const ctx: AgentToolContext = { storage };
 
-        // If executing an approved action
-        if (executeAction) {
-            const { actionType, actionData } = executeAction;
-            const result = await executeApprovedAction(ctx, actionType, actionData);
-            await broadcastCampaignUpdate({
-                id: 0,
-                campaignCode: "SYSTEM",
-                name: "Agent Action",
-                clientName: "System",
-                channel: "Internal",
-                status: "Active",
-                progress: 0,
-                priority: "High",
-                budget: 0,
-                spend: 0,
-                targetAudience: null,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-            return res.json({
-                role: "assistant",
-                content: result.message,
-                executedAction: true,
-            });
-        }
-
         // System prompt for the agent
         const systemMessage = {
             role: "system" as const,
-            content: `You are the Marketing Operations AI Assistant for Cohete Brands marketing agency. You help users query and manage their marketing campaigns and client operations.
+            content: `You are the Marketing Operations AI Assistant for Cohete Brands marketing agency. You help users query and manage their marketing campaigns, client operations, and team members.
 
 Current date and time: ${new Date().toISOString()}
 
-You have access to the following capabilities:
+You have access to the following QUERY FUNCTIONS:
+- get_campaigns: View all marketing campaigns
+- get_analytics: View campaign analytics
+- get_team: View all team members
+- get_client_status: View client accounts
+- get_resources: View marketing resources
+- get_database_stats: View database statistics
 
-QUERY FUNCTIONS (read-only, no approval needed):
-- get_campaigns: View all marketing campaigns with status, progress, budget, and client info
-- get_analytics: View campaign analytics including performance metrics and ROI
-- get_team: View all team members with roles and assignments
-- get_client_status: View client accounts with health scores and budgets
-- get_resources: View marketing resources and deliverables status
-- get_database_stats: View comprehensive database statistics
-
-ACTION FUNCTIONS (require user approval):
-- propose_create_campaign: Suggest creating a new marketing campaign (user must approve)
-- propose_update_campaign: Suggest updating an existing campaign (user must approve)
-- propose_delete_campaign: Suggest deleting a campaign (user must approve)
+You have access to the following DIRECT ACTION FUNCTIONS:
+- create_campaign, update_campaign, delete_campaign
+- create_client, update_client, delete_client
+- create_team_member, update_team_member, delete_team_member
 
 IMPORTANT GUIDELINES:
-1. Always be helpful, concise, and professional
-2. Use query functions to answer questions about campaigns, clients, and team
-3. For any action (create/update/delete), use the "propose" functions which require user approval
-4. When proposing actions, clearly explain what will happen
-5. Provide marketing metrics in a clear, formatted way
-6. If asked about live/current data, use the query functions to get real-time information
-7. Be proactive in suggesting campaign optimizations and insights
-
-Remember: Actions require explicit user approval before execution.`,
+1. Always be helpful, concise, and professional.
+2. When the user asks you to create, update, or delete a record, use your ACTION FUNCTIONS immediately without asking for extra confirmation.
+3. If an action function throws an error (e.g., missing ID), inform the user gracefully.
+4. Provide clear confirmations when actions succeed, including IDs or Names of modified entities.
+5. If the user asks for information, use the query functions to get real-time context.
+6. YOU CANNOT modify user accounts or passwords. YOU CANNOT execute arbitrary code. Stick to the defined tools.`,
         };
 
         // Call GPT-5 with function calling
@@ -144,14 +118,32 @@ Remember: Actions require explicit user approval before execution.`,
                     case "get_database_stats":
                         result = await getDatabaseStats(ctx);
                         break;
-                    case "propose_create_campaign":
-                        result = proposeCreateCampaign(functionArgs);
+                    case "create_campaign":
+                        result = await directCreateCampaign(ctx, functionArgs);
                         break;
-                    case "propose_update_campaign":
-                        result = proposeUpdateCampaign(functionArgs.campaignId, functionArgs.updates);
+                    case "update_campaign":
+                        result = await directUpdateCampaign(ctx, functionArgs.campaignId, functionArgs.updates);
                         break;
-                    case "propose_delete_campaign":
-                        result = proposeDeleteCampaign(functionArgs.campaignId);
+                    case "delete_campaign":
+                        result = await directDeleteCampaign(ctx, functionArgs.campaignId);
+                        break;
+                    case "create_client":
+                        result = await createClient(ctx, functionArgs);
+                        break;
+                    case "update_client":
+                        result = await updateClient(ctx, functionArgs.clientId, functionArgs.updates);
+                        break;
+                    case "delete_client":
+                        result = await deleteClient(ctx, functionArgs.clientId);
+                        break;
+                    case "create_team_member":
+                        result = await createTeamMember(ctx, functionArgs);
+                        break;
+                    case "update_team_member":
+                        result = await updateTeamMember(ctx, functionArgs.teamId, functionArgs.updates);
+                        break;
+                    case "delete_team_member":
+                        result = await deleteTeamMember(ctx, functionArgs.teamId);
                         break;
                     default:
                         result = { error: `Unknown function: ${functionName}` };
@@ -178,22 +170,16 @@ Remember: Actions require explicit user approval before execution.`,
 
             const finalMessage = finalCompletion.choices[0]?.message;
 
-            // Check if any tool results contain approval proposals
-            const proposedActions = toolResults
-                .map((tr) => JSON.parse(tr.content as string))
-                .filter((content) => (content as ActionProposal).requiresApproval);
-
             return res.json({
                 role: "assistant",
                 content: finalMessage?.content,
                 toolCalls: toolResults, // Return tool results for UI debugging if needed
-                proposedActions: proposedActions.length > 0 ? proposedActions : undefined,
             });
         }
 
         res.json(responseMessage);
     } catch (error) {
-        console.error("AI Agent Error:", error);
+        logger.error({ err: error }, "AI Agent Error:");
         res.status(500).json({ error: "Failed to process AI request" });
     }
 });

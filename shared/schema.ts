@@ -405,6 +405,11 @@ export const digitalAssets = pgTable("digital_assets", {
   assignedManagerId: integer("assigned_manager_id"),  // FK to team added later
 
   status: text("status").notNull().default("active"),  // "active", "expired", "transferred"
+
+  // 360 Finance linkage — stores the recurringTransaction id if auto-synced
+  linkedRecurringTransactionId: integer("linked_recurring_transaction_id")
+    .references(() => recurringTransactions.id, { onDelete: "set null" }),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -942,6 +947,10 @@ export const transactions = pgTable("transactions", {
   source: text("source"), // "manual", "client_project", "recurring_template"
   sourceId: integer("source_id"), // Reference to project or other entity
 
+  // ✅ Project and Payment Sync Linkage
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "set null" }),
+  installmentId: integer("installment_id").references(() => installments.id, { onDelete: "set null" }),
+
   // Legacy/Optional fields (marked for deprecation)
   status: text("status").default("Pendiente"), // ⚠️ Deprecated: use isPaid instead. Kept for backward compatibility
   description: text("description"), // Mapped to Concepto
@@ -977,6 +986,8 @@ export const insertTransactionSchema = createInsertSchema(transactions, {
   clientId: z.coerce.number().int().positive().optional().nullable(),
   recurringTemplateId: z.coerce.number().int().positive().optional().nullable(),
   sourceId: z.coerce.number().int().positive().optional().nullable(),
+  projectId: z.coerce.number().int().positive().optional().nullable(),
+  installmentId: z.coerce.number().int().positive().optional().nullable(),
 }).omit({
   id: true,
   createdAt: true,

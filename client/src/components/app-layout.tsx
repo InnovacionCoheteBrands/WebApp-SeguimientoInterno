@@ -265,7 +265,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         {/* Dynamic Page Content Wrapper */}
-        <div className="flex-1 px-8 pb-8 w-full max-w-[1920px] mx-auto">
+        <div className="flex-1 px-4 md:px-8 pb-24 md:pb-8 w-full max-w-[1920px] mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={location}

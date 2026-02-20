@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertProjectTeamAssignmentSchema, updateProjectTeamAssignmentSchema } from "@shared/schema";
 import { ZodError } from "zod";
 
@@ -16,7 +17,7 @@ router.get("/projects/:projectId/team", async (req: Request, res: Response) => {
         const assignments = await storage.getProjectTeamAssignments(Number(req.params.projectId));
         res.json(assignments);
     } catch (error) {
-        console.error("Error fetching project team:", error);
+        logger.error({ err: error }, "Error fetching project team:");
         res.status(500).json({ error: "Failed to fetch project team" });
     }
 });
@@ -32,7 +33,7 @@ router.post("/projects/:projectId/team", async (req: Request, res: Response) => 
         if (error instanceof ZodError) {
             return res.status(400).json({ error: "Validation failed", details: error.errors });
         }
-        console.error("Error creating project team assignment:", error);
+        logger.error({ err: error }, "Error creating project team assignment:");
         res.status(500).json({ error: "Failed to assign team member" });
     }
 });
@@ -50,7 +51,7 @@ router.patch("/project-team/:id", async (req: Request, res: Response) => {
         if (error instanceof ZodError) {
             return res.status(400).json({ error: "Validation failed", details: error.errors });
         }
-        console.error("Error updating assignment:", error);
+        logger.error({ err: error }, "Error updating assignment:");
         res.status(500).json({ error: "Failed to update assignment" });
     }
 });
@@ -61,7 +62,7 @@ router.delete("/project-team/:id", async (req: Request, res: Response) => {
         await storage.deleteProjectTeamAssignment(Number(req.params.id));
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting assignment:", error);
+        logger.error({ err: error }, "Error deleting assignment:");
         res.status(500).json({ error: "Failed to remove team member from project" });
     }
 });
@@ -72,7 +73,7 @@ router.get("/team/:teamMemberId/performance", async (req: Request, res: Response
         const performance = await storage.getTeamMemberPerformance(Number(req.params.teamMemberId));
         res.json(performance);
     } catch (error) {
-        console.error("Error fetching team member performance:", error);
+        logger.error({ err: error }, "Error fetching team member performance:");
         res.status(500).json({ error: "Failed to fetch performance metrics" });
     }
 });

@@ -1,5 +1,5 @@
 import type { IStorage } from "./storage";
-import type { InsertCampaign } from "@shared/schema";
+import type { InsertCampaign, InsertClientAccount, InsertTeam } from "@shared/schema";
 
 export interface AgentToolContext {
   storage: IStorage;
@@ -106,95 +106,95 @@ export async function getDatabaseStats(ctx: AgentToolContext) {
   };
 }
 
-type CreateCampaignAction = {
-  actionType: "create_campaign";
-  actionData: InsertCampaign;
-};
+// ==========================================
+// DIRECT EXECUTION MUTATORS
+// ==========================================
 
-type UpdateCampaignAction = {
-  actionType: "update_campaign";
-  actionData: { campaignId: number; updates: Partial<InsertCampaign> };
-};
-
-type DeleteCampaignAction = {
-  actionType: "delete_campaign";
-  actionData: { campaignId: number };
-};
-
-type AgentAction = CreateCampaignAction | UpdateCampaignAction | DeleteCampaignAction;
-
-export type ActionProposal = AgentAction & {
-  requiresApproval: true;
-  description: string;
-};
-
-export function proposeCreateCampaign(campaignData: InsertCampaign): ActionProposal {
+// --- Campaigns ---
+export async function directCreateCampaign(ctx: AgentToolContext, campaignData: InsertCampaign) {
+  const newCampaign = await ctx.storage.createCampaign(campaignData);
   return {
-    requiresApproval: true,
-    actionType: "create_campaign",
-    actionData: campaignData,
-    description: `Create new campaign: ${campaignData.name} for ${campaignData.clientName} on ${campaignData.channel} with priority ${campaignData.priority}`,
+    success: true,
+    data: newCampaign,
+    message: `Campaign "${campaignData.name}" created successfully with ID ${newCampaign.id}.`,
   };
 }
 
-export function proposeUpdateCampaign(campaignId: number, updates: Partial<InsertCampaign>): ActionProposal {
-  const updateFields = Object.keys(updates).join(", ");
+export async function directUpdateCampaign(ctx: AgentToolContext, campaignId: number, updates: Partial<InsertCampaign>) {
+  const updatedCampaign = await ctx.storage.updateCampaign(campaignId, updates);
+  if (!updatedCampaign) throw new Error(`Campaign ID ${campaignId} not found.`);
   return {
-    requiresApproval: true,
-    actionType: "update_campaign",
-    actionData: { campaignId, updates },
-    description: `Update campaign #${campaignId}: ${updateFields}`,
+    success: true,
+    data: updatedCampaign,
+    message: `Campaign #${campaignId} updated successfully.`,
   };
 }
 
-export function proposeDeleteCampaign(campaignId: number): ActionProposal {
+export async function directDeleteCampaign(ctx: AgentToolContext, campaignId: number) {
+  const success = await ctx.storage.deleteCampaign(campaignId);
+  if (!success) throw new Error(`Campaign ID ${campaignId} not found or could not be deleted.`);
   return {
-    requiresApproval: true,
-    actionType: "delete_campaign",
-    actionData: { campaignId },
-    description: `Delete campaign #${campaignId}`,
+    success: true,
+    message: `Campaign #${campaignId} deleted successfully.`,
   };
 }
 
-export async function executeApprovedAction(
-  ctx: AgentToolContext,
-  actionType: string,
-  actionData: unknown
-) {
-  switch (actionType) {
-    case "create_campaign":
-      const createData = actionData as InsertCampaign;
-      const newCampaign = await ctx.storage.createCampaign(createData);
-      return {
-        success: true,
-        data: newCampaign,
-        message: `Campaign "${createData.name}" created successfully`,
-      };
+// --- Clients ---
+export async function createClient(ctx: AgentToolContext, clientData: InsertClientAccount) {
+  const newClient = await ctx.storage.createClientAccount(clientData);
+  return {
+    success: true,
+    data: newClient,
+    message: `Client "${clientData.companyName}" created successfully with ID ${newClient.id}.`,
+  };
+}
 
-    case "update_campaign":
-      const updateData = actionData as { campaignId: number; updates: Partial<InsertCampaign> };
-      const updatedCampaign = await ctx.storage.updateCampaign(
-        updateData.campaignId,
-        updateData.updates
-      );
-      return {
-        success: true,
-        data: updatedCampaign,
-        message: `Campaign #${updateData.campaignId} updated successfully`,
-      };
+export async function updateClient(ctx: AgentToolContext, clientId: number, updates: Partial<InsertClientAccount>) {
+  const updatedClient = await ctx.storage.updateClientAccount(clientId, updates);
+  if (!updatedClient) throw new Error(`Client ID ${clientId} not found.`);
+  return {
+    success: true,
+    data: updatedClient,
+    message: `Client #${clientId} updated successfully.`,
+  };
+}
 
-    case "delete_campaign":
-      const deleteData = actionData as { campaignId: number };
-      await ctx.storage.deleteCampaign(deleteData.campaignId);
-      return {
-        success: true,
-        data: { id: deleteData.campaignId },
-        message: `Campaign #${deleteData.campaignId} deleted successfully`,
-      };
+export async function deleteClient(ctx: AgentToolContext, clientId: number) {
+  const success = await ctx.storage.deleteClientAccount(clientId);
+  if (!success) throw new Error(`Client ID ${clientId} not found or could not be deleted.`);
+  return {
+    success: true,
+    message: `Client #${clientId} deleted successfully.`,
+  };
+}
 
-    default:
-      throw new Error(`Unknown action type: ${actionType}`);
-  }
+// --- Team ---
+export async function createTeamMember(ctx: AgentToolContext, teamData: InsertTeam) {
+  const newMember = await ctx.storage.createTeam(teamData);
+  return {
+    success: true,
+    data: newMember,
+    message: `Team member "${teamData.name}" created successfully with ID ${newMember.id}.`,
+  };
+}
+
+export async function updateTeamMember(ctx: AgentToolContext, teamId: number, updates: Partial<InsertTeam>) {
+  const updatedMember = await ctx.storage.updateTeam(teamId, updates);
+  if (!updatedMember) throw new Error(`Team member ID ${teamId} not found.`);
+  return {
+    success: true,
+    data: updatedMember,
+    message: `Team member #${teamId} updated successfully.`,
+  };
+}
+
+export async function deleteTeamMember(ctx: AgentToolContext, teamId: number) {
+  const success = await ctx.storage.deleteTeam(teamId);
+  if (!success) throw new Error(`Team member ID ${teamId} not found or could not be deleted.`);
+  return {
+    success: true,
+    message: `Team member #${teamId} deleted successfully.`,
+  };
 }
 
 export const agentTools = [
@@ -267,45 +267,19 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "propose_create_campaign",
-      description: "Propose creating a new marketing campaign (requires user approval before execution)",
+      name: "create_campaign",
+      description: "Directly create a new marketing campaign in the system.",
       parameters: {
         type: "object",
         properties: {
-          campaignCode: {
-            type: "string",
-            description: "Unique campaign code (e.g., CAMP-001)",
-          },
-          name: {
-            type: "string",
-            description: "Campaign name",
-          },
-          clientName: {
-            type: "string",
-            description: "Client company name",
-          },
-          channel: {
-            type: "string",
-            description: "Marketing channel (e.g., Meta, Google Ads, LinkedIn)",
-          },
-          priority: {
-            type: "string",
-            enum: ["Low", "Medium", "High", "Critical"],
-            description: "Campaign priority level",
-          },
-          status: {
-            type: "string",
-            enum: ["Planning", "Active", "In Progress", "Paused", "Completed"],
-            description: "Initial campaign status",
-          },
-          budget: {
-            type: "number",
-            description: "Total campaign budget",
-          },
-          progress: {
-            type: "number",
-            description: "Initial progress percentage (0-100)",
-          },
+          campaignCode: { type: "string", description: "Unique campaign code (e.g., CAMP-001)" },
+          name: { type: "string", description: "Campaign name" },
+          clientName: { type: "string", description: "Client company name" },
+          channel: { type: "string", description: "Marketing channel (e.g., Meta, Google Ads, LinkedIn)" },
+          priority: { type: "string", enum: ["Low", "Medium", "High", "Critical"], description: "Campaign priority level" },
+          status: { type: "string", enum: ["Planning", "Active", "In Progress", "Paused", "Completed"], description: "Initial campaign status" },
+          budget: { type: "number", description: "Total campaign budget" },
+          progress: { type: "number", description: "Initial progress percentage (0-100)" },
         },
         required: ["campaignCode", "name", "clientName", "channel", "priority", "budget"],
       },
@@ -314,15 +288,12 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "propose_update_campaign",
-      description: "Propose updating an existing campaign (requires user approval before execution)",
+      name: "update_campaign",
+      description: "Directly update an existing campaign.",
       parameters: {
         type: "object",
         properties: {
-          campaignId: {
-            type: "number",
-            description: "ID of the campaign to update",
-          },
+          campaignId: { type: "number", description: "ID of the campaign to update" },
           updates: {
             type: "object",
             properties: {
@@ -343,17 +314,122 @@ export const agentTools = [
   {
     type: "function" as const,
     function: {
-      name: "propose_delete_campaign",
-      description: "Propose deleting a campaign (requires user approval before execution)",
+      name: "delete_campaign",
+      description: "Directly delete a campaign.",
       parameters: {
         type: "object",
         properties: {
-          campaignId: {
-            type: "number",
-            description: "ID of the campaign to delete",
-          },
+          campaignId: { type: "number", description: "ID of the campaign to delete" },
         },
         required: ["campaignId"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_client",
+      description: "Create a new client account.",
+      parameters: {
+        type: "object",
+        properties: {
+          companyName: { type: "string" },
+          industry: { type: "string" },
+          monthlyBudget: { type: "number" },
+        },
+        required: ["companyName", "industry", "monthlyBudget"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "update_client",
+      description: "Update an existing client account.",
+      parameters: {
+        type: "object",
+        properties: {
+          clientId: { type: "number" },
+          updates: {
+            type: "object",
+            properties: {
+              companyName: { type: "string" },
+              industry: { type: "string" },
+              monthlyBudget: { type: "number" },
+              healthScore: { type: "number" },
+              status: { type: "string" },
+            },
+          },
+        },
+        required: ["clientId", "updates"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "delete_client",
+      description: "Delete an existing client account.",
+      parameters: {
+        type: "object",
+        properties: {
+          clientId: { type: "number" },
+        },
+        required: ["clientId"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_team_member",
+      description: "Create a new team member/employee.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Full name (legacy)" },
+          firstName: { type: "string" },
+          lastName: { type: "string" },
+          email: { type: "string" },
+          role: { type: "string", description: "Job title" },
+          department: { type: "string" },
+        },
+        required: ["firstName", "lastName", "email", "role"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "update_team_member",
+      description: "Update a team member.",
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "number" },
+          updates: {
+            type: "object",
+            properties: {
+              status: { type: "string", description: "e.g. Available, Busy" },
+              role: { type: "string" },
+            },
+          },
+        },
+        required: ["teamId", "updates"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "delete_team_member",
+      description: "Delete a team member.",
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "number" },
+        },
+        required: ["teamId"],
       },
     },
   },

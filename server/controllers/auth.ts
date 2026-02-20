@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
+import { logger } from '../utils/logger';
 import { hashPassword, verifyPassword } from '../utils/crypto';
 import { generateToken, requireAuth } from '../middleware/auth';
 import passport from 'passport';
@@ -61,7 +62,7 @@ router.post('/login', async (req, res) => {
             if (isValidPassword) {
                 const hashedPassword = await hashPassword(password);
                 await storage.updateUserPassword(user.id, hashedPassword);
-                console.log(`[Auth] Migrated user ${username} to hashed password`);
+                logger.info({ username }, "Password migrated to hash");
             }
         }
 
@@ -94,7 +95,7 @@ router.post('/login', async (req, res) => {
                 details: error.errors
             });
         }
-        console.error('Login error:', error);
+        logger.error({ err: error }, 'Login error:');
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -145,7 +146,7 @@ router.post('/register', async (req, res) => {
                 details: error.errors
             });
         }
-        console.error('Register error:', error);
+        logger.error({ err: error }, 'Register error:');
         res.status(500).json({ error: 'Registration failed' });
     }
 });
@@ -192,7 +193,7 @@ router.get('/google/callback', (req, res, next) => {
         session: false
     }, (err: any, user: any, info: any) => {
         if (err || !user) {
-            console.error('[Google OAuth] Authentication failed:', err || info);
+            logger.error({ err: err || info }, '[Google OAuth] Authentication failed:');
             return res.redirect('/auth?error=GoogleAuthFailed');
         }
 
@@ -232,7 +233,7 @@ router.get('/me', requireAuth, async (req, res) => {
         const { password, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
     } catch (error) {
-        console.error('Error fetching current user:', error);
+        logger.error({ err: error }, 'Error fetching current user:');
         res.status(500).json({ error: 'Failed to fetch user' });
     }
 });

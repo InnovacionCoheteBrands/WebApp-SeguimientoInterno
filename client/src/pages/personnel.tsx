@@ -50,17 +50,17 @@ export default function Personnel() {
   const queryClient = useQueryClient();
 
   // --- Data Fetching ---
-  console.log("Rendering Personnel Page...");
+
   const { data: teamMembers = [], error: teamError } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
-  console.log("Team Data:", teamMembers.length, teamError);
+
 
   const { data: assignments = [] } = useQuery({ queryKey: ["team-assignments"], queryFn: fetchTeamAssignments });
   const { data: campaigns = [] } = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
   const { data: projects = [] } = useQuery({ queryKey: ["projects"], queryFn: fetchProjects });
 
-  console.log("Fetching Roles...");
+
   const { data: roles = [], error: roleError } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
-  console.log("Roles Data:", roles, roleError);
+
 
   // --- Derived State & Logic ---
   const teamWithMetrics = useMemo(() => {
@@ -168,7 +168,7 @@ export default function Personnel() {
 
   const handleSubmitAssignment = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting Assignment:", { assigningToMember, assignmentForm });
+
 
     if (!assigningToMember || !assignmentForm.projectId) {
       toast({
@@ -176,7 +176,7 @@ export default function Personnel() {
         description: "Por favor selecciona un proyecto válido.",
         variant: "destructive"
       });
-      console.warn("Validation failed: Mising team member or project ID.");
+
       return;
     }
 
@@ -246,7 +246,7 @@ export default function Personnel() {
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Efficiency Rate</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Efficiency Rate</p>
                 <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.efficiencyRate}%</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -259,7 +259,7 @@ export default function Personnel() {
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Saturated Resources</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Saturated Resources</p>
                 <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.saturatedCount}</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
@@ -272,7 +272,7 @@ export default function Personnel() {
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Available Capacity</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Available Capacity</p>
                 <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.availableCount}</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function Personnel() {
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wilder">Est. Revenue Potential</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Est. Revenue Potential</p>
                 <h3 className="text-2xl font-mono font-bold text-foreground mt-1">${(stats.potentialRevenue / 1000).toFixed(1)}k</h3>
               </div>
               <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">

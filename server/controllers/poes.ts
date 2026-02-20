@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertPoeSchema, updatePoeSchema } from "@shared/schema";
 import { ZodError } from "zod";
 
@@ -16,7 +17,7 @@ router.get("/", async (_req: Request, res: Response) => {
         const poes = await storage.getPoes();
         res.json(poes);
     } catch (error) {
-        console.error("Error fetching POES:", error);
+        logger.error({ err: error }, "Error fetching POES:");
         res.status(500).json({ error: "Failed to fetch POES" });
     }
 });
@@ -27,7 +28,7 @@ router.get("/category/:category", async (req: Request, res: Response) => {
         const poes = await storage.getPoesByCategory(req.params.category);
         res.json(poes);
     } catch (error) {
-        console.error("Error fetching POES by category:", error);
+        logger.error({ err: error }, "Error fetching POES by category:");
         res.status(500).json({ error: "Failed to fetch POES by category" });
     }
 });
@@ -41,7 +42,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         }
         res.json(poe);
     } catch (error) {
-        console.error("Error fetching POE:", error);
+        logger.error({ err: error }, "Error fetching POE:");
         res.status(500).json({ error: "Failed to fetch POE" });
     }
 });
@@ -56,7 +57,7 @@ router.post("/", async (req: Request, res: Response) => {
         if (error instanceof ZodError) {
             return res.status(400).json({ error: "Validation failed", details: error.errors });
         }
-        console.error("Error creating POE:", error);
+        logger.error({ err: error }, "Error creating POE:");
         res.status(500).json({ error: "Failed to create POE" });
     }
 });
@@ -74,7 +75,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         if (error instanceof ZodError) {
             return res.status(400).json({ error: "Validation failed", details: error.errors });
         }
-        console.error("Error updating POE:", error);
+        logger.error({ err: error }, "Error updating POE:");
         res.status(500).json({ error: "Failed to update POE" });
     }
 });
@@ -88,7 +89,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting POE:", error);
+        logger.error({ err: error }, "Error deleting POE:");
         res.status(500).json({ error: "Failed to delete POE" });
     }
 });

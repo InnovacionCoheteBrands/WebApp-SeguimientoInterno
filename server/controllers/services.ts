@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertServiceCatalogSchema, updateServiceCatalogSchema } from "@shared/schema";
 
 const router = Router();
 
 // ===========================================
-// 🛠️ SERVICE CATALOG ENDPOINTS
+// Ã°Å¸â€ºÂ Ã¯Â¸Â SERVICE CATALOG ENDPOINTS
 // ===========================================
 
 router.get("/services", async (req, res) => {
@@ -13,7 +14,7 @@ router.get("/services", async (req, res) => {
         const services = await storage.getServiceCatalog();
         res.json(services);
     } catch (error) {
-        console.error("Failed to fetch service catalog:", error);
+        logger.error({ err: error }, "Failed to fetch service catalog:");
         res.status(500).json({ error: "Failed to fetch service catalog" });
     }
 });
@@ -27,7 +28,7 @@ router.get("/services/:id", async (req, res) => {
         }
         res.json(service);
     } catch (error) {
-        console.error(`Failed to fetch service ${req.params.id}:`, error);
+        logger.error({ err: error }, `Failed to fetch service ${req.params.id}:`);
         res.status(500).json({ error: "Failed to fetch service" });
     }
 });
@@ -41,7 +42,7 @@ router.post("/services", async (req, res) => {
         if (error.errors) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create service:", error);
+        logger.error({ err: error }, "Failed to create service:");
         res.status(500).json({ error: "Failed to create service" });
     }
 });
@@ -61,7 +62,7 @@ router.patch("/services/:id", async (req, res) => {
         if (error.errors) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error(`Failed to update service ${req.params.id}:`, error);
+        logger.error({ err: error }, `Failed to update service ${req.params.id}:`);
         res.status(500).json({ error: "Failed to update service" });
     }
 });
@@ -77,7 +78,7 @@ router.delete("/services/:id", async (req, res) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error(`Failed to delete service ${req.params.id}:`, error);
+        logger.error({ err: error }, `Failed to delete service ${req.params.id}:`);
         res.status(500).json({ error: "Failed to delete service" });
     }
 });

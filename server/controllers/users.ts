@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { z } from "zod";
 import { hashPassword } from "../utils/crypto";
 import { upload } from "../middleware/upload";
@@ -32,7 +33,7 @@ router.post("/me/avatar", upload.single("avatar"), async (req, res) => {
         // Return the new avatar URL
         res.json({ avatarUrl });
     } catch (error) {
-        console.error("Error uploading avatar:", error);
+        logger.error({ err: error }, "Error uploading avatar:");
         res.status(500).json({ error: "Failed to upload avatar" });
     }
 });

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertUserSchema } from "@shared/schema";
 
 const router = Router();
@@ -30,7 +31,7 @@ async function getDefaultUser() {
             username,
             password: hashedPassword,
         });
-        console.log("🔒 Created default admin user (admin/admin123)");
+        logger.warn("Created default admin user");
     }
     return user;
 }

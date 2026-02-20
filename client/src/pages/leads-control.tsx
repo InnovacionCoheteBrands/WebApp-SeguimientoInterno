@@ -256,19 +256,19 @@ export default function LeadsControl() {
                 <div className="flex gap-2">
                     <Button
                         variant={showActiveOnly ? "secondary" : "ghost"}
-                        className="rounded-sm"
+                        className="rounded-full"
                         onClick={() => setShowActiveOnly(!showActiveOnly)}
                     >
                         {showActiveOnly ? "Activos" : "Todos"}
                     </Button>
                     <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" className="border-border rounded-sm">
+                            <Button variant="outline" className="border-border rounded-full">
                                 <Settings className="w-4 h-4 mr-2" />
                                 Vista
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md rounded-sm">
+                        <DialogContent className="max-w-md">
                             <DialogHeader>
                                 <DialogTitle>Configuración de Pipeline</DialogTitle>
                                 <DialogDescription>
@@ -328,7 +328,7 @@ export default function LeadsControl() {
 
                     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button className="rounded-sm">
+                            <Button className="rounded-full">
                                 <Plus className="w-4 h-4 mr-2" />
                                 Nuevo Lead
                             </Button>
@@ -501,13 +501,13 @@ export default function LeadsControl() {
                                                 {/* Contact Info - Compact */}
                                                 <div className="flex flex-col gap-1.5">
                                                     {lead.email && (
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/60 group-hover/card:text-muted-foreground transition-colors truncate">
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/80 group-hover/card:text-muted-foreground transition-colors truncate">
                                                             <Mail className="size-3 flex-shrink-0" />
                                                             <span className="truncate">{lead.email}</span>
                                                         </div>
                                                     )}
                                                     {lead.phone && (
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/60 group-hover/card:text-muted-foreground transition-colors">
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/80 group-hover/card:text-muted-foreground transition-colors">
                                                             <Phone className="size-3 flex-shrink-0" />
                                                             <span>{lead.phone}</span>
                                                         </div>

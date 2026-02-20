@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertContactSchema, updateContactSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -10,12 +11,12 @@ router.get("/clients/:clientId/contacts", async (req, res) => {
     try {
         const clientId = parseInt(req.params.clientId);
         if (isNaN(clientId)) {
-            return res.status(400).json({ error: "ID de cliente inválido" });
+            return res.status(400).json({ error: "ID de cliente invÃƒÂ¡lido" });
         }
         const contacts = await storage.getContactsByClientId(clientId);
         res.json(contacts);
     } catch (error) {
-        console.error("Error fetching contacts:", error);
+        logger.error({ err: error }, "Error fetching contacts:");
         res.status(500).json({ error: "Error al obtener contactos" });
     }
 });
@@ -30,7 +31,7 @@ router.get("/contacts/:id", async (req, res) => {
         }
         res.json(contact);
     } catch (error) {
-        console.error("Error fetching contact:", error);
+        logger.error({ err: error }, "Error fetching contact:");
         res.status(500).json({ error: "Error al obtener contacto" });
     }
 });
@@ -45,7 +46,7 @@ router.post("/contacts", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error creating contact:", error);
+        logger.error({ err: error }, "Error creating contact:");
         res.status(500).json({ error: "Error al crear contacto" });
     }
 });
@@ -64,7 +65,7 @@ router.patch("/contacts/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error updating contact:", error);
+        logger.error({ err: error }, "Error updating contact:");
         res.status(500).json({ error: "Error al actualizar contacto" });
     }
 });
@@ -79,7 +80,7 @@ router.delete("/contacts/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting contact:", error);
+        logger.error({ err: error }, "Error deleting contact:");
         res.status(500).json({ error: "Error al eliminar contacto" });
     }
 });

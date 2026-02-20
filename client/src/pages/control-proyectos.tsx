@@ -271,8 +271,8 @@ export default function ControlProyectos() {
                 <CardHeader>
                     <CardTitle className="text-lg font-semibold">Proyectos</CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
+                <CardContent className="p-0 overflow-x-auto">
+                    <Table className="min-w-[900px]">
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead className="font-semibold">Proyecto</TableHead>

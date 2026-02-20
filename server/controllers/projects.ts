@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import {
     insertProjectSchema,
     updateProjectSchema,
@@ -19,7 +20,7 @@ router.get("/projects", async (req, res) => {
         const projects = await storage.getProjects();
         res.json(projects);
     } catch (error) {
-        console.error("Failed to fetch projects:", error);
+        logger.error({ err: error }, "Failed to fetch projects:");
         res.status(500).json({ error: "Failed to fetch projects" });
     }
 });
@@ -33,7 +34,7 @@ router.get("/projects/:id", async (req, res) => {
         }
         res.json(project);
     } catch (error) {
-        console.error("Failed to fetch project:", error);
+        logger.error({ err: error }, "Failed to fetch project:");
         res.status(500).json({ error: "Failed to fetch project" });
     }
 });
@@ -48,7 +49,7 @@ router.get("/projects/:id/details", async (req, res) => {
         }
         res.json(details);
     } catch (error) {
-        console.error("Failed to fetch project details:", error);
+        logger.error({ err: error }, "Failed to fetch project details:");
         res.status(500).json({ error: "Failed to fetch project details" });
     }
 });
@@ -62,7 +63,7 @@ router.post("/projects", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create project:", error);
+        logger.error({ err: error }, "Failed to create project:");
         res.status(500).json({ error: "Failed to create project" });
     }
 });
@@ -80,7 +81,7 @@ router.patch("/projects/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to update project:", error);
+        logger.error({ err: error }, "Failed to update project:");
         res.status(500).json({ error: "Failed to update project" });
     }
 });
@@ -94,7 +95,7 @@ router.delete("/projects/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete project:", error);
+        logger.error({ err: error }, "Failed to delete project:");
         res.status(500).json({ error: "Failed to delete project" });
     }
 });
@@ -106,7 +107,7 @@ router.get("/projects/:id/deliverables", async (req, res) => {
         const deliverables = await storage.getProjectDeliverables(projectId);
         res.json(deliverables);
     } catch (error) {
-        console.error("Failed to fetch deliverables:", error);
+        logger.error({ err: error }, "Failed to fetch deliverables:");
         res.status(500).json({ error: "Failed to fetch deliverables" });
     }
 });
@@ -124,7 +125,7 @@ router.post("/projects/:id/deliverables", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create deliverable:", error);
+        logger.error({ err: error }, "Failed to create deliverable:");
         res.status(500).json({ error: "Failed to create deliverable" });
     }
 });
@@ -156,7 +157,7 @@ router.get("/projects/:id/attachments", async (req, res) => {
         const attachments = await storage.getProjectAttachments(projectId);
         res.json(attachments);
     } catch (error) {
-        console.error("Failed to fetch attachments:", error);
+        logger.error({ err: error }, "Failed to fetch attachments:");
         res.status(500).json({ error: "Failed to fetch attachments" });
     }
 });
@@ -174,7 +175,7 @@ router.post("/projects/:id/attachments", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create attachment:", error);
+        logger.error({ err: error }, "Failed to create attachment:");
         res.status(500).json({ error: "Failed to create attachment" });
     }
 });
@@ -193,7 +194,7 @@ router.patch("/deliverables/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to update deliverable:", error);
+        logger.error({ err: error }, "Failed to update deliverable:");
         res.status(500).json({ error: "Failed to update deliverable" });
     }
 });
@@ -207,7 +208,7 @@ router.delete("/deliverables/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete deliverable:", error);
+        logger.error({ err: error }, "Failed to delete deliverable:");
         res.status(500).json({ error: "Failed to delete deliverable" });
     }
 });
@@ -222,7 +223,7 @@ router.delete("/attachments/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete attachment:", error);
+        logger.error({ err: error }, "Failed to delete attachment:");
         res.status(500).json({ error: "Failed to delete attachment" });
     }
 });
@@ -243,7 +244,7 @@ router.post("/deliverables/:id/link-attachment", async (req, res) => {
         }
         res.json(deliverable);
     } catch (error: any) {
-        console.error("Failed to link attachment:", error);
+        logger.error({ err: error }, "Failed to link attachment:");
         res.status(500).json({ error: error.message || "Failed to link attachment" });
     }
 });
@@ -276,7 +277,7 @@ router.post("/deliverables/:id/upload-and-link", async (req, res) => {
 
         res.json({ deliverable, attachment });
     } catch (error: any) {
-        console.error("Failed to upload and link:", error);
+        logger.error({ err: error }, "Failed to upload and link:");
         res.status(500).json({ error: error.message || "Failed to upload and link attachment" });
     }
 });
@@ -288,7 +289,7 @@ router.post("/projects/:id/recalculate-health", async (req, res) => {
         const health = await storage.calculateProjectHealth(projectId);
         res.json({ health });
     } catch (error) {
-        console.error("Failed to recalculate project health:", error);
+        logger.error({ err: error }, "Failed to recalculate project health:");
         res.status(500).json({ error: "Failed to recalculate project health" });
     }
 });
@@ -303,7 +304,7 @@ router.post("/projects/:id/recalculate-health", async (req, res) => {
 // I will adopt the Strategy: Mount at `/api`.
 
 // ===========================================
-// 🛠️ PROJECT SERVICES ENDPOINTS
+// Ã°Å¸â€ºÂ Ã¯Â¸Â PROJECT SERVICES ENDPOINTS
 // ===========================================
 
 router.get("/projects/:id/services", async (req, res) => {
@@ -312,7 +313,7 @@ router.get("/projects/:id/services", async (req, res) => {
         const services = await storage.getProjectServices(projectId);
         res.json(services);
     } catch (error) {
-        console.error("Failed to fetch project services:", error);
+        logger.error({ err: error }, "Failed to fetch project services:");
         res.status(500).json({ error: "Failed to fetch project services" });
     }
 });
@@ -330,7 +331,7 @@ router.post("/projects/:id/services", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to add service to project:", error);
+        logger.error({ err: error }, "Failed to add service to project:");
         res.status(500).json({ error: "Failed to add service to project" });
     }
 });
@@ -342,7 +343,7 @@ router.delete("/projects/:id/services/:serviceId", async (req, res) => {
         await storage.removeProjectService(projectId, serviceId);
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to remove service from project:", error);
+        logger.error({ err: error }, "Failed to remove service from project:");
         res.status(500).json({ error: "Failed to remove service from project" });
     }
 });
@@ -358,7 +359,7 @@ router.patch("/projects/:id/services/:serviceId", async (req, res) => {
         }
         res.json(updated);
     } catch (error) {
-        console.error("Failed to update project service:", error);
+        logger.error({ err: error }, "Failed to update project service:");
         res.status(500).json({ error: "Failed to update project service" });
     }
 });

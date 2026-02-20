@@ -376,6 +376,8 @@ export interface ProjectDetails {
     budget: number;
     totalExpenses: number;
     laborCosts: number;
+    serviceCosts: number;
+    adSpend: number;
     actualCost: number;
     margin: number;
     marginPercentage: number;
@@ -656,7 +658,9 @@ export class DBStorage implements IStorage {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw new Error("Error al guardar la métrica del sistema");
+      throw new Error("Error al guardar la métrica del sistema", {
+        cause: error instanceof Error ? error : undefined,
+      });
     }
   }
 
@@ -678,7 +682,9 @@ export class DBStorage implements IStorage {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw new Error("Error al guardar los datos de telemetría");
+      throw new Error("Error al guardar los datos de telemetría", {
+        cause: error instanceof Error ? error : undefined,
+      });
     }
   }
 
@@ -699,7 +705,9 @@ export class DBStorage implements IStorage {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw new Error("Error al limpiar datos de telemetría antiguos");
+      throw new Error("Error al limpiar datos de telemetría antiguos", {
+        cause: error instanceof Error ? error : undefined,
+      });
     }
   }
 
@@ -720,7 +728,9 @@ export class DBStorage implements IStorage {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw new Error("Error al limpiar métricas del sistema antiguas");
+      throw new Error("Error al limpiar métricas del sistema antiguas", {
+        cause: error instanceof Error ? error : undefined,
+      });
     }
   }
 
@@ -1248,6 +1258,48 @@ export class DBStorage implements IStorage {
   async createAdMetric(metric: InsertAdMetric): Promise<AdMetric> {
     try {
       const [newMetric] = await db.insert(adMetrics).values(metric).returning();
+
+      // 360 Bridge 3: Marketing (Ad Metrics) to Finance (Ad Spend Conciliation)
+      if (metric.spend && parseFloat(metric.spend.toString()) > 0) {
+        // 1. Get Creative to find Campaign
+        const [creative] = await db.select().from(adCreatives).where(eq(adCreatives.id, metric.creativeId)).limit(1);
+
+        if (creative && creative.campaignId) {
+          // 2. Get Campaign to find Client
+          const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, creative.campaignId)).limit(1);
+
+          if (campaign) {
+            // Note: campaigns only stores clientName string, not clientId relation.
+            // For a perfect 360 link, we try to match the clientAccount by name, but fallback to null if not found
+            let matchedClientId = null;
+            if (campaign.clientName) {
+              const [client] = await db.select().from(clientAccounts)
+                .where(eq(clientAccounts.companyName, campaign.clientName))
+                .limit(1);
+              if (client) matchedClientId = client.id;
+            }
+
+            // Get Platform Name for notes
+            const [platform] = await db.select().from(adPlatforms).where(eq(adPlatforms.id, metric.platformId)).limit(1);
+            const platformName = platform ? platform.displayName : 'Desconocida';
+
+            // 3. Register the Ad Spend as an Expense (Gasto - Pauta)
+            await db.insert(transactions).values({
+              type: "Gasto",
+              category: "Pauta",
+              amount: metric.spend.toString(),
+              date: new Date(metric.metricDate),
+              isPaid: true, // Ad spend is usually already paid/captured by the platform
+              clientId: matchedClientId, // Nullable FK, ok if null
+              source: "ad_metric",
+              sourceId: newMetric.id,
+              description: `Gasto Pauta: Ad ${creative.platformAdId} (Campaña: ${campaign.name})`,
+              notes: `Métrica de Ads (${platformName}) del ${new Date(metric.metricDate).toLocaleDateString()} importada para ${campaign.clientName}`
+            });
+          }
+        }
+      }
+
       return newMetric;
     } catch (error) {
       console.error(`❌ [createAdMetric] Error al insertar métrica de ads:`, {
@@ -2461,8 +2513,33 @@ export class DBStorage implements IStorage {
       laborCosts += hours * costPerHour;
     }
 
+    // 360 Bridge 4: Operations (Margin & Profitability)
+    // 4.1 Get Project Services Costs
+    const servicesResult = await db.execute(sql`
+      SELECT COALESCE(SUM(CAST(COALESCE(ps.custom_price, sc.default_price) AS DECIMAL)), 0) as service_costs
+      FROM ${projectServices} ps
+      INNER JOIN ${serviceCatalog} sc ON ps.service_id = sc.id
+      WHERE ps.project_id = ${id}
+    `);
+    const serviceCosts = parseFloat((servicesResult[0] as any)?.service_costs || '0');
+
+    // 4.2 Get Ad Spend for Campaigns associated with this Project's Client
+    let adSpend = 0;
+    if (projectData.client_id) {
+      const adSpendResult = await db.execute(sql`
+        SELECT COALESCE(SUM(CAST(am.spend AS DECIMAL)), 0) as total_ad_spend
+        FROM ${adMetrics} am
+        INNER JOIN ${adCreatives} ac ON am.creative_id = ac.id
+        INNER JOIN ${campaigns} c ON ac.campaign_id = c.id
+        INNER JOIN ${clientAccounts} ca ON c.client_name = ca.company_name
+        WHERE ca.id = ${projectData.client_id}
+      `);
+      adSpend = parseFloat((adSpendResult[0] as any)?.total_ad_spend || '0');
+    }
+
     const budget = parseFloat(projectData.budget || '0');
-    const actualCost = totalExpenses + laborCosts;
+    // True cost includes direct registered expenses + labor + services + ad spend
+    const actualCost = totalExpenses + laborCosts + serviceCosts + adSpend;
     const margin = budget - actualCost;
     const marginPercentage = budget > 0 ? (margin / budget) * 100 : 0;
 
@@ -2507,6 +2584,8 @@ export class DBStorage implements IStorage {
         budget,
         totalExpenses,
         laborCosts,
+        serviceCosts,
+        adSpend,
         actualCost,
         margin,
         marginPercentage,
@@ -2591,6 +2670,50 @@ export class DBStorage implements IStorage {
 
   async createDigitalAsset(asset: InsertDigitalAsset): Promise<DigitalAsset> {
     const [newAsset] = await db.insert(digitalAssets).values(asset).returning();
+
+    // 360 Bridge 5: Digital Assets Renewals ➔ Finance (Software Expenses)
+    // When a digital asset has autoRenew=true and cost > 0, create a recurring transaction
+    if (newAsset.autoRenew && newAsset.cost && parseFloat(newAsset.cost) > 0) {
+      // Map renewal frequency to recurringTransactions frequency
+      const frequencyMap: Record<string, string> = {
+        "monthly": "monthly",
+        "quarterly": "quarterly",
+        "yearly": "yearly",
+        "biennial": "yearly", // Fallback to yearly, adjusted by amount
+        "one-time": "yearly", // One-time assets shouldn't auto-renew, but fallback
+      };
+      const financeFrequency = frequencyMap[newAsset.renewalFrequency || "yearly"] || "yearly";
+
+      // Get client name for description
+      const [client] = await db.select().from(clientAccounts).where(eq(clientAccounts.id, newAsset.clientId)).limit(1);
+      const clientName = client ? client.companyName : 'Cliente';
+
+      // Calculate next execution date based on expiration or today
+      const nextExecution = newAsset.expirationDate || new Date();
+
+      // Create a Recurring Transaction template in Finance
+      const [recurringTx] = await db.insert(recurringTransactions).values({
+        name: `Renovación: ${newAsset.name}`,
+        description: `Gasto recurrente de ${newAsset.assetType} (${newAsset.provider || 'proveedor no especificado'}) para ${clientName}`,
+        type: "Gasto",
+        category: "Software",
+        amount: newAsset.cost,
+        frequency: financeFrequency,
+        dayOfMonth: nextExecution.getDate(),
+        clientId: newAsset.clientId,
+        isActive: true,
+        nextExecutionDate: nextExecution,
+        notes: `Auto-generado por Bridge 5 (Digital Assets). Asset ID: ${newAsset.id}`,
+      }).returning();
+
+      // Link the recurring transaction back to the digital asset
+      if (recurringTx) {
+        await db.update(digitalAssets)
+          .set({ linkedRecurringTransactionId: recurringTx.id })
+          .where(eq(digitalAssets.id, newAsset.id));
+      }
+    }
+
     return newAsset;
   }
 
@@ -2603,6 +2726,12 @@ export class DBStorage implements IStorage {
   }
 
   async deleteDigitalAsset(id: number): Promise<boolean> {
+    // Also clean up the linked recurring transaction if it exists
+    const [asset] = await db.select().from(digitalAssets).where(eq(digitalAssets.id, id)).limit(1);
+    if (asset && asset.linkedRecurringTransactionId) {
+      await db.delete(recurringTransactions)
+        .where(eq(recurringTransactions.id, asset.linkedRecurringTransactionId));
+    }
     await db.delete(digitalAssets).where(eq(digitalAssets.id, id));
     return true;
   }
@@ -2660,6 +2789,27 @@ export class DBStorage implements IStorage {
 
   async createInstallment(installment: InsertInstallment): Promise<Installment> {
     const [newInstallment] = await db.insert(installments).values(installment).returning();
+
+    // Financial Sync Middleware: Create a Pending Transaction for this installment
+    const project = await this.getProjectById(newInstallment.projectId);
+    if (project) {
+      await db.insert(transactions).values({
+        type: "Ingreso",
+        category: "Proyectos",
+        amount: String(newInstallment.amount),
+        date: newInstallment.dueDate,
+        isPaid: newInstallment.isPaid || newInstallment.status === "collected",
+        paidDate: newInstallment.paidDate,
+        clientId: project.clientId,
+        projectId: project.id,
+        installmentId: newInstallment.id,
+        source: "client_project",
+        sourceId: project.id,
+        notes: newInstallment.notes || "Generado automáticamente desde parcialidad de proyecto",
+        description: newInstallment.resolvedConcept || `Parcialidad ${newInstallment.installmentNumber} - ${project.name}`
+      });
+    }
+
     return newInstallment;
   }
 
@@ -2668,10 +2818,27 @@ export class DBStorage implements IStorage {
       .set({ ...installmentData, updatedAt: new Date() })
       .where(eq(installments.id, id))
       .returning();
+
+    if (updated) {
+      // Financial Sync Middleware: Sync status with linked transaction
+      const isPaid = updated.isPaid || updated.status === "collected";
+      await db.update(transactions)
+        .set({
+          isPaid,
+          paidDate: updated.paidDate,
+          amount: String(updated.amount),
+          date: updated.dueDate,
+          updatedAt: new Date()
+        })
+        .where(eq(transactions.installmentId, updated.id));
+    }
+
     return updated;
   }
 
   async deleteInstallment(id: number): Promise<boolean> {
+    // Financial Sync Middleware: Delete linked transaction
+    await db.delete(transactions).where(eq(transactions.installmentId, id));
     await db.delete(installments).where(eq(installments.id, id));
     return true;
   }
@@ -2731,6 +2898,22 @@ export class DBStorage implements IStorage {
         conceptTemplate: `{{service_name}} - Parcialidad {{installment_number}} de {{total_payments}}`,
         resolvedConcept: `${project.name} - Parcialidad ${i} de ${numberOfPayments}`,
       }).returning();
+
+      // Financial Sync Middleware: Create Transaction for auto-generated installment
+      await db.insert(transactions).values({
+        type: "Ingreso",
+        category: "Proyectos",
+        amount: amountPerInstallment,
+        date: dueDate,
+        isPaid: false,
+        clientId: project.clientId,
+        projectId: project.id,
+        installmentId: installment.id,
+        source: "client_project",
+        sourceId: project.id,
+        notes: "Generado automáticamente (Iguala)",
+        description: `${project.name} - Parcialidad ${i} de ${numberOfPayments}`
+      });
 
       newInstallments.push(installment);
     }
@@ -2803,10 +2986,47 @@ export class DBStorage implements IStorage {
 
   async addProjectService(data: InsertProjectService): Promise<ProjectService> {
     const [newAssignment] = await db.insert(projectServices).values(data).returning();
+
+    // Financial Sync Middleware: Register cost as 'Egreso' if the service has a cost
+    const service = await this.getServiceCatalogById(data.serviceId);
+    const amountStr = data.customPrice || (service ? service.defaultPrice : "0");
+    const amount = parseFloat(amountStr || "0");
+
+    if (amount > 0 && service) {
+      await db.insert(transactions).values({
+        type: "Gasto",
+        category: "Proyectos",
+        amount: String(amount),
+        date: new Date(),
+        isPaid: false, // Default pending for expenses
+        projectId: data.projectId,
+        source: "project",
+        sourceId: data.projectId,
+        notes: data.notes || "Generado automáticamente desde servicio asignado al proyecto",
+        description: `Costo asociado: ${service.name}`,
+        provider: "Proveedor Interno/Externo"
+      });
+    }
+
     return newAssignment;
   }
 
   async removeProjectService(projectId: number, serviceId: number): Promise<boolean> {
+    const service = await this.getServiceCatalogById(serviceId);
+
+    // Financial Sync Middleware: Delete associated pending expense
+    if (service) {
+      await db.delete(transactions)
+        .where(
+          and(
+            eq(transactions.projectId, projectId),
+            eq(transactions.type, "Gasto"),
+            eq(transactions.description, `Costo asociado: ${service.name}`),
+            eq(transactions.isPaid, false) // Only delete if not already paid
+          )
+        );
+    }
+
     const result = await db.delete(projectServices)
       .where(and(
         eq(projectServices.projectId, projectId),
@@ -2853,6 +3073,15 @@ export class DBStorage implements IStorage {
   }
 
   async updateLead(id: number, lead: UpdateLead): Promise<Lead | undefined> {
+    const existingLead = await this.getLeadById(id);
+    if (!existingLead) return undefined;
+
+    // 360 Bridge: Auto-convert if status changes to "Ganado" and hasn't been converted
+    if (lead.status === "Ganado" && existingLead.status !== "Ganado" && !existingLead.convertedToClientId) {
+      const conversionResult = await this.convertLeadToClient(id);
+      return conversionResult.lead;
+    }
+
     const [updated] = await db.update(leads)
       .set({ ...lead, updatedAt: new Date() })
       .where(eq(leads.id, id))
@@ -2869,22 +3098,45 @@ export class DBStorage implements IStorage {
     const lead = await this.getLeadById(leadId);
     if (!lead) throw new Error("Lead not found");
 
-    // Create client from lead data
+    if (lead.convertedToClientId) {
+      throw new Error("Este lead ya fue convertido a cliente");
+    }
+
+    // 1. Create client from lead data
+    let companyName = lead.company || lead.name;
     const newClient = await this.createClientAccount({
-      companyName: lead.company || lead.name,
-      industry: "Por definir",
+      companyName: companyName,
+      industry: lead.origin || "Por definir",
       monthlyBudget: Number(lead.estimatedValue) || 0,
       currentSpend: 0,
       healthScore: 100,
       status: "Active",
     });
 
-    // Update lead with conversion info
-    const updatedLead = await this.updateLead(leadId, {
+    // 2. 360 Bridge: Auto-create an initial "Onboarding" Project for Ops handoff
+    await this.createProject({
+      clientId: newClient.id,
+      name: `Onboarding: ${companyName}`,
+      serviceType: "Setup Inicial",
+      status: "Planning",
+      health: "green",
+      level: "Plata",
+      coverColor: "#3B82F6",
+      progress: 0,
+      budget: lead.estimatedValue ? lead.estimatedValue.toString() : "0",
+      description: `Proyecto generado automáticamente tras cerrar el Lead #${leadId}. Notas del lead: ${lead.notes || "Sin notas"}`,
+      dealType: "Proyecto", // Default for onboarding (instead of One-shot which is invalid)
+      numberOfPayments: 1,
+      totalAmount: lead.estimatedValue ? lead.estimatedValue.toString() : "0"
+    });
+
+    // 3. Update lead with conversion info
+    const [updatedLead] = await db.update(leads).set({
       status: "Ganado",
       convertedToClientId: newClient.id,
       convertedAt: new Date(),
-    });
+      updatedAt: new Date()
+    }).where(eq(leads.id, leadId)).returning();
 
     return { lead: updatedLead!, clientId: newClient.id };
   }
@@ -2981,18 +3233,83 @@ export class DBStorage implements IStorage {
 
   async createProjectTeamAssignment(assignment: InsertProjectTeamAssignment): Promise<ProjectTeamAssignment> {
     const [newAssignment] = await db.insert(projectTeamAssignments).values(assignment).returning();
+
+    // 360 Bridge 2: HR to Finance (Payroll Synchronization)
+    // Create an "Egreso" transaction for the team member's cost on this project
+    const [teamMember] = await db.select().from(team).where(eq(team.id, assignment.teamMemberId)).limit(1);
+    const [project] = await db.select().from(projects).where(eq(projects.id, assignment.projectId)).limit(1);
+
+    if (teamMember && project && teamMember.internalCostHour && assignment.allocatedHours) {
+      const costPerHour = parseFloat(teamMember.internalCostHour);
+      const totalCost = costPerHour * assignment.allocatedHours;
+
+      if (totalCost > 0) {
+        await db.insert(transactions).values({
+          type: "Gasto",
+          category: "Nómina",
+          amount: totalCost.toString(),
+          date: new Date(),
+          isPaid: false, // Starts as pending payroll
+          projectId: assignment.projectId,
+          clientId: project.clientId,
+          source: "team_assignment",
+          sourceId: newAssignment.id,
+          description: `Costo Nómina: ${teamMember.firstName} ${teamMember.lastName} en ${project.name}`,
+          notes: `${assignment.allocatedHours} horas asignadas a $${costPerHour}/hr`
+        });
+      }
+    }
+
     return newAssignment;
   }
 
   async updateProjectTeamAssignment(id: number, assignment: UpdateProjectTeamAssignment): Promise<ProjectTeamAssignment | undefined> {
+    const existingAssignment = await db.select().from(projectTeamAssignments).where(eq(projectTeamAssignments.id, id)).limit(1).then(res => res[0]);
+
     const [updated] = await db.update(projectTeamAssignments)
       .set({ ...assignment, updatedAt: new Date() })
       .where(eq(projectTeamAssignments.id, id))
       .returning();
+
+    // 360 Bridge 2: HR to Finance (Update Payroll Sync)
+    if (updated && existingAssignment && assignment.allocatedHours !== undefined && assignment.allocatedHours !== existingAssignment.allocatedHours) {
+      const [teamMember] = await db.select().from(team).where(eq(team.id, updated.teamMemberId)).limit(1);
+      if (teamMember && teamMember.internalCostHour && updated.allocatedHours !== null) {
+        const costPerHour = parseFloat(teamMember.internalCostHour);
+        const newTotalCost = costPerHour * updated.allocatedHours;
+
+        await db.update(transactions)
+          .set({
+            amount: newTotalCost.toString(),
+            notes: `${updated.allocatedHours} horas asignadas a $${costPerHour}/hr`,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              eq(transactions.source, "team_assignment"),
+              eq(transactions.sourceId, updated.id),
+              eq(transactions.isPaid, false) // Only update if not already paid
+            )
+          );
+      }
+    }
+
     return updated;
   }
 
   async deleteProjectTeamAssignment(id: number): Promise<boolean> {
+    const [assignment] = await db.select().from(projectTeamAssignments).where(eq(projectTeamAssignments.id, id)).limit(1);
+    if (!assignment) return false;
+
+    // 360 Bridge 2: HR to Finance (Cancel Payroll Sync if unpaid)
+    await db.delete(transactions).where(
+      and(
+        eq(transactions.source, "team_assignment"),
+        eq(transactions.sourceId, id),
+        eq(transactions.isPaid, false) // Only delete if not already hit the books
+      )
+    );
+
     await db.delete(projectTeamAssignments).where(eq(projectTeamAssignments.id, id));
     return true;
   }
@@ -3020,4 +3337,3 @@ export class DBStorage implements IStorage {
 }
 
 export const storage = new DBStorage();
-

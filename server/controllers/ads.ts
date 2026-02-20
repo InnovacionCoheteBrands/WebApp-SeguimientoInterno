@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import {
     insertAdPlatformSchema,
     insertPlatformConnectionSchema,
@@ -83,7 +84,7 @@ router.get("/ads/overview", async (req, res) => {
             lastUpdated: new Date().toISOString(),
         });
     } catch (error) {
-        console.error("Failed to fetch ads overview:", error);
+        logger.error({ err: error }, "Failed to fetch ads overview:");
         res.status(500).json({ error: "Failed to fetch ads overview" });
     }
 });
@@ -94,7 +95,7 @@ router.get("/ads/creatives/top", async (req, res) => {
         const topCreatives = await storage.getTopPerformingCreatives(limit);
         res.json(topCreatives);
     } catch (error) {
-        console.error("Failed to fetch top creatives:", error);
+        logger.error({ err: error }, "Failed to fetch top creatives:");
         res.status(500).json({ error: "Failed to fetch top performing creatives" });
     }
 });
@@ -105,7 +106,7 @@ router.get("/ads/creatives/bottom", async (req, res) => {
         const bottomCreatives = await storage.getBottomPerformingCreatives(limit);
         res.json(bottomCreatives);
     } catch (error) {
-        console.error("Failed to fetch bottom creatives:", error);
+        logger.error({ err: error }, "Failed to fetch bottom creatives:");
         res.status(500).json({ error: "Failed to fetch bottom performing creatives" });
     }
 });
@@ -161,7 +162,7 @@ router.post("/ads/request-review", async (req, res) => {
             notifiedTeam: "media-buyers", // TODO: Make this dynamic
         });
     } catch (error) {
-        console.error("Failed to send review request:", error);
+        logger.error({ err: error }, "Failed to send review request:");
         res.status(500).json({ error: "Failed to send review request" });
     }
 });
@@ -172,7 +173,7 @@ router.get("/ad-platforms", async (req, res) => {
         const platforms = await storage.getAdPlatforms();
         res.json(platforms);
     } catch (error) {
-        console.error("Failed to fetch ad platforms:", error);
+        logger.error({ err: error }, "Failed to fetch ad platforms:");
         res.status(500).json({ error: "Failed to fetch ad platforms" });
     }
 });
@@ -186,7 +187,7 @@ router.get("/ad-platforms/:id", async (req, res) => {
         }
         res.json(platform);
     } catch (error) {
-        console.error("Failed to fetch ad platform:", error);
+        logger.error({ err: error }, "Failed to fetch ad platform:");
         res.status(500).json({ error: "Failed to fetch ad platform" });
     }
 });
@@ -200,7 +201,7 @@ router.get("/ad-platforms/name/:name", async (req, res) => {
         }
         res.json(platform);
     } catch (error) {
-        console.error("Failed to fetch ad platform by name:", error);
+        logger.error({ err: error }, "Failed to fetch ad platform by name:");
         res.status(500).json({ error: "Failed to fetch ad platform" });
     }
 });
@@ -214,7 +215,7 @@ router.post("/ad-platforms", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create ad platform:", error);
+        logger.error({ err: error }, "Failed to create ad platform:");
         res.status(500).json({ error: "Failed to create ad platform" });
     }
 });
@@ -232,7 +233,7 @@ router.patch("/ad-platforms/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to update ad platform:", error);
+        logger.error({ err: error }, "Failed to update ad platform:");
         res.status(500).json({ error: "Failed to update ad platform" });
     }
 });
@@ -246,7 +247,7 @@ router.delete("/ad-platforms/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete ad platform:", error);
+        logger.error({ err: error }, "Failed to delete ad platform:");
         res.status(500).json({ error: "Failed to delete ad platform" });
     }
 });
@@ -276,7 +277,7 @@ router.get("/ads/integrations/connections", async (req, res) => {
 
         res.json(enrichedConnections);
     } catch (error) {
-        console.error("Failed to fetch platform connections:", error);
+        logger.error({ err: error }, "Failed to fetch platform connections:");
         res.status(500).json({ error: "Failed to fetch platform connections" });
     }
 });
@@ -292,7 +293,7 @@ router.delete("/ads/integrations/connections/:id", async (req, res) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete connection:", error);
+        logger.error({ err: error }, "Failed to delete connection:");
         res.status(500).json({ error: "Failed to delete connection" });
     }
 });
@@ -306,7 +307,7 @@ router.post("/platform-connections", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create platform connection:", error);
+        logger.error({ err: error }, "Failed to create platform connection:");
         res.status(500).json({ error: "Failed to create platform connection" });
     }
 });
@@ -324,7 +325,7 @@ router.patch("/platform-connections/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to update platform connection:", error);
+        logger.error({ err: error }, "Failed to update platform connection:");
         res.status(500).json({ error: "Failed to update platform connection" });
     }
 });
@@ -340,7 +341,7 @@ router.get("/ads/integrations/oauth/init", async (req, res) => {
             message: "Please use API Key authentication for now"
         });
     } catch (error) {
-        console.error("OAuth init failed:", error);
+        logger.error({ err: error }, "OAuth init failed:");
         res.status(500).json({ error: "OAuth initialization failed" });
     }
 });
@@ -350,7 +351,7 @@ router.get("/ads/integrations/oauth/callback", async (req, res) => {
         // TODO: Handle OAuth callback
         res.status(501).json({ error: "OAuth callback not implemented" });
     } catch (error) {
-        console.error("OAuth callback failed:", error);
+        logger.error({ err: error }, "OAuth callback failed:");
         res.status(500).json({ error: "OAuth callback failed" });
     }
 });
@@ -390,7 +391,13 @@ router.post("/ads/integrations/api-key", async (req, res) => {
                 encryptedApiSecret = encrypt(apiSecret);
             }
         } else {
-            console.warn('⚠️  WARNING: ENCRYPTION_KEY not configured. Storing API keys in plaintext.');
+            if (process.env.NODE_ENV === "production") {
+                return res.status(503).json({
+                    error: "ServiceUnavailable",
+                    message: "ENCRYPTION_KEY is required in production to store API keys securely.",
+                });
+            }
+            logger.warn("ENCRYPTION_KEY not configured. Storing API keys in plaintext (development only).");
         }
 
         // Create platform connection with encrypted credentials
@@ -415,7 +422,7 @@ router.post("/ads/integrations/api-key", async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("Failed to create API key connection:", error);
+        logger.error({ err: error }, "Failed to create API key connection:");
         res.status(500).json({ error: "Failed to create API key connection" });
     }
 });
@@ -426,7 +433,7 @@ router.get("/ads/integrations/mappings", async (req, res) => {
         const mappings = await storage.getAccountMappings();
         res.json(mappings);
     } catch (error) {
-        console.error("Failed to fetch account mappings:", error);
+        logger.error({ err: error }, "Failed to fetch account mappings:");
         res.status(500).json({ error: "Failed to fetch account mappings" });
     }
 });
@@ -437,7 +444,7 @@ router.get("/account-mappings", async (req, res) => {
         const mappings = await storage.getAccountMappings();
         res.json(mappings);
     } catch (error) {
-        console.error("Failed to fetch account mappings:", error);
+        logger.error({ err: error }, "Failed to fetch account mappings:");
         res.status(500).json({ error: "Failed to fetch account mappings" });
     }
 });
@@ -451,7 +458,7 @@ router.get("/account-mappings/:id", async (req, res) => {
         }
         res.json(mapping);
     } catch (error) {
-        console.error("Failed to fetch account mapping:", error);
+        logger.error({ err: error }, "Failed to fetch account mapping:");
         res.status(500).json({ error: "Failed to fetch account mapping" });
     }
 });
@@ -462,7 +469,7 @@ router.get("/account-mappings/connection/:connectionId", async (req, res) => {
         const mappings = await storage.getAccountMappingsByConnectionId(connectionId);
         res.json(mappings);
     } catch (error) {
-        console.error("Failed to fetch mappings by connection:", error);
+        logger.error({ err: error }, "Failed to fetch mappings by connection:");
         res.status(500).json({ error: "Failed to fetch mappings by connection" });
     }
 });
@@ -476,7 +483,7 @@ router.post("/account-mappings", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create account mapping:", error);
+        logger.error({ err: error }, "Failed to create account mapping:");
         res.status(500).json({ error: "Failed to create account mapping" });
     }
 });
@@ -494,7 +501,7 @@ router.patch("/account-mappings/:id", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to update account mapping:", error);
+        logger.error({ err: error }, "Failed to update account mapping:");
         res.status(500).json({ error: "Failed to update account mapping" });
     }
 });
@@ -508,7 +515,7 @@ router.delete("/account-mappings/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete account mapping:", error);
+        logger.error({ err: error }, "Failed to delete account mapping:");
         res.status(500).json({ error: "Failed to delete account mapping" });
     }
 });
@@ -518,7 +525,7 @@ router.post("/ads/integrations/mappings", async (req, res) => {
         const mapping = await storage.createAccountMapping(req.body);
         res.status(201).json(mapping);
     } catch (error) {
-        console.error("Failed to create account mapping:", error);
+        logger.error({ err: error }, "Failed to create account mapping:");
         res.status(500).json({ error: "Failed to create account mapping" });
     }
 });
@@ -534,7 +541,7 @@ router.delete("/ads/integrations/mappings/:id", async (req, res) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete mapping:", error);
+        logger.error({ err: error }, "Failed to delete mapping:");
         res.status(500).json({ error: "Failed to delete mapping" });
     }
 });
@@ -545,7 +552,7 @@ router.get("/ads/integrations/kpis", async (req, res) => {
         const kpis = await storage.getClientKpiConfigs();
         res.json(kpis);
     } catch (error) {
-        console.error("Failed to fetch client KPIs:", error);
+        logger.error({ err: error }, "Failed to fetch client KPIs:");
         res.status(500).json({ error: "Failed to fetch client KPIs" });
     }
 });
@@ -556,7 +563,7 @@ router.get("/client-kpi-config", async (req, res) => {
         const configs = await storage.getClientKpiConfigs();
         res.json(configs);
     } catch (error) {
-        console.error("Failed to fetch KPI configs:", error);
+        logger.error({ err: error }, "Failed to fetch KPI configs:");
         res.status(500).json({ error: "Failed to fetch KPI configs" });
     }
 });
@@ -570,7 +577,7 @@ router.get("/client-kpi-config/:clientName", async (req, res) => {
         }
         res.json(config);
     } catch (error) {
-        console.error("Failed to fetch KPI config:", error);
+        logger.error({ err: error }, "Failed to fetch KPI config:");
         res.status(500).json({ error: "Failed to fetch KPI config" });
     }
 });
@@ -584,7 +591,7 @@ router.post("/client-kpi-config", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to create KPI config:", error);
+        logger.error({ err: error }, "Failed to create KPI config:");
         res.status(500).json({ error: "Failed to create KPI config" });
     }
 });
@@ -602,7 +609,7 @@ router.patch("/client-kpi-config/:clientName", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Failed to update KPI config:", error);
+        logger.error({ err: error }, "Failed to update KPI config:");
         res.status(500).json({ error: "Failed to update KPI config" });
     }
 });
@@ -616,7 +623,7 @@ router.delete("/client-kpi-config/:clientName", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete KPI config:", error);
+        logger.error({ err: error }, "Failed to delete KPI config:");
         res.status(500).json({ error: "Failed to delete KPI config" });
     }
 });
@@ -649,7 +656,7 @@ router.put("/ads/integrations/kpis/:clientName", async (req, res) => {
 
         res.json(kpi);
     } catch (error) {
-        console.error("Failed to update client KPIs:", error);
+        logger.error({ err: error }, "Failed to update client KPIs:");
         res.status(500).json({ error: "Failed to update client KPIs" });
     }
 });
@@ -665,7 +672,7 @@ router.delete("/ads/integrations/kpis/:clientName", async (req, res) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error("Failed to delete KPI config:", error);
+        logger.error({ err: error }, "Failed to delete KPI config:");
         res.status(500).json({ error: "Failed to delete KPI config" });
     }
 });

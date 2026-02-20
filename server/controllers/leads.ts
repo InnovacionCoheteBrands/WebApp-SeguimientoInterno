@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { ZodError } from "zod";
 
@@ -16,7 +17,7 @@ router.get("/", async (_req: Request, res: Response) => {
         const leads = await storage.getLeads();
         res.json(leads);
     } catch (error) {
-        console.error("Error fetching leads:", error);
+        logger.error({ err: error }, "Error fetching leads:");
         res.status(500).json({ error: "Failed to fetch leads" });
     }
 });
@@ -27,7 +28,7 @@ router.get("/metrics", async (_req: Request, res: Response) => {
         const metrics = await storage.getLeadsMetrics();
         res.json(metrics);
     } catch (error) {
-        console.error("Error fetching leads metrics:", error);
+        logger.error({ err: error }, "Error fetching leads metrics:");
         res.status(500).json({ error: "Failed to fetch leads metrics" });
     }
 });
@@ -38,7 +39,7 @@ router.get("/origin/:origin", async (req: Request, res: Response) => {
         const leads = await storage.getLeadsByOrigin(req.params.origin);
         res.json(leads);
     } catch (error) {
-        console.error("Error fetching leads by origin:", error);
+        logger.error({ err: error }, "Error fetching leads by origin:");
         res.status(500).json({ error: "Failed to fetch leads by origin" });
     }
 });
@@ -52,7 +53,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         }
         res.json(lead);
     } catch (error) {
-        console.error("Error fetching lead:", error);
+        logger.error({ err: error }, "Error fetching lead:");
         res.status(500).json({ error: "Failed to fetch lead" });
     }
 });
@@ -67,7 +68,7 @@ router.post("/", async (req: Request, res: Response) => {
         if (error instanceof ZodError) {
             return res.status(400).json({ error: "Validation failed", details: error.errors });
         }
-        console.error("Error creating lead:", error);
+        logger.error({ err: error }, "Error creating lead:");
         res.status(500).json({ error: "Failed to create lead" });
     }
 });
@@ -85,7 +86,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         if (error instanceof ZodError) {
             return res.status(400).json({ error: "Validation failed", details: error.errors });
         }
-        console.error("Error updating lead:", error);
+        logger.error({ err: error }, "Error updating lead:");
         res.status(500).json({ error: "Failed to update lead" });
     }
 });
@@ -96,7 +97,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
         await storage.deleteLead(Number(req.params.id));
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting lead:", error);
+        logger.error({ err: error }, "Error deleting lead:");
         res.status(500).json({ error: "Failed to delete lead" });
     }
 });
@@ -107,7 +108,7 @@ router.post("/:id/convert", async (req: Request, res: Response) => {
         const result = await storage.convertLeadToClient(Number(req.params.id));
         res.json(result);
     } catch (error) {
-        console.error("Error converting lead:", error);
+        logger.error({ err: error }, "Error converting lead:");
         res.status(500).json({ error: "Failed to convert lead to client" });
     }
 });

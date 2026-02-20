@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertClientDocumentSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -10,12 +11,12 @@ router.get("/clients/:clientId/documents", async (req, res) => {
     try {
         const clientId = parseInt(req.params.clientId);
         if (isNaN(clientId)) {
-            return res.status(400).json({ error: "ID de cliente inválido" });
+            return res.status(400).json({ error: "ID de cliente invÃƒÂ¡lido" });
         }
         const documents = await storage.getClientDocumentsByClientId(clientId);
         res.json(documents);
     } catch (error) {
-        console.error("Error fetching client documents:", error);
+        logger.error({ err: error }, "Error fetching client documents:");
         res.status(500).json({ error: "Error al obtener documentos del cliente" });
     }
 });
@@ -30,7 +31,7 @@ router.get("/client-documents/:id", async (req, res) => {
         }
         res.json(document);
     } catch (error) {
-        console.error("Error fetching client document:", error);
+        logger.error({ err: error }, "Error fetching client document:");
         res.status(500).json({ error: "Error al obtener documento" });
     }
 });
@@ -45,7 +46,7 @@ router.post("/client-documents", async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error creating client document:", error);
+        logger.error({ err: error }, "Error creating client document:");
         res.status(500).json({ error: "Error al crear documento" });
     }
 });
@@ -60,7 +61,7 @@ router.delete("/client-documents/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting client document:", error);
+        logger.error({ err: error }, "Error deleting client document:");
         res.status(500).json({ error: "Error al eliminar documento" });
     }
 });

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertTeamSchema, updateTeamSchema, insertTeamAssignmentSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -10,32 +11,30 @@ router.get("/team", async (req, res) => {
         const allTeam = await storage.getTeam();
         res.json(allTeam);
     } catch (error) {
-        console.error("Failed to fetch team:", error);
+        logger.error({ err: error }, "Failed to fetch team:");
         res.status(500).json({ error: "Failed to fetch team", details: error instanceof Error ? error.message : String(error) });
     }
 });
 
 router.post("/team", async (req, res) => {
     try {
-        console.log("📥 POST /team - Body received:", JSON.stringify(req.body, null, 2));
 
         const validatedData = insertTeamSchema.parse(req.body);
-        console.log("✅ Team validation passed:", JSON.stringify(validatedData, null, 2));
 
         const person = await storage.createTeam(validatedData);
         res.status(201).json(person);
     } catch (error) {
-        console.error("❌ Error creating team member:");
+        logger.error({ err: error }, "Failed to create team member");
         if (error instanceof z.ZodError) {
-            console.error("   Zod validation errors:", JSON.stringify(error.errors, null, 2));
+            logger.error({ err: JSON.stringify(error.errors, null, 2) }, "   Zod validation errors:");
             return res.status(400).json({ error: error.errors });
         }
         // Log the actual database/ORM error
         if (error instanceof Error) {
-            console.error("   Error message:", error.message);
-            console.error("   Error stack:", error.stack);
+            logger.error({ err: error.message }, "   Error message:");
+            logger.error({ err: error.stack }, "   Error stack:");
         }
-        console.error("   Full error:", error);
+        logger.error({ err: error }, "   Full error:");
         res.status(500).json({
             error: "Failed to create team member",
             details: error instanceof Error ? error.message : "Unknown error",
@@ -90,12 +89,7 @@ router.post("/team/assignments", async (req, res) => {
         res.status(201).json(assignment);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const errorMsg = `❌ [POST /team/assignments] Validation Error: ${JSON.stringify(error.errors)}\nBody: ${JSON.stringify(req.body)}\n\n`;
-            console.error(errorMsg);
-            try {
-                const fs = await import('fs');
-                fs.appendFileSync('debug_error.log', errorMsg);
-            } catch (e) { /* ignore */ }
+            logger.error({ err: error }, "Team assignment validation error");
             return res.status(400).json({ error: error.errors });
         }
         res.status(500).json({ error: "Failed to create assignment" });

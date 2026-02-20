@@ -8,30 +8,91 @@ let wss: WebSocketServer | null = null;
 let telemetryInterval: NodeJS.Timeout | null = null;
 let metricsInterval: NodeJS.Timeout | null = null;
 
-// Helper to check if error is a WebSocket DB connection error (non-critical)
-function isDbWebSocketError(error: unknown): boolean {
-  if (!error) return false;
+const DB_CONNECTION_ERROR_CODES = new Set([
+  "ENOTFOUND",
+  "CERT_HAS_EXPIRED",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENETUNREACH",
+  "EPIPE",
+]);
 
-  // Check if error is an object with common error properties
-  if (typeof error !== 'object' || error === null) return false;
+const DB_CONNECTION_ERROR_TOKENS = [
+  "ENOTFOUND",
+  "CERT_HAS_EXPIRED",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENETUNREACH",
+  "EPIPE",
+];
 
-  // Type guard for error objects with code property
-  const hasCode = (obj: object): obj is { code?: string } => 'code' in obj;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
-  // Check direct code property
-  if (hasCode(error) && (error.code === 'ENOTFOUND' || error.code === 'CERT_HAS_EXPIRED')) {
-    return true;
-  }
+function collectErrorMetadata(error: unknown): { codes: Set<string>; message: string } {
+  const codes = new Set<string>();
+  const messages: string[] = [];
+  const queue: unknown[] = [error];
+  const visited = new Set<unknown>();
 
-  // Check nested error property
-  if ('error' in error) {
-    const nestedError = (error as { error: unknown }).error;
-    if (typeof nestedError === 'object' && nestedError !== null && hasCode(nestedError)) {
-      return nestedError.code === 'ENOTFOUND' || nestedError.code === 'CERT_HAS_EXPIRED';
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) {
+      continue;
+    }
+    visited.add(current);
+
+    if (current instanceof Error) {
+      messages.push(current.message);
+      const maybeCode = (current as Error & { code?: unknown }).code;
+      if (typeof maybeCode === "string") {
+        codes.add(maybeCode);
+      }
+
+      if (isRecord(current.cause)) {
+        queue.push(current.cause);
+      } else if (current.cause) {
+        queue.push(current.cause);
+      }
+    }
+
+    if (!isRecord(current)) {
+      continue;
+    }
+
+    const recordCode = current.code;
+    if (typeof recordCode === "string") {
+      codes.add(recordCode);
+    }
+
+    const recordMessage = current.message;
+    if (typeof recordMessage === "string") {
+      messages.push(recordMessage);
+    }
+
+    if ("error" in current) {
+      queue.push(current.error);
+    }
+
+    if ("cause" in current) {
+      queue.push(current.cause);
     }
   }
 
-  return false;
+  return { codes, message: messages.join(" ") };
+}
+
+// Helper to check if error is a DB connectivity issue (non-critical for websocket simulators)
+function isDbWebSocketError(error: unknown): boolean {
+  const { codes, message } = collectErrorMetadata(error);
+  if (Array.from(codes).some((code) => DB_CONNECTION_ERROR_CODES.has(code))) {
+    return true;
+  }
+
+  return DB_CONNECTION_ERROR_TOKENS.some((token) => message.includes(token));
 }
 
 export function setupWebSocket(server: Server) {

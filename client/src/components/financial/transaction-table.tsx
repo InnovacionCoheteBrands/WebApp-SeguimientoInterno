@@ -40,8 +40,8 @@ export function TransactionTable({ data, onEdit, onDelete, showProvider, showCli
     }
 
     return (
-        <div className="rounded-md border border-border">
-            <Table>
+        <div className="rounded-md border border-border overflow-x-auto">
+            <Table className="min-w-[800px]">
                 <TableHeader>
                     <TableRow className="border-border hover:bg-transparent">
                         <TableHead className="w-[120px]">Fecha</TableHead>
@@ -98,7 +98,7 @@ export function TransactionTable({ data, onEdit, onDelete, showProvider, showCli
 
                             <TableCell className="text-right text-xs font-mono text-muted-foreground">
                                 {transaction.rfc && <span className="block">{transaction.rfc}</span>}
-                                {transaction.invoiceNumber && <span className="text-muted-foreground/60">#{transaction.invoiceNumber}</span>}
+                                {transaction.invoiceNumber && <span className="text-muted-foreground/80">#{transaction.invoiceNumber}</span>}
                             </TableCell>
 
                             <TableCell>

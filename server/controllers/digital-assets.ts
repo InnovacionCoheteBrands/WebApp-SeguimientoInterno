@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
+import { logger } from "../utils/logger";
 import { insertDigitalAssetSchema, updateDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -36,12 +37,12 @@ router.get("/clients/:clientId/digital-assets", async (req, res) => {
     try {
         const clientId = parseInt(req.params.clientId);
         if (isNaN(clientId)) {
-            return res.status(400).json({ error: "ID de cliente inválido" });
+            return res.status(400).json({ error: "ID de cliente invÃƒÂ¡lido" });
         }
         const assets = await storage.getDigitalAssetsByClientId(clientId);
         res.json(assets);
     } catch (error) {
-        console.error("Error fetching digital assets:", error);
+        logger.error({ err: error }, "Error fetching digital assets:");
         res.status(500).json({ error: "Error al obtener activos digitales" });
     }
 });
@@ -53,7 +54,7 @@ router.get("/digital-assets/expiring", async (req, res) => {
         const assets = await storage.getExpiringDigitalAssets(days);
         res.json(assets);
     } catch (error) {
-        console.error("Error fetching expiring assets:", error);
+        logger.error({ err: error }, "Error fetching expiring assets:");
         res.status(500).json({ error: "Error al obtener activos por vencer" });
     }
 });
@@ -68,7 +69,7 @@ router.get("/digital-assets/:id", async (req, res) => {
         }
         res.json(asset);
     } catch (error) {
-        console.error("Error fetching digital asset:", error);
+        logger.error({ err: error }, "Error fetching digital asset:");
         res.status(500).json({ error: "Error al obtener activo digital" });
     }
 });
@@ -106,10 +107,10 @@ router.post("/digital-assets", upload.array('files'), async (req, res) => {
         res.status(201).json(asset);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            console.error("Validation error:", error.errors);
+            logger.error({ err: error.errors }, "Validation error:");
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error creating digital asset:", error);
+        logger.error({ err: error }, "Error creating digital asset:");
         res.status(500).json({ error: "Error al crear activo digital" });
     }
 });
@@ -176,10 +177,10 @@ router.patch("/digital-assets/:id", upload.array('files'), async (req, res) => {
         res.json(asset);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            console.error("Validation error:", error.errors);
+            logger.error({ err: error.errors }, "Validation error:");
             return res.status(400).json({ error: error.errors });
         }
-        console.error("Error updating digital asset:", error);
+        logger.error({ err: error }, "Error updating digital asset:");
         res.status(500).json({ error: "Error al actualizar activo digital" });
     }
 });
@@ -194,7 +195,7 @@ router.delete("/digital-assets/:id", async (req, res) => {
         }
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting digital asset:", error);
+        logger.error({ err: error }, "Error deleting digital asset:");
         res.status(500).json({ error: "Error al eliminar activo digital" });
     }
 });
