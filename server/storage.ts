@@ -78,6 +78,9 @@ import {
   type ProjectTeamAssignment,
   type InsertProjectTeamAssignment,
   type UpdateProjectTeamAssignment,
+  type Supplier,
+  type InsertSupplier,
+  type UpdateSupplier,
   // Tables
   users,
   campaigns,
@@ -112,6 +115,7 @@ import {
   leads,
   poes,
   projectTeamAssignments,
+  suppliers,
   type AgencyRole,
   type InsertAgencyRole,
   type UpdateAgencyRole,
@@ -3046,9 +3050,168 @@ export class DBStorage implements IStorage {
     return updated;
   }
 
+  async updateProjectServiceLine(projectId: number, serviceId: number, data: {
+    quantity?: number;
+    customCost?: string | null;
+    sellPrice?: string | null;
+    customPrice?: string | null;
+    notes?: string | null;
+  }): Promise<ProjectService | undefined> {
+    const updatePayload: Record<string, any> = {};
+    if (data.quantity !== undefined) updatePayload.quantity = data.quantity;
+    if (data.customCost !== undefined) updatePayload.customCost = data.customCost;
+    if (data.sellPrice !== undefined) updatePayload.sellPrice = data.sellPrice;
+    if (data.customPrice !== undefined) updatePayload.customPrice = data.customPrice;
+    if (data.notes !== undefined) updatePayload.notes = data.notes;
+
+    const [updated] = await db.update(projectServices)
+      .set(updatePayload)
+      .where(and(
+        eq(projectServices.projectId, projectId),
+        eq(projectServices.serviceId, serviceId)
+      ))
+      .returning();
+    return updated;
+  }
+
+  // ===========================================
+  // 🏭 SUPPLIERS MODULE IMPLEMENTATION
+  // ===========================================
+
+  async getSuppliers(): Promise<Supplier[]> {
+    return await db.select().from(suppliers).orderBy(suppliers.name);
+  }
+
+  async getActiveSuppliers(): Promise<Supplier[]> {
+    return await db.select().from(suppliers).where(eq(suppliers.isActive, true)).orderBy(suppliers.name);
+  }
+
+  async getSupplierById(id: number): Promise<Supplier | undefined> {
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id)).limit(1);
+    return supplier;
+  }
+
+  async createSupplier(data: InsertSupplier): Promise<Supplier> {
+    const [newSupplier] = await db.insert(suppliers).values(data).returning();
+    return newSupplier;
+  }
+
+  async updateSupplier(id: number, data: UpdateSupplier): Promise<Supplier | undefined> {
+    const [updated] = await db.update(suppliers)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(suppliers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    // Unlink services before deleting
+    await db.update(serviceCatalog)
+      .set({ supplierId: null })
+      .where(eq(serviceCatalog.supplierId, id));
+    await db.delete(suppliers).where(eq(suppliers.id, id));
+    return true;
+  }
+
+  // ===========================================
+  // 💹 PROJECT PROFITABILITY ENGINE
+  // ===========================================
+
+  async getProjectProfitability(projectId: number) {
+    // 1. Get project to check dealType (iguala vs proyecto)
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+    if (!project) throw new Error("Proyecto no encontrado");
+
+    // 2. Get all services assigned to this project with full catalog details
+    const servicesResult = await db.execute(sql`
+      SELECT
+        ps.id,
+        ps.project_id      AS "projectId",
+        ps.service_id      AS "serviceId",
+        ps.quantity,
+        ps.custom_cost     AS "customCost",
+        ps.custom_price    AS "customPrice",
+        ps.sell_price      AS "sellPrice",
+        ps.notes,
+        sc.name            AS "serviceName",
+        sc.description     AS "serviceDescription",
+        sc.base_cost       AS "baseCost",
+        sc.default_price   AS "defaultPrice",
+        sc.category,
+        sc.icon,
+        sup.id             AS "supplierId",
+        sup.name           AS "supplierName"
+      FROM ${projectServices} ps
+      INNER JOIN ${serviceCatalog} sc ON ps.service_id = sc.id
+      LEFT JOIN ${suppliers} sup ON sc.supplier_id = sup.id
+      WHERE ps.project_id = ${projectId}
+      ORDER BY sc.name
+    `);
+
+    // 3. Calculate per-line profitability
+    const lines = (servicesResult as any[]).map(row => {
+      const qty = parseInt(row.quantity || '1');
+      // Cost: custom negotiated cost first, then catalog base cost, then 0
+      const unitCost = parseFloat(row.customCost || row.baseCost || '0');
+      // Price: sellPrice (new field) > customPrice (legacy) > defaultPrice > 0
+      const unitPrice = parseFloat(row.sellPrice || row.customPrice || row.defaultPrice || '0');
+      const lineCost = qty * unitCost;
+      const linePrice = qty * unitPrice;
+      const lineMargin = linePrice - lineCost;
+      const lineMarginPct = linePrice > 0 ? (lineMargin / linePrice) * 100 : 0;
+
+      return {
+        id: row.id,
+        serviceId: row.serviceId,
+        serviceName: row.serviceName,
+        serviceDescription: row.serviceDescription,
+        category: row.category,
+        icon: row.icon,
+        supplierId: row.supplierId,
+        supplierName: row.supplierName,
+        quantity: qty,
+        unitCost,
+        unitPrice,
+        lineCost,
+        linePrice,
+        lineMargin,
+        lineMarginPct: Math.round(lineMarginPct * 100) / 100,
+        notes: row.notes,
+      };
+    });
+
+    // 4. Aggregate totals
+    const totalCost = lines.reduce((s, l) => s + l.lineCost, 0);
+    const totalPrice = lines.reduce((s, l) => s + l.linePrice, 0);
+    const totalMargin = totalPrice - totalCost;
+    const profitabilityPct = totalPrice > 0 ? (totalMargin / totalPrice) * 100 : 0;
+
+    // 5. Health classification
+    let health: 'healthy' | 'warning' | 'critical';
+    if (profitabilityPct >= 20) health = 'healthy';
+    else if (profitabilityPct >= 10) health = 'warning';
+    else health = 'critical';
+
+    return {
+      projectId,
+      projectName: project.name,
+      dealType: project.dealType,          // "Proyecto" | "Iguala"
+      isRecurringMonthly: project.dealType === 'Iguala',
+      lines,
+      totals: {
+        totalCost: Math.round(totalCost * 100) / 100,
+        totalPrice: Math.round(totalPrice * 100) / 100,
+        totalMargin: Math.round(totalMargin * 100) / 100,
+        profitabilityPct: Math.round(profitabilityPct * 100) / 100,
+        health,
+      },
+    };
+  }
+
   // ===========================================
   // 🎯 LEADS MODULE IMPLEMENTATION (CRM Kanban)
   // ===========================================
+
 
   async getLeads(): Promise<Lead[]> {
     return await db.select().from(leads).orderBy(desc(leads.createdAt));

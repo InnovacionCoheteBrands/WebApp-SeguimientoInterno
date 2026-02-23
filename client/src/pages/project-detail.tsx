@@ -20,6 +20,7 @@ import { formatDistanceToNow, format, isPast } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { InstallmentsTable } from "@/components/projects/installments-table";
+import { ProfitabilityCalculator } from "@/components/projects/profitability-calculator";
 
 const HEALTH_STYLES = {
     green: { border: "border-l-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-500", label: "Saludable" },
@@ -692,6 +693,14 @@ export default function ProjectDetail() {
                         )}
                     </div>
                 </div>
+
+                {/* Profitability Calculator - full width */}
+                <Card className="rounded-[2rem] relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-teal-500/0 via-teal-500 to-teal-500/0 opacity-50" />
+                    <CardContent className="p-6">
+                        <ProfitabilityCalculator projectId={projectId} />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

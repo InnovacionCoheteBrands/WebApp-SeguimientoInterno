@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -167,6 +168,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <NavButton icon={TrendingUp} label={t("analytics")} active={location === "/kpis"} href="/kpis" collapsed={isCollapsed} />
               <NavButton icon={Target} label="CRM" active={location === "/crm"} href="/crm" collapsed={isCollapsed} />
               <NavButton icon={Globe} label="Digital Assets" active={location === "/digital-assets"} href="/digital-assets" collapsed={isCollapsed} />
+              <NavButton icon={Truck} label="Proveedores" active={location === "/proveedores"} href="/proveedores" collapsed={isCollapsed} />
               <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" collapsed={isCollapsed} />
               <NavButton icon={FileText} label="POES" active={location === "/poes"} href="/poes" collapsed={isCollapsed} />
               <NavButton icon={CalendarDays} label="Calendario" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />

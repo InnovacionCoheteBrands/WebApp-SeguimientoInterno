@@ -23,6 +23,7 @@ import digitalAssetsRouter from "./controllers/digital-assets";
 import clientDocumentsRouter from "./controllers/client-documents";
 import installmentsRouter from "./controllers/installments";
 import servicesRouter from "./controllers/services";
+import suppliersRouter from "./controllers/suppliers";
 // Cohete Replica Module Controllers
 import leadsRouter from "./controllers/leads";
 import poesRouter from "./controllers/poes";
@@ -67,6 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", requireAuth, clientDocumentsRouter);
   app.use("/api", requireAuth, installmentsRouter);
   app.use("/api", requireAuth, servicesRouter);
+  app.use("/api", requireAuth, suppliersRouter);
   // Cohete Replica Module Routes
   app.use("/api/leads", requireAuth, leadsRouter);
   app.use("/api/poes", requireAuth, poesRouter);

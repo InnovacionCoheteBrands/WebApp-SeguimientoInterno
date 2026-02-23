@@ -1313,6 +1313,60 @@ export type InsertProjectDeliverable = z.infer<typeof insertProjectDeliverableSc
 export type UpdateProjectDeliverable = z.infer<typeof updateProjectDeliverableSchema>;
 
 // ===========================================
+// 🏭 SUPPLIERS MODULE (Directorio de Proveedores)
+// ===========================================
+
+export const SUPPLIER_SPECIALTIES = [
+  "Diseño Gráfico",
+  "Desarrollo Web",
+  "Fotografía / Video",
+  "Redacción / Copywriting",
+  "SEO / SEM",
+  "Pauta Digital",
+  "Impresión",
+  "Sonido / Música",
+  "Traducción",
+  "Consultoría",
+  "Software / SaaS",
+  "Otro",
+] as const;
+
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),             // Nombre de la empresa
+  contactName: text("contact_name"),        // Nombre del contacto principal
+  email: text("email"),
+  phone: text("phone"),
+  specialty: text("specialty").notNull(),   // From SUPPLIER_SPECIALTIES
+  website: text("website"),
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSupplierSchema = createInsertSchema(suppliers, {
+  // 🛡️ XSS Protection
+  name: safeString(200),
+  contactName: safeOptionalString(200),
+  email: z.string().email("Email inválido").max(200).optional().nullable(),
+  phone: safeOptionalString(50),
+  specialty: z.enum(SUPPLIER_SPECIALTIES),
+  website: safeOptionalString(500),
+  notes: safeOptionalString(1000),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSupplierSchema = insertSupplierSchema.partial();
+
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type UpdateSupplier = z.infer<typeof updateSupplierSchema>;
+
+// ===========================================
 // 🛠️ SERVICE CATALOG MODULE
 // ===========================================
 
@@ -1320,7 +1374,12 @@ export const serviceCatalog = pgTable("service_catalog", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  // Precio de venta base recomendado
   defaultPrice: numeric("default_price", { precision: 12, scale: 2 }),
+  // Costo base interno / costo de proveedor
+  baseCost: numeric("base_cost", { precision: 12, scale: 2 }),
+  // Proveedor que entrega este servicio (opcional)
+  supplierId: integer("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
   category: text("category"),  // "Marketing", "Desarrollo", "Diseño", etc.
   icon: text("icon"),  // Icon name for UI display
   isActive: boolean("is_active").notNull().default(true),
@@ -1337,6 +1396,10 @@ export const insertServiceCatalogSchema = createInsertSchema(serviceCatalog, {
 
   // 🔢 Number validation
   defaultPrice: optionalPositiveNumericString(),
+  baseCost: optionalPositiveNumericString(),
+
+  // 🔗 FK coercion
+  supplierId: z.coerce.number().int().positive().optional().nullable(),
 }).omit({
   id: true,
   createdAt: true,
@@ -1357,8 +1420,11 @@ export const projectServices = pgTable("project_services", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   serviceId: integer("service_id").notNull().references(() => serviceCatalog.id, { onDelete: "cascade" }),
-  customPrice: numeric("custom_price", { precision: 12, scale: 2 }),  // Precio específico si difiere del default
-  notes: text("notes"),  // Notas específicas para este servicio en el proyecto
+  quantity: integer("quantity").notNull().default(1),          // Cantidad de unidades
+  customCost: numeric("custom_cost", { precision: 12, scale: 2 }),   // Costo del proveedor negociado
+  customPrice: numeric("custom_price", { precision: 12, scale: 2 }), // Precio VENTA al cliente (legacy)
+  sellPrice: numeric("sell_price", { precision: 12, scale: 2 }),     // Precio venta (nuevo campo explícito)
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -1368,7 +1434,10 @@ export const insertProjectServiceSchema = createInsertSchema(projectServices, {
   serviceId: z.coerce.number().int().positive("Se requiere un servicio válido"),
 
   // 🔢 Number validation
+  quantity: z.coerce.number().int().min(1).default(1),
+  customCost: optionalPositiveNumericString(),
   customPrice: optionalPositiveNumericString(),
+  sellPrice: optionalPositiveNumericString(),
 
   // 🛡️ XSS Protection
   notes: safeOptionalString(500),

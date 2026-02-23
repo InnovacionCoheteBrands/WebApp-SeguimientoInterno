@@ -364,4 +364,37 @@ router.patch("/projects/:id/services/:serviceId", async (req, res) => {
     }
 });
 
+// Profitability Calculator endpoint
+router.get("/projects/:id/profitability", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+        const data = await storage.getProjectProfitability(id);
+        res.json(data);
+    } catch (error: any) {
+        if (error.message === "Proyecto no encontrado") {
+            return res.status(404).json({ error: error.message });
+        }
+        logger.error({ err: error }, `Failed to calculate profitability for project ${req.params.id}`);
+        res.status(500).json({ error: "Failed to calculate project profitability" });
+    }
+});
+
+// Update project service (with new quantity/cost/sellPrice fields)
+router.patch("/projects/:id/services/:serviceId/line", async (req, res) => {
+    try {
+        const projectId = parseInt(req.params.id);
+        const serviceId = parseInt(req.params.serviceId);
+        const { quantity, customCost, sellPrice, customPrice, notes } = req.body;
+        const updated = await storage.updateProjectServiceLine(projectId, serviceId, {
+            quantity, customCost, sellPrice, customPrice, notes
+        });
+        if (!updated) return res.status(404).json({ error: "Service line not found" });
+        res.json(updated);
+    } catch (error) {
+        logger.error({ err: error }, "Failed to update project service line:");
+        res.status(500).json({ error: "Failed to update project service line" });
+    }
+});
+
 export default router;
