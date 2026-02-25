@@ -60,6 +60,14 @@ export default function AuthPage() {
                 body: JSON.stringify(data),
             });
 
+            // Defensive check: ensure we received JSON, not HTML (server crash fallback)
+            const contentType = response.headers.get("content-type") || "";
+            if (!contentType.includes("application/json")) {
+                throw new Error(
+                    "El servidor no respondió correctamente. Verifica que el backend esté activo e intenta de nuevo."
+                );
+            }
+
             const result = await response.json();
 
             if (!response.ok) {

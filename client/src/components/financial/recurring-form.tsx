@@ -70,15 +70,15 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
         defaultValues: {
             name: "",
             type: defaultType,
-            amount: "0",
+            amount: "",
             category: "",
             frequency: "monthly",
             // interval: 1, // Removed
             isActive: true,
             // Fiscal / Extra
             description: "",
-            subtotal: "0",
-            iva: "0",
+            subtotal: "",
+            iva: "",
             rfc: "",
             provider: "",
             clientId: null,
@@ -112,13 +112,13 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
                 reset({
                     name: "",
                     type: defaultType,
-                    amount: "0",
+                    amount: "",
                     category: "",
                     frequency: "monthly",
                     isActive: true,
                     notes: "",
-                    subtotal: "0",
-                    iva: "0",
+                    subtotal: "",
+                    iva: "",
                     rfc: "",
                     provider: "",
                     clientId: null,
@@ -309,7 +309,7 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
                                     <FormItem>
                                         <FormLabel>Subtotal</FormLabel>
                                         <FormControl>
-                                            <Input type="number" step="0.01" {...field} />
+                                            <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value || ""} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -323,7 +323,7 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
                                     <FormItem>
                                         <FormLabel>IVA (16%)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" readOnly className="bg-muted" {...field} />
+                                            <Input type="number" readOnly className="bg-muted" placeholder="0.00" {...field} value={field.value || ""} />
                                         </FormControl>
                                     </FormItem>
                                 )}
@@ -336,7 +336,7 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
                                     <FormItem>
                                         <FormLabel className="font-bold">Total</FormLabel>
                                         <FormControl>
-                                            <Input type="number" readOnly className="font-bold bg-muted" {...field} />
+                                            <Input type="number" readOnly className="font-bold bg-muted" placeholder="0.00" {...field} value={field.value || ""} />
                                         </FormControl>
                                     </FormItem>
                                 )}
@@ -403,7 +403,7 @@ export function RecurringForm({ open, onOpenChange, initialData, defaultType = "
                                         <FormItem>
                                             <FormLabel>Día del mes de ejecución</FormLabel>
                                             <FormControl>
-                                                <Input type="number" min="1" max="31" {...field} />
+                                                <Input type="number" min="1" max="31" placeholder={String(new Date().getDate())} {...field} value={field.value ?? ""} />
                                             </FormControl>
                                             <FormDescription>Se generará automáticamente en este día</FormDescription>
                                             <FormMessage />

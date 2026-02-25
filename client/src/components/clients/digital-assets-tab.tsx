@@ -36,7 +36,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
         name: "",
         provider: "",
         expirationDate: "",
-        cost: 0,
+        cost: "" as string | number,
         autoRenew: true,
         status: "active",
     });
@@ -113,7 +113,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
             name: "",
             provider: "",
             expirationDate: "",
-            cost: 0,
+            cost: "",
             autoRenew: true,
             status: "active",
         });
@@ -129,7 +129,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                 name: asset.name,
                 provider: asset.provider || "",
                 expirationDate: asset.expirationDate ? new Date(asset.expirationDate).toISOString().split('T')[0] : "",
-                cost: asset.cost ? Number(asset.cost) : 0,
+                cost: asset.cost ? Number(asset.cost) : "",
                 autoRenew: asset.autoRenew,
                 status: asset.status,
             });
@@ -160,7 +160,7 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
             assetType: formData.type,
             name: formData.name,
             provider: formData.provider || null,
-            cost: formData.cost ? formData.cost.toString() : undefined,
+            cost: formData.cost !== "" && formData.cost !== undefined ? Number(formData.cost).toString() : undefined,
             autoRenew: formData.autoRenew,
             status: formData.status,
             expirationDate: formData.expirationDate ? new Date(formData.expirationDate) : null,
@@ -342,8 +342,9 @@ export function DigitalAssetsTab({ clientId }: DigitalAssetsTabProps) {
                                 <Input
                                     id="cost"
                                     type="number"
-                                    value={formData.cost}
-                                    onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                                    placeholder="0.00"
+                                    value={formData.cost === 0 ? "" : formData.cost}
+                                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                                     className="h-10"
                                 />
                             </div>

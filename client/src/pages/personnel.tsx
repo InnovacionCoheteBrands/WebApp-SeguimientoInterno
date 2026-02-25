@@ -162,7 +162,7 @@ export default function Personnel() {
 
   const [assignmentForm, setAssignmentForm] = useState({
     projectId: 0,
-    hoursAllocated: 10
+    hoursAllocated: "" as string | number
   });
 
 
@@ -183,7 +183,7 @@ export default function Personnel() {
     createAssignmentMutation.mutate({
       teamId: assigningToMember,
       projectId: assignmentForm.projectId,
-      hoursAllocated: assignmentForm.hoursAllocated
+      hoursAllocated: assignmentForm.hoursAllocated === "" ? 0 : Number(assignmentForm.hoursAllocated)
     }, {
       onError: (error) => {
         console.error("Mutation failed:", error);
@@ -498,8 +498,9 @@ export default function Personnel() {
                 <div className="flex items-center gap-2">
                   <Input
                     type="number" min="0" max="168"
-                    value={assignmentForm.hoursAllocated}
-                    onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: parseInt(e.target.value) })}
+                    placeholder="0"
+                    value={assignmentForm.hoursAllocated === 0 ? "" : assignmentForm.hoursAllocated}
+                    onChange={e => setAssignmentForm({ ...assignmentForm, hoursAllocated: e.target.value })}
                     className="bg-background border-border rounded-full"
                   />
                   <span className="text-xs text-muted-foreground font-mono">HRS/WK</span>

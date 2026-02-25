@@ -64,7 +64,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
             lastName: "",
             email: "",
             phone: "",
-            monthlySalary: "0",
+            monthlySalary: "",
             payrollType: "Fija",
             startDate: new Date(),
             employeeStatus: "Activo",
@@ -78,8 +78,8 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
             workHoursStart: "09:00",
             workHoursEnd: "18:00",
             weeklyCapacity: 40,
-            internalCostHour: "0",
-            billableRate: "0",
+            internalCostHour: "",
+            billableRate: "",
         },
     });
 
@@ -91,7 +91,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                     lastName: initialData.lastName || "",
                     email: initialData.email || "",
                     phone: initialData.phone || "",
-                    monthlySalary: initialData.monthlySalary?.toString() || "0",
+                    monthlySalary: initialData.monthlySalary?.toString() || "",
                     payrollType: (initialData.payrollType as "Fija" | "Variable") || "Fija",
                     startDate: initialData.startDate ? new Date(initialData.startDate) : new Date(),
                     employeeStatus: (initialData.employeeStatus as "Activo" | "Inactivo") || "Activo",
@@ -105,8 +105,8 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                     workHoursStart: initialData.workHoursStart || "09:00",
                     workHoursEnd: initialData.workHoursEnd || "18:00",
                     weeklyCapacity: initialData.weeklyCapacity || 40,
-                    internalCostHour: initialData.internalCostHour?.toString() || "0",
-                    billableRate: initialData.billableRate?.toString() || "0",
+                    internalCostHour: initialData.internalCostHour?.toString() || "",
+                    billableRate: initialData.billableRate?.toString() || "",
                 });
                 setAvatarPreview(initialData.avatarUrl || null);
             } else {
@@ -115,7 +115,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                     lastName: "",
                     email: "",
                     phone: "",
-                    monthlySalary: "0",
+                    monthlySalary: "",
                     payrollType: "Fija",
                     startDate: new Date(),
                     employeeStatus: "Activo",
@@ -128,8 +128,8 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                     workHoursStart: "09:00",
                     workHoursEnd: "18:00",
                     weeklyCapacity: 40,
-                    internalCostHour: "0",
-                    billableRate: "0",
+                    internalCostHour: "",
+                    billableRate: "",
                 });
                 setAvatarPreview(null);
             }
@@ -340,7 +340,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                                     <FormLabel>Sueldo Mensual *</FormLabel>
                                     <FormControl>
                                         <div className="relative">
-                                            <Input type="number" placeholder="0" {...field} className="pr-12" />
+                                            <Input type="number" placeholder="0.00" {...field} value={field.value || ""} className="pr-12" />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                                                 MXN
                                             </span>

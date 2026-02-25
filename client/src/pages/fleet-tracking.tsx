@@ -31,12 +31,13 @@ const FleetTracking = memo(function FleetTracking() {
     queryFn: fetchClientAccounts,
   });
 
-  const [formData, setFormData] = useState<Partial<InsertClientAccount>>({
+  // Local form state uses strings for numeric fields so inputs can start truly empty
+  const [formData, setFormData] = useState({
     companyName: "",
     industry: "",
-    monthlyBudget: 0,
-    currentSpend: 0,
-    healthScore: 100,
+    monthlyBudget: "",
+    currentSpend: "",
+    healthScore: "100",
     nextMilestone: "",
     status: "Active",
   });
@@ -85,9 +86,9 @@ const FleetTracking = memo(function FleetTracking() {
     setFormData({
       companyName: "",
       industry: "",
-      monthlyBudget: 0,
-      currentSpend: 0,
-      healthScore: 100,
+      monthlyBudget: "",
+      currentSpend: "",
+      healthScore: "100",
       nextMilestone: "",
       status: "Active",
     });
@@ -100,9 +101,9 @@ const FleetTracking = memo(function FleetTracking() {
       setFormData({
         companyName: account.companyName,
         industry: account.industry,
-        monthlyBudget: account.monthlyBudget,
-        currentSpend: account.currentSpend,
-        healthScore: account.healthScore,
+        monthlyBudget: account.monthlyBudget?.toString() ?? "",
+        currentSpend: account.currentSpend?.toString() ?? "",
+        healthScore: account.healthScore?.toString() ?? "100",
         nextMilestone: account.nextMilestone || "",
         status: account.status,
       });
@@ -120,8 +121,16 @@ const FleetTracking = memo(function FleetTracking() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Convert string fields back to numbers for schema validation
+    const payload = {
+      ...formData,
+      monthlyBudget: parseFloat(formData.monthlyBudget as string) || 0,
+      currentSpend: parseFloat(formData.currentSpend as string) || 0,
+      healthScore: parseInt(formData.healthScore as string) || 0,
+    };
+
     // 🛡️ Validate with shared schema (XSS protection + positive numbers)
-    const result = insertClientAccountSchema.safeParse(formData);
+    const result = insertClientAccountSchema.safeParse(payload);
     if (!result.success) {
       const firstError = result.error.errors[0];
       toast({
@@ -423,8 +432,9 @@ const FleetTracking = memo(function FleetTracking() {
                 <Input
                   id="monthlyBudget"
                   type="number"
+                  placeholder="0.00"
                   value={formData.monthlyBudget}
-                  onChange={(e) => setFormData({ ...formData, monthlyBudget: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, monthlyBudget: e.target.value })}
                   className="h-11"
                   data-testid="input-budget"
                 />
@@ -435,8 +445,9 @@ const FleetTracking = memo(function FleetTracking() {
                 <Input
                   id="currentSpend"
                   type="number"
+                  placeholder="0.00"
                   value={formData.currentSpend}
-                  onChange={(e) => setFormData({ ...formData, currentSpend: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, currentSpend: e.target.value })}
                   className="h-11"
                   data-testid="input-spend"
                 />
@@ -451,7 +462,7 @@ const FleetTracking = memo(function FleetTracking() {
                 min="0"
                 max="100"
                 value={formData.healthScore}
-                onChange={(e) => setFormData({ ...formData, healthScore: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, healthScore: e.target.value })}
                 className="h-11"
                 data-testid="input-healthscore"
               />

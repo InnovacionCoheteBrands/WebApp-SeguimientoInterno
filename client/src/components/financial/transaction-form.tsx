@@ -65,9 +65,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
         defaultValues: {
             type: defaultType,
             date: new Date(),
-            amount: "0",
-            subtotal: "0",
-            iva: "0",
+            amount: "",
+            subtotal: "",
+            iva: "",
             category: "",
             description: "",
             status: "Pendiente",
@@ -438,7 +438,9 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                             <FormControl>
                                                 <Input
                                                     type="number" step="0.01" min="0"
+                                                    placeholder="0.00"
                                                     {...field}
+                                                    value={field.value || ""}
                                                     className="bg-background border-border text-right font-mono font-bold text-foreground"
                                                     readOnly
                                                 />

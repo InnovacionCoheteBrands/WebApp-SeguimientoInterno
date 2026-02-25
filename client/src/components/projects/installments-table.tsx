@@ -32,7 +32,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
     const [formData, setFormData] = useState({
         installmentNumber: 1,
         concept: "",
-        amount: 0,
+        amount: "" as string | number,
         dueDate: "",
         status: "pending",
     });
@@ -91,7 +91,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
         setFormData({
             installmentNumber: installments.length + 1,
             concept: "",
-            amount: 0,
+            amount: "",
             dueDate: "",
             status: "pending",
         });
@@ -126,7 +126,7 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
         const payload = {
             projectId,
             installmentNumber: formData.installmentNumber,
-            amount: formData.amount.toString(),
+            amount: (formData.amount === "" ? 0 : Number(formData.amount)).toString(),
             dueDate: new Date(formData.dueDate),
             // Set resolved concept for display
             resolvedConcept: formData.concept,
@@ -314,8 +314,9 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                             <Input
                                 id="amount"
                                 type="number"
-                                value={formData.amount}
-                                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                                placeholder="0.00"
+                                value={formData.amount === 0 ? "" : formData.amount}
+                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                                 className="h-10"
                             />
                         </div>

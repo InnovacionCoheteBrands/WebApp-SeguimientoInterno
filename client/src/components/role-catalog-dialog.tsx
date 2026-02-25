@@ -24,7 +24,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
     const [formData, setFormData] = useState<Partial<InsertAgencyRole>>({
         roleName: "",
         department: "",
-        defaultBillableRate: "0",
+        defaultBillableRate: "",
         allowedActivities: "[]"
     });
     const [currentActivities, setCurrentActivities] = useState<string[]>([]);
@@ -50,7 +50,7 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
 
     const resetForm = () => {
         setEditingRole(null);
-        setFormData({ roleName: "", department: "", defaultBillableRate: "0", allowedActivities: "[]" });
+        setFormData({ roleName: "", department: "", defaultBillableRate: "", allowedActivities: "[]" });
         setCurrentActivities([]);
         setNewActivity("");
     };
@@ -193,7 +193,8 @@ export function RoleCatalogDialog({ open, onOpenChange }: RoleCatalogDialogProps
                                 <Label className="text-muted-foreground">Default Billable Rate ($/hr)</Label>
                                 <Input
                                     type="number"
-                                    value={formData.defaultBillableRate}
+                                    placeholder="0.00"
+                                    value={formData.defaultBillableRate || ""}
                                     onChange={e => setFormData({ ...formData, defaultBillableRate: e.target.value })}
                                     className="bg-background border-border text-green-500 font-mono"
                                 />
