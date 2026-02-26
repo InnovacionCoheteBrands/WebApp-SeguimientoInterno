@@ -1197,6 +1197,7 @@ export const installments = pgTable("installments", {
   // Concept with dynamic placeholders
   conceptTemplate: text("concept_template"),  // "{{service_name}} - Mes {{month}}"
   resolvedConcept: text("resolved_concept"),  // Computed: "Iguala Marketing - Mes Enero 2026"
+  concept: text("concept"), // Custom concept for payment segmentation
 
   // Payment linkage
   isPaid: boolean("is_paid").notNull().default(false),
@@ -1217,6 +1218,7 @@ export const insertInstallmentSchema = createInsertSchema(installments, {
   status: z.enum(["pending", "collected", "overdue", "cancelled"]).default("pending"),
   conceptTemplate: safeOptionalString(500),
   resolvedConcept: safeOptionalString(500),
+  concept: safeOptionalString(500),
   simpleNoteNumber: safeOptionalString(50),
   notes: safeOptionalString(1000),
 

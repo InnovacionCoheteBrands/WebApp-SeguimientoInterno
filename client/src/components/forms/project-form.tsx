@@ -30,7 +30,6 @@ import {
     fetchServiceCatalog,
     addProjectTeamMember,
     addProjectService,
-    fetchInstallmentsByProject as fetchInstallments,
     createInstallment,
     type Project
 } from "@/lib/api";
@@ -60,8 +59,8 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
 
     const [selectedTeamMembers, setSelectedTeamMembers] = useState<number[]>([]);
     const [selectedServices, setSelectedServices] = useState<number[]>([]);
-    const [installments, setInstallments] = useState<Array<{ amount: number; date: Date; description: string }>>([]);
-    const [newInstallment, setNewInstallment] = useState<{ amount: string, date: Date | undefined, description: string }>({ amount: "", date: new Date(), description: "" });
+    const [installments, setInstallments] = useState<Array<{ amount: number; date: Date; concept: string }>>([]);
+    const [newInstallment, setNewInstallment] = useState<{ amount: string, date: Date | undefined, concept: string }>({ amount: "", date: new Date(), concept: "" });
 
     const { data: clients = [] } = useQuery({ queryKey: ["client-accounts"], queryFn: fetchClientAccounts });
     const { data: team = [] } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
@@ -139,6 +138,21 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
         }
     }, [open, initialData, form]);
 
+    // Automatic cost calculation based on selected services
+    useEffect(() => {
+        if (!services.length || !selectedServices.length) return;
+
+        const totalCost = selectedServices.reduce((sum, serviceId) => {
+            const service = services.find(s => s.id === serviceId);
+            const price = service?.defaultPrice ? parseFloat(service.defaultPrice) : 0;
+            return sum + price;
+        }, 0);
+
+        if (totalCost > 0) {
+            form.setValue("quotationAmount", totalCost.toString(), { shouldDirty: true, shouldValidate: true });
+        }
+    }, [selectedServices, services, form]);
+
     const createMutation = useMutation({
         mutationFn: async (data: z.infer<typeof formSchema>) => {
             const project = await createProject(data);
@@ -163,7 +177,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                         amount: inst.amount.toString(),
                         dueDate: inst.date,
                         status: "pending",
-                        notes: inst.description
+                        notes: inst.concept
                     } as any)
                 ));
             }
@@ -202,9 +216,9 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
         setInstallments([...installments, {
             amount: parseFloat(newInstallment.amount),
             date: newInstallment.date,
-            description: newInstallment.description
+            concept: newInstallment.concept
         }]);
-        setNewInstallment({ amount: "", date: new Date(), description: "" });
+        setNewInstallment({ amount: "", date: new Date(), concept: "" });
     };
 
     const removeInstallment = (index: number) => {
@@ -215,7 +229,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="h-[80vh] flex flex-col">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="h-[70vh] flex flex-col">
                 <ScrollArea className="flex-1 pr-4">
                     <div className="space-y-8">
                         {/* === GENERAL SECTION === */}
@@ -372,7 +386,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                                     <div className="text-xs text-muted-foreground">Fracciona los pagos en fechas específicas</div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-2 mb-2">
+                                <div className="grid grid-cols-4 gap-2 mb-2">
                                     <Input type="number" placeholder="Monto" value={newInstallment.amount} onChange={e => setNewInstallment({ ...newInstallment, amount: e.target.value })} />
                                     <Popover>
                                         <PopoverTrigger asChild>
@@ -383,6 +397,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={newInstallment.date} onSelect={(d) => d && setNewInstallment({ ...newInstallment, date: d })} initialFocus /></PopoverContent>
                                     </Popover>
+                                    <Input placeholder="Concepto" value={newInstallment.concept} onChange={e => setNewInstallment({ ...newInstallment, concept: e.target.value })} />
                                     <Button type="button" size="sm" onClick={addInstallment}><Plus className="h-4 w-4 mr-1" /> Agregar</Button>
                                 </div>
 
@@ -390,7 +405,10 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                                     {installments.length === 0 && <div className="text-center py-4 text-muted-foreground text-sm">No hay pagos segmentados</div>}
                                     {installments.map((inst, idx) => (
                                         <div key={idx} className="flex items-center justify-between bg-background p-2 rounded border text-sm">
-                                            <span>${inst.amount} - {format(inst.date, "dd/MM/yyyy")}</span>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">${inst.amount} - {format(inst.date, "dd/MM/yyyy")}</span>
+                                                {inst.concept && <span className="text-xs text-muted-foreground">{inst.concept}</span>}
+                                            </div>
                                             <Button variant="ghost" size="icon" onClick={() => removeInstallment(idx)} className="h-6 w-6 text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     ))}
