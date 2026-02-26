@@ -1,30 +1,92 @@
 [
   {
-    "column_name": "id",
-    "data_type": "character varying"
+    "table_name": "ad_platforms"
   },
   {
-    "column_name": "username",
-    "data_type": "text"
+    "table_name": "campaigns"
   },
   {
-    "column_name": "password",
-    "data_type": "text"
+    "table_name": "ad_metrics"
   },
   {
-    "column_name": "settings",
-    "data_type": "text"
+    "table_name": "agency_role_catalog"
   },
   {
-    "column_name": "api_key",
-    "data_type": "text"
+    "table_name": "client_accounts"
   },
   {
-    "column_name": "webhook_url",
-    "data_type": "text"
+    "table_name": "account_mappings"
   },
   {
-    "column_name": "role",
-    "data_type": "text"
+    "table_name": "billing_profiles"
+  },
+  {
+    "table_name": "client_kpi_config"
+  },
+  {
+    "table_name": "contacts"
+  },
+  {
+    "table_name": "digital_assets"
+  },
+  {
+    "table_name": "poes"
+  },
+  {
+    "table_name": "installments"
+  },
+  {
+    "table_name": "project_attachments"
+  },
+  {
+    "table_name": "project_deliverables"
+  },
+  {
+    "table_name": "project_services"
+  },
+  {
+    "table_name": "platform_connections"
+  },
+  {
+    "table_name": "leads"
+  },
+  {
+    "table_name": "recurring_transactions"
+  },
+  {
+    "table_name": "service_catalog"
+  },
+  {
+    "table_name": "resources"
+  },
+  {
+    "table_name": "project_team_assignments"
+  },
+  {
+    "table_name": "system_metrics"
+  },
+  {
+    "table_name": "projects"
+  },
+  {
+    "table_name": "telemetry_data"
+  },
+  {
+    "table_name": "team"
+  },
+  {
+    "table_name": "team_assignments"
+  },
+  {
+    "table_name": "users"
+  },
+  {
+    "table_name": "ad_creatives"
+  },
+  {
+    "table_name": "client_documents"
+  },
+  {
+    "table_name": "transactions"
   }
 ]

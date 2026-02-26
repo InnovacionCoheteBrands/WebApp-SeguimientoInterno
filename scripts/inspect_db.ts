@@ -7,11 +7,11 @@ import * as fs from 'fs';
 async function run() {
     try {
         const result = await db.execute(sql`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'users';
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public';
     `);
-        console.log("Columns in users table:");
+        console.log("Tables in database:");
         const output = JSON.stringify(result, null, 2);
         console.log(output);
         fs.writeFileSync("db_schema.json", output);
