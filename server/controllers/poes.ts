@@ -8,6 +8,7 @@ import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertPoeSchema, updatePoeSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -52,6 +53,7 @@ router.post("/", async (req: Request, res: Response) => {
     try {
         const validated = insertPoeSchema.parse(req.body);
         const poe = await storage.createPoe(validated);
+        logAction(req, "CREATE", "POE", poe.id.toString(), `Creó el POE '${poe.title}'`);
         res.status(201).json(poe);
     } catch (error) {
         if (error instanceof ZodError) {
@@ -70,6 +72,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         if (!poe) {
             return res.status(404).json({ error: "POE not found" });
         }
+        logAction(req, "UPDATE", "POE", req.params.id, `Actualizó el POE '${poe.title}'`, validated as Record<string, any>);
         res.json(poe);
     } catch (error) {
         if (error instanceof ZodError) {
@@ -83,10 +86,12 @@ router.patch("/:id", async (req: Request, res: Response) => {
 // DELETE /api/poes/:id - Soft delete POE
 router.delete("/:id", async (req: Request, res: Response) => {
     try {
-        const deleted = await storage.deletePoe(Number(req.params.id));
+        const id = Number(req.params.id);
+        const deleted = await storage.deletePoe(id);
         if (!deleted) {
             return res.status(404).json({ error: "POE not found" });
         }
+        logAction(req, "DELETE", "POE", id.toString(), `Eliminó el POE #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting POE:");

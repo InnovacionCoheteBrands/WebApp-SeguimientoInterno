@@ -8,6 +8,7 @@ import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -63,6 +64,7 @@ router.post("/", async (req: Request, res: Response) => {
     try {
         const validated = insertLeadSchema.parse(req.body);
         const lead = await storage.createLead(validated);
+        logAction(req, "CREATE", "LEAD", lead.id.toString(), `Creó el prospecto '${lead.name}'`);
         res.status(201).json(lead);
     } catch (error) {
         if (error instanceof ZodError) {
@@ -81,6 +83,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         if (!lead) {
             return res.status(404).json({ error: "Lead not found" });
         }
+        logAction(req, "UPDATE", "LEAD", lead.id.toString(), `Actualizó al prospecto '${lead.name}'`, validated as Record<string, any>);
         res.json(lead);
     } catch (error) {
         if (error instanceof ZodError) {
@@ -94,7 +97,9 @@ router.patch("/:id", async (req: Request, res: Response) => {
 // DELETE /api/leads/:id - Delete lead
 router.delete("/:id", async (req: Request, res: Response) => {
     try {
-        await storage.deleteLead(Number(req.params.id));
+        const id = Number(req.params.id);
+        await storage.deleteLead(id);
+        logAction(req, "DELETE", "LEAD", id.toString(), `Eliminó al prospecto #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting lead:");
@@ -105,7 +110,9 @@ router.delete("/:id", async (req: Request, res: Response) => {
 // POST /api/leads/:id/convert - Convert lead to client
 router.post("/:id/convert", async (req: Request, res: Response) => {
     try {
-        const result = await storage.convertLeadToClient(Number(req.params.id));
+        const id = Number(req.params.id);
+        const result = await storage.convertLeadToClient(id);
+        logAction(req, "CONVERT", "LEAD", id.toString(), `Convirtió al prospecto en cliente`);
         res.json(result);
     } catch (error) {
         logger.error({ err: error }, "Error converting lead:");

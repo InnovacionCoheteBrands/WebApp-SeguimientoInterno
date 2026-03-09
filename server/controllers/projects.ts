@@ -124,6 +124,7 @@ router.post("/projects/:id/deliverables", async (req, res) => {
             projectId
         });
         const deliverable = await storage.createProjectDeliverable(validatedData);
+        logAction(req, "CREATE", "DELIVERABLE", deliverable.id.toString(), `Creó el entregable '${deliverable.name}' en el proyecto #${projectId}`);
         res.status(201).json(deliverable);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -174,6 +175,7 @@ router.post("/projects/:id/attachments", async (req, res) => {
             projectId
         });
         const attachment = await storage.createProjectAttachment(validatedData);
+        logAction(req, "CREATE", "ATTACHMENT", attachment.id.toString(), `Subió el archivo '${attachment.name}' al proyecto #${projectId}`);
         res.status(201).json(attachment);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -193,6 +195,7 @@ router.patch("/deliverables/:id", async (req, res) => {
         if (!deliverable) {
             return res.status(404).json({ error: "Deliverable not found" });
         }
+        logAction(req, "UPDATE", "DELIVERABLE", id.toString(), `Actualizó el entregable '${deliverable.name}'`, validatedData as Record<string, any>);
         res.json(deliverable);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -210,6 +213,7 @@ router.delete("/deliverables/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Deliverable not found" });
         }
+        logAction(req, "DELETE", "DELIVERABLE", id.toString(), `Eliminó el entregable #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Failed to delete deliverable:");
@@ -225,6 +229,7 @@ router.delete("/attachments/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Attachment not found" });
         }
+        logAction(req, "DELETE", "ATTACHMENT", id.toString(), `Eliminó el archivo #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Failed to delete attachment:");
@@ -330,6 +335,7 @@ router.post("/projects/:id/services", async (req, res) => {
             projectId
         });
         const service = await storage.addProjectService(validatedData);
+        logAction(req, "ADD_SERVICE", "PROJECT", projectId.toString(), `Agregó servicio #${validatedData.serviceId} al proyecto`);
         res.status(201).json(service);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -345,6 +351,7 @@ router.delete("/projects/:id/services/:serviceId", async (req, res) => {
         const projectId = parseInt(req.params.id);
         const serviceId = parseInt(req.params.serviceId);
         await storage.removeProjectService(projectId, serviceId);
+        logAction(req, "REMOVE_SERVICE", "PROJECT", projectId.toString(), `Eliminó servicio #${serviceId} del proyecto`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Failed to remove service from project:");

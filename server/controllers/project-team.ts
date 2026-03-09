@@ -8,6 +8,7 @@ import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertProjectTeamAssignmentSchema, updateProjectTeamAssignmentSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.post("/projects/:projectId/team", async (req: Request, res: Response) => 
         const data = { ...req.body, projectId: Number(req.params.projectId) };
         const validated = insertProjectTeamAssignmentSchema.parse(data);
         const assignment = await storage.createProjectTeamAssignment(validated);
+        logAction(req, "ASSIGN", "PROJECT", validated.projectId.toString(), `Asignó al miembro #${validated.teamMemberId} al proyecto`);
         res.status(201).json(assignment);
     } catch (error) {
         if (error instanceof ZodError) {
@@ -59,7 +61,9 @@ router.patch("/project-team/:id", async (req: Request, res: Response) => {
 // DELETE /api/project-team/:id - Remove assignment
 router.delete("/project-team/:id", async (req: Request, res: Response) => {
     try {
-        await storage.deleteProjectTeamAssignment(Number(req.params.id));
+        const id = Number(req.params.id);
+        await storage.deleteProjectTeamAssignment(id);
+        logAction(req, "UNASSIGN", "PROJECT", id.toString(), `Removió asignación de equipo #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting assignment:");

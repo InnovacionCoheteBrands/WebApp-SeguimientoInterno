@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertServiceCatalogSchema, updateServiceCatalogSchema } from "@shared/schema";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.post("/services", async (req, res) => {
     try {
         const validatedData = insertServiceCatalogSchema.parse(req.body);
         const newService = await storage.createServiceCatalog(validatedData);
+        logAction(req, "CREATE", "SERVICE", newService.id.toString(), `Agregó '${newService.name}' al catálogo de servicios`);
         res.status(201).json(newService);
     } catch (error: any) {
         if (error.errors) {
@@ -56,7 +58,7 @@ router.patch("/services/:id", async (req, res) => {
         if (!updated) {
             return res.status(404).json({ error: "Service not found" });
         }
-
+        logAction(req, "UPDATE", "SERVICE", id.toString(), `Actualizó el servicio '${updated.name}'`, validatedData as Record<string, any>);
         res.json(updated);
     } catch (error: any) {
         if (error.errors) {
@@ -75,7 +77,7 @@ router.delete("/services/:id", async (req, res) => {
         if (!success) {
             return res.status(404).json({ error: "Service not found" });
         }
-
+        logAction(req, "DELETE", "SERVICE", id.toString(), `Eliminó el servicio #${id} del catálogo`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, `Failed to delete service ${req.params.id}:`);

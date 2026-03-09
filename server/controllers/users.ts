@@ -4,6 +4,7 @@ import { logger } from "../utils/logger";
 import { z } from "zod";
 import { hashPassword } from "../utils/crypto";
 import { upload } from "../middleware/upload";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.post("/me/avatar", upload.single("avatar"), async (req, res) => {
         }
 
         // Return the new avatar URL
+        logAction(req, "UPDATE", "USER", req.user.id.toString(), `Actualizó su foto de perfil`);
         res.json({ avatarUrl });
     } catch (error) {
         logger.error({ err: error }, "Error uploading avatar:");
@@ -88,6 +90,7 @@ router.patch("/:id", async (req, res) => {
         if (!updated) return res.status(404).json({ error: "User not found" });
 
         const { password, ...sanitized } = updated;
+        logAction(req, "UPDATE_USER", "USER", id.toString(), `Modificó los permisos o contraseña del usuario '${updated.username}'`);
         res.json(sanitized);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -113,6 +116,7 @@ router.delete("/:id", async (req, res) => {
         }
 
         await storage.deleteUser(id);
+        logAction(req, "DELETE_USER", "USER", id.toString(), `Eliminó la cuenta del usuario #${id}`);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: "Failed to delete user" });

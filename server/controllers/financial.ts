@@ -71,6 +71,7 @@ router.patch("/transactions/:id", async (req, res) => {
         if (!transaction) {
             return res.status(404).json({ error: "Transaction not found" });
         }
+        logAction(req, "UPDATE", "FINANCE", id.toString(), `Actualizó la transacción '${transaction.description}'`, validatedData as Record<string, any>);
         res.json(transaction);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -87,6 +88,7 @@ router.delete("/transactions/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Transaction not found" });
         }
+        logAction(req, "DELETE", "FINANCE", id.toString(), `Eliminó la transacción #${id}`);
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: "Failed to delete transaction" });
@@ -151,6 +153,7 @@ router.post("/recurring-transactions", async (req, res) => {
 
         const validatedData = insertRecurringTransactionSchema.parse(dataToValidate);
         const recurring = await storage.createRecurringTransaction(validatedData);
+        logAction(req, "CREATE", "FINANCE_RECURRING", recurring.id.toString(), `Creó transacción recurrente '${recurring.description}'`);
         res.status(201).json(recurring);
     } catch (error) {
         logger.error({ err: error }, "Failed to create recurring transaction");
@@ -175,6 +178,7 @@ router.patch("/recurring-transactions/:id", async (req, res) => {
         if (!recurring) {
             return res.status(404).json({ error: "Recurring transaction not found" });
         }
+        logAction(req, "UPDATE", "FINANCE_RECURRING", id.toString(), `Actualizó transacción recurrente '${recurring.description}'`, validatedData as Record<string, any>);
         res.json(recurring);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -191,6 +195,7 @@ router.delete("/recurring-transactions/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Recurring transaction not found" });
         }
+        logAction(req, "DELETE", "FINANCE_RECURRING", id.toString(), `Eliminó transacción recurrente #${id}`);
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: "Failed to delete recurring transaction" });
@@ -253,6 +258,7 @@ router.post("/finance/obligations/:id/pay", async (req, res) => {
         const templateId = parseInt(req.params.id);
         const paidDate = req.body.paidDate ? new Date(req.body.paidDate) : new Date();
         const transaction = await storage.markObligationAsPaid(templateId, paidDate);
+        logAction(req, "CREATE", "FINANCE", transaction.id.toString(), `Pagó obligación recurrente (Generó transacción '${transaction.description}')`);
         res.status(201).json(transaction);
     } catch (error) {
         logger.error({ err: error }, "Failed to mark obligation as paid:");
@@ -284,6 +290,7 @@ router.post("/finance/obligations/:id/unpay", async (req, res) => {
             transactionDeleted: deleted,
             recurring
         });
+        logAction(req, "UNPAY", "FINANCE", templateId.toString(), `Deshizo el pago de la obligación recurrente #${templateId}`);
     } catch (error) {
         logger.error({ err: error }, "Failed to unpay obligation:");
         res.status(500).json({ error: "Failed to revert payment status" });
