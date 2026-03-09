@@ -15,6 +15,7 @@ export default function AuthCallbackPage() {
 
         const searchParams = new URLSearchParams(window.location.search);
         const token = searchParams.get("token");
+        const refreshToken = searchParams.get("refreshToken");
         const userStr = searchParams.get("user");
         const error = searchParams.get("error");
 
@@ -29,10 +30,11 @@ export default function AuthCallbackPage() {
 
                 // Save token to localStorage FIRST (so API calls can use it immediately)
                 localStorage.setItem('token', token);
+                if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
                 localStorage.setItem('user', JSON.stringify(user));
 
                 // Then update React state
-                login(token, user);
+                login(token, user, refreshToken || undefined);
 
                 // Small delay to let React state propagate before redirect
                 // This prevents the race condition where dashboard components

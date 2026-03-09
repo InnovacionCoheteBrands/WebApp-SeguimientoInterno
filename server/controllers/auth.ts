@@ -11,6 +11,7 @@ import { logger } from '../utils/logger';
 import { hashPassword, verifyPassword } from '../utils/crypto';
 import { generateToken, requireAuth } from '../middleware/auth';
 import passport from 'passport';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -29,6 +30,26 @@ const registerSchema = z.object({
         .min(8, 'Password must be at least 8 characters')
         .max(100, 'Password must be at most 100 characters'),
 });
+
+const refreshRequestSchema = z.object({
+    refreshToken: z.string().min(1, 'Refresh token is required')
+});
+
+const generateRefreshToken = async (userId: string) => {
+    const token = crypto.randomBytes(40).toString('hex');
+    // 7 days expiration
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await storage.createRefreshToken({
+        userId,
+        tokenHash: token,
+        expiresAt,
+        revoked: false
+    });
+
+    return token;
+};
 
 /**
  * POST /api/auth/login
@@ -80,8 +101,12 @@ router.post('/login', async (req, res) => {
             role: user.role || 'user'
         });
 
+        // Generate Refresh Token
+        const refreshToken = await generateRefreshToken(user.id);
+
         res.json({
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 username: user.username,
@@ -131,8 +156,12 @@ router.post('/register', async (req, res) => {
             role: user.role || 'user'
         });
 
+        // Generate Refresh Token
+        const refreshToken = await generateRefreshToken(user.id);
+
         res.status(201).json({
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 username: user.username,
@@ -153,15 +182,61 @@ router.post('/register', async (req, res) => {
 
 /**
  * POST /api/auth/refresh
- * Refresh JWT token (requires valid current token)
+ * Refresh JWT token (requires valid refresh token)
  */
 router.post('/refresh', async (req, res) => {
-    // This would typically use a refresh token
-    // For now, just reject - users must re-login
-    res.status(501).json({
-        error: 'NotImplemented',
-        message: 'Token refresh not yet implemented. Please log in again.'
-    });
+    try {
+        const { refreshToken } = refreshRequestSchema.parse(req.body);
+
+        // Find token
+        const storedToken = await storage.getRefreshToken(refreshToken);
+        if (!storedToken) {
+            return res.status(401).json({ error: 'InvalidToken', message: 'Invalid refresh token.' });
+        }
+
+        if (storedToken.revoked) {
+            // Potential reuse of revoked token - revoke all as a security measure
+            await storage.revokeAllUserRefreshTokens(storedToken.userId);
+            return res.status(401).json({ error: 'TokenRevoked', message: 'Token has been revoked. Re-login required.' });
+        }
+
+        if (new Date() > storedToken.expiresAt) {
+            return res.status(401).json({ error: 'TokenExpired', message: 'Refresh token expired. Re-login required.' });
+        }
+
+        // Get user
+        const user = await storage.getUser(storedToken.userId);
+        if (!user) {
+            return res.status(401).json({ error: 'UserNotFound', message: 'User not found.' });
+        }
+
+        // Revoke the old refresh token (rotate it)
+        await storage.revokeRefreshToken(refreshToken);
+
+        // Generate new tokens
+        const newToken = generateToken({
+            id: user.id,
+            username: user.username,
+            role: user.role || 'user'
+        });
+        const newRefreshToken = await generateRefreshToken(user.id);
+
+        res.json({
+            token: newToken,
+            refreshToken: newRefreshToken,
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'ValidationError', details: error.errors });
+        }
+        logger.error({ err: error }, 'Refresh token error:');
+        res.status(500).json({ error: 'Token refresh failed' });
+    }
 });
 
 /**
@@ -204,13 +279,23 @@ router.get('/google/callback', (req, res, next) => {
             role: user.role || 'user'
         });
 
-        // Redirect to frontend with token
-        res.redirect(`/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
-            id: user.id,
-            username: user.username,
-            role: user.role,
-            avatarUrl: user.avatarUrl
-        }))}`);
+        // Note: we can't easily wait for generateRefreshToken in this passport callback
+        // without wrapping it in an async IIFE, so we'll do that here:
+        (async () => {
+            try {
+                const refreshToken = await generateRefreshToken(user.id);
+                // Redirect to frontend with tokens
+                res.redirect(`/auth/callback?token=${token}&refreshToken=${refreshToken}&user=${encodeURIComponent(JSON.stringify({
+                    id: user.id,
+                    username: user.username,
+                    role: user.role,
+                    avatarUrl: user.avatarUrl
+                }))}`);
+            } catch (err) {
+                logger.error({ err }, '[Google OAuth] Error generating refresh token:');
+                res.redirect('/auth?error=TokenGenerationFailed');
+            }
+        })();
     })(req, res, next);
 });
 

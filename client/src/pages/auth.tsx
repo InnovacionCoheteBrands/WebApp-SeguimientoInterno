@@ -75,7 +75,7 @@ export default function AuthPage() {
             }
 
             // Use AuthContext login method instead of direct localStorage
-            login(result.token, result.user);
+            login(result.token, result.user, result.refreshToken);
 
             toast({
                 title: "¡Bienvenido!",

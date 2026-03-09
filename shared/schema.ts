@@ -141,6 +141,19 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  revoked: boolean("revoked").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type InsertRefreshToken = z.infer<typeof insertRefreshTokenSchema>;
+
 export const campaigns = pgTable("campaigns", {
   id: serial("id").primaryKey(),
   campaignCode: text("campaign_code").notNull().unique(),
@@ -623,26 +636,29 @@ export type Resource = typeof resources.$inferSelect;
 export type InsertResource = z.infer<typeof insertResourceSchema>;
 
 // Master Service Catalog
+export const ROLE_LEVELS = ["Senior", "Mid", "Junior", "Trainee"] as const;
+
 export const agencyRoleCatalog = pgTable("agency_role_catalog", {
   id: serial("id").primaryKey(),
   roleName: text("role_name").notNull(),
-  department: text("department").notNull(), // Renamed from department
-  defaultBillableRate: numeric("default_billable_rate").notNull().default("0"),
-  allowedActivities: text("allowed_activities"), // JSON string array ["Logo Design", "Coding"]
+  roleLevel: text("role_level").default("Senior"), // "Senior", "Mid", "Junior", "Trainee"
+  department: text("department"),
+  defaultBillableRate: numeric("default_billable_rate", { precision: 12, scale: 2 }),
+  allowedActivities: text("allowed_activities"), // JSON string array
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertAgencyRoleSchema = createInsertSchema(agencyRoleCatalog, {
-  // 🛡️ XSS Protection for text fields
-  roleName: safeString(100),
-  department: safeString(100),
-  allowedActivities: safeOptionalString(2000), // JSON array needs space
-
-  // 🔢 Positive number validation
-  defaultBillableRate: positiveNumericString(),
+  roleName: safeString(200),
+  roleLevel: safeOptionalString(50),
+  department: safeOptionalString(200),
+  allowedActivities: safeOptionalString(2000),
+  defaultBillableRate: optionalPositiveNumericString(),
 }).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const updateAgencyRoleSchema = insertAgencyRoleSchema.partial();
@@ -1387,6 +1403,11 @@ export const serviceCatalog = pgTable("service_catalog", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+
+  // Expanded Growth Fields
+  estimatedDeliveryDays: integer("estimated_delivery_days").default(0),
+  requiredRoles: text("required_roles"), // JSON array of roles
+  marketingAssetUrl: text("marketing_asset_url"),
 });
 
 export const insertServiceCatalogSchema = createInsertSchema(serviceCatalog, {
@@ -1395,10 +1416,13 @@ export const insertServiceCatalogSchema = createInsertSchema(serviceCatalog, {
   description: safeOptionalString(500),
   category: safeOptionalString(100),
   icon: safeOptionalString(50),
+  marketingAssetUrl: safeOptionalString(1000),
+  requiredRoles: safeOptionalString(1000), // Validated as string (JSON)
 
   // 🔢 Number validation
   defaultPrice: optionalPositiveNumericString(),
   baseCost: optionalPositiveNumericString(),
+  estimatedDeliveryDays: z.coerce.number().int().min(0).default(0),
 
   // 🔗 FK coercion
   supplierId: z.coerce.number().int().positive().optional().nullable(),
@@ -1687,5 +1711,4 @@ export const updateProjectTeamAssignmentSchema = insertProjectTeamAssignmentSche
 export type ProjectTeamAssignment = typeof projectTeamAssignments.$inferSelect;
 export type InsertProjectTeamAssignment = z.infer<typeof insertProjectTeamAssignmentSchema>;
 export type UpdateProjectTeamAssignment = z.infer<typeof updateProjectTeamAssignmentSchema>;
-
 

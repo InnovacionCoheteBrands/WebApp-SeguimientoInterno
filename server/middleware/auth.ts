@@ -125,7 +125,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
  */
 export function generateToken(
     user: { id: string; username: string; role: string },
-    expiresInSeconds: number = 86400 // 24 hours
+    expiresInSeconds: number = 900 // 15 minutes
 ): string {
     const secret = getJwtSecret();
     return jwt.sign(

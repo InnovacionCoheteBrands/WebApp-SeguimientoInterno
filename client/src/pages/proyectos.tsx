@@ -336,6 +336,7 @@ export default function Proyectos() {
                         </DialogHeader>
                         <div className="px-10 pb-10">
                             <ProjectForm
+                                key={isDialogOpen ? (selectedProject ? `edit-${selectedProject.id}` : 'new') : 'closed'}
                                 open={isDialogOpen}
                                 onOpenChange={setIsDialogOpen}
                                 initialData={selectedProject}

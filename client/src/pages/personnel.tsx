@@ -228,7 +228,7 @@ export default function Personnel() {
               onClick={() => setIsCatalogOpen(true)}
             >
               <Settings className="size-4 mr-2" />
-              Configure Agency
+              Roles
             </Button>
             <Button
               onClick={() => handleOpenTeamDialog()}
@@ -356,13 +356,13 @@ export default function Personnel() {
                     </Avatar>
                     <div>
                       <h4 className="font-bold text-foreground text-sm">{member.name}</h4>
-                      <p className="text-xs text-muted-foreground">{member.role}</p>
+                      <p className="text-xs text-muted-foreground">{member.roleData?.roleName || member.role}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className={`rounded-full text-[10px] font-mono
-                         ${member.seniority === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
+                         ${(member.roleData?.roleLevel || member.seniority) === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
                       `}>
-                    {member.area ? `${member.area} • ` : ''}{member.seniority}
+                    {member.area ? `${member.area} • ` : ''}{member.roleData?.roleLevel || member.seniority}
                   </Badge>
                 </div>
 

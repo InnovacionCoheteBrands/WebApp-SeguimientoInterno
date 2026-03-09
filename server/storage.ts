@@ -119,6 +119,9 @@ import {
   type AgencyRole,
   type InsertAgencyRole,
   type UpdateAgencyRole,
+  refreshTokens,
+  type RefreshToken,
+  type InsertRefreshToken,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -142,6 +145,12 @@ export interface IStorage {
   updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
 
+  // Token Management
+  createRefreshToken(data: InsertRefreshToken): Promise<RefreshToken>;
+  getRefreshToken(tokenHash: string): Promise<RefreshToken | undefined>;
+  revokeRefreshToken(tokenHash: string): Promise<void>;
+  revokeAllUserRefreshTokens(userId: string): Promise<void>;
+
   getCampaigns(): Promise<Campaign[]>;
   getCampaignById(id: number): Promise<Campaign | undefined>;
   createCampaign(campaign: InsertCampaign): Promise<Campaign>;
@@ -162,8 +171,8 @@ export interface IStorage {
   updateClientAccount(id: number, account: Partial<InsertClientAccount>): Promise<ClientAccount | undefined>;
   deleteClientAccount(id: number): Promise<boolean>;
 
-  getTeam(): Promise<Team[]>;
-  getTeamById(id: number): Promise<Team | undefined>;
+  getTeam(): Promise<(Team & { roleData: AgencyRole | null })[]>;
+  getTeamById(id: number): Promise<(Team & { roleData: AgencyRole | null }) | undefined>;
   createTeam(person: InsertTeam): Promise<Team>;
   updateTeam(id: number, person: UpdateTeam): Promise<Team | undefined>;
   deleteTeam(id: number): Promise<boolean>;
@@ -369,6 +378,15 @@ export interface IStorage {
   updateProjectTeamAssignment(id: number, assignment: UpdateProjectTeamAssignment): Promise<ProjectTeamAssignment | undefined>;
   deleteProjectTeamAssignment(id: number): Promise<boolean>;
   getTeamMemberPerformance(teamMemberId: number): Promise<{ revenueGenerated: number; projectsCount: number; hoursLogged: number }>;
+
+  // ===========================================
+  // 👥 AGENCY ROLE CATALOG
+  // ===========================================
+  getAgencyRoles(): Promise<AgencyRole[]>;
+  getAgencyRoleById(id: number): Promise<AgencyRole | undefined>;
+  createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole>;
+  updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole | undefined>;
+  deleteAgencyRole(id: number): Promise<boolean>;
 }
 
 // Project Details for Command Center view
@@ -508,6 +526,46 @@ export class DBStorage implements IStorage {
     } catch (error) {
       console.error(`❌ [deleteUser] Error al eliminar usuario:`, { id, error });
       throw new Error("Error al eliminar usuario");
+    }
+  }
+
+  // ===========================================
+  // 🛡️ REFRESH TOKENS (SEC-001)
+  // ===========================================
+  async createRefreshToken(data: InsertRefreshToken): Promise<RefreshToken> {
+    try {
+      const [token] = await db.insert(refreshTokens).values(data).returning();
+      return token;
+    } catch (error) {
+      console.error(`❌ [createRefreshToken] Error:`, error);
+      throw new Error("Error al crear refresh token");
+    }
+  }
+
+  async getRefreshToken(tokenHash: string): Promise<RefreshToken | undefined> {
+    const [token] = await db.select().from(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash));
+    return token;
+  }
+
+  async revokeRefreshToken(tokenHash: string): Promise<void> {
+    try {
+      await db.update(refreshTokens)
+        .set({ revoked: true })
+        .where(eq(refreshTokens.tokenHash, tokenHash));
+    } catch (error) {
+      console.error(`❌ [revokeRefreshToken] Error:`, error);
+      throw new Error("Error al revocar refresh token");
+    }
+  }
+
+  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    try {
+      await db.update(refreshTokens)
+        .set({ revoked: true })
+        .where(eq(refreshTokens.userId, userId));
+    } catch (error) {
+      console.error(`❌ [revokeAllUserRefreshTokens] Error:`, error);
+      throw new Error("Error al revocar todos los refresh tokens del usuario");
     }
   }
 
@@ -804,13 +862,38 @@ export class DBStorage implements IStorage {
     }
   }
 
-  async getTeam(): Promise<Team[]> {
-    return await db.select().from(team).orderBy(desc(team.createdAt));
+  async getTeam(): Promise<(Team & { roleData: AgencyRole | null })[]> {
+    const results = await db
+      .select({
+        team: team,
+        roleData: agencyRoleCatalog,
+      })
+      .from(team)
+      .leftJoin(agencyRoleCatalog, eq(team.roleCatalogId, agencyRoleCatalog.id))
+      .orderBy(desc(team.createdAt));
+
+    return results.map(row => ({
+      ...row.team,
+      roleData: row.roleData
+    }));
   }
 
-  async getTeamById(id: number): Promise<Team | undefined> {
-    const [person] = await db.select().from(team).where(eq(team.id, id));
-    return person;
+  async getTeamById(id: number): Promise<(Team & { roleData: AgencyRole | null }) | undefined> {
+    const results = await db
+      .select({
+        team: team,
+        roleData: agencyRoleCatalog,
+      })
+      .from(team)
+      .leftJoin(agencyRoleCatalog, eq(team.roleCatalogId, agencyRoleCatalog.id))
+      .where(eq(team.id, id));
+
+    if (results.length === 0) return undefined;
+
+    return {
+      ...results[0].team,
+      roleData: results[0].roleData
+    };
   }
 
   async createTeam(person: InsertTeam): Promise<Team> {
@@ -1649,7 +1732,7 @@ export class DBStorage implements IStorage {
         CAST(amount AS DECIMAL) as amount,
         TO_CHAR(date, 'YYYY-MM') as month
       FROM ${transactions}
-      WHERE date >= ${start} AND date <= ${end}
+      WHERE date >= ${start.toISOString()} AND date <= ${end.toISOString()}
       ORDER BY date DESC
     `);
 

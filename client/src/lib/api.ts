@@ -29,8 +29,10 @@ import type {
   InsertProjectAttachment,
   AgencyRole,
   InsertAgencyRole,
-  UpdateAgencyRole
+  UpdateAgencyRole,
 } from "@shared/schema";
+
+export type { AgencyRole };
 
 export type ClientAccount = Omit<DBClientAccount, 'lastContact' | 'timestamp'> & {
   lastContact: string;
@@ -44,8 +46,10 @@ export type Project = DBProject & {
   deliverables?: ProjectDeliverable[];
 };
 
-// 🔒 Security Wrapper: Auto-injects JWT token
-async function request(url: string, options: RequestInit = {}): Promise<Response> {
+let refreshPromise: Promise<string | null> | null = null;
+
+// 🔒 Security Wrapper: Auto-injects JWT token and handles refresh
+export async function request(url: string, options: RequestInit = {}): Promise<Response> {
   const token = localStorage.getItem("token");
   const headers = new Headers(options.headers);
 
@@ -63,8 +67,42 @@ async function request(url: string, options: RequestInit = {}): Promise<Response
   const res = await fetch(url, fetchOptions);
 
   // 🚨 Intercept 401 Unauthorized globally
-  // Skip dispatching on auth pages to prevent logout cascade during OAuth callback flow
-  if (res.status === 401) {
+  if (res.status === 401 && !url.includes('/api/auth/refresh') && !url.includes('/api/auth/login')) {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (refreshToken) {
+      if (!refreshPromise) {
+        refreshPromise = fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        })
+          .then(async (refreshRes) => {
+            if (!refreshRes.ok) throw new Error('Refresh failed');
+            const data = await refreshRes.json();
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("refreshToken", data.refreshToken);
+            return data.token;
+          })
+          .catch((err) => {
+            console.error("Token refresh failed", err);
+            return null;
+          })
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+
+      const newToken = await refreshPromise;
+      if (newToken) {
+        // Retry original request
+        const newHeaders = new Headers(options.headers);
+        newHeaders.set("Authorization", `Bearer ${newToken}`);
+        return fetch(url, { ...fetchOptions, headers: newHeaders });
+      }
+    }
+
+    // Skip dispatching on auth pages to prevent logout cascade during OAuth callback flow
     const isAuthPage = window.location.pathname.startsWith('/auth');
     if (!isAuthPage) {
       window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: 401 } }));
@@ -174,13 +212,13 @@ export async function deleteClientAccount(id: number): Promise<void> {
   }
 }
 
-export async function fetchTeam(): Promise<Team[]> {
+export async function fetchTeam(): Promise<(Team & { roleData?: AgencyRole | null })[]> {
   const res = await request("/api/team");
   if (!res.ok) throw new Error("Failed to fetch team");
   return res.json();
 }
 
-export async function createTeam(person: InsertTeam): Promise<Team> {
+export async function createTeam(person: InsertTeam): Promise<Team & { roleData?: AgencyRole | null }> {
   const res = await request("/api/team", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -190,7 +228,7 @@ export async function createTeam(person: InsertTeam): Promise<Team> {
   return res.json();
 }
 
-export async function updateTeam(id: number, person: UpdateTeam): Promise<Team> {
+export async function updateTeam(id: number, person: UpdateTeam): Promise<Team & { roleData?: AgencyRole | null }> {
   const res = await request(`/api/team/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -744,6 +782,8 @@ export async function deleteAgencyRole(id: number): Promise<void> {
   });
   if (!res.ok) throw new Error("Failed to delete agency role");
 }
+
+// Service Catalog — see line ~1030 below
 
 // ===========================================
 // 📇 CONTACTS MODULE

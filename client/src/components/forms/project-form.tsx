@@ -28,17 +28,18 @@ import {
     fetchClientAccounts,
     fetchTeam,
     fetchServiceCatalog,
+    fetchAgencyRoles,
     addProjectTeamMember,
     addProjectService,
     createInstallment,
     type Project
 } from "@/lib/api";
 import { insertProjectSchema } from "@shared/schema";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -57,101 +58,136 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
-    const [selectedTeamMembers, setSelectedTeamMembers] = useState<number[]>([]);
-    const [selectedServices, setSelectedServices] = useState<number[]>([]);
-    const [installments, setInstallments] = useState<Array<{ amount: number; date: Date; concept: string }>>([]);
+    const [selectedTeamMembers, setSelectedTeamMembers] = useState<number[]>(() =>
+        (initialData as any)?.teamMembers?.map((m: any) => m.teamMemberId) || []
+    );
+    const [selectedServices, setSelectedServices] = useState<number[]>(() =>
+        (initialData as any)?.services?.map((s: any) => s.serviceId) || []
+    );
+    const [installments, setInstallments] = useState<Array<{ amount: number; date: Date; concept: string }>>(() =>
+        (initialData as any)?.installments || []
+    );
     const [newInstallment, setNewInstallment] = useState<{ amount: string, date: Date | undefined, concept: string }>({ amount: "", date: new Date(), concept: "" });
+    const [missingRoles, setMissingRoles] = useState<string[]>([]);
 
     const { data: clients = [] } = useQuery({ queryKey: ["client-accounts"], queryFn: fetchClientAccounts });
     const { data: team = [] } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
     const { data: services = [] } = useQuery({ queryKey: ["service-catalog"], queryFn: fetchServiceCatalog });
+    const { data: agencyRoles = [] } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            clientId: 0,
-            name: "",
-            serviceType: "General",
-            status: "planning",
-            health: "green",
-            progress: 0,
-            description: "",
-            level: "Plata",
-            quotationAmount: "",
-            monthlyMaintenance: "",
-            coverColor: "#3B82F6",
-            additionalNotes: "",
-            dealType: "Proyecto",
-            totalAmount: "",
-            numberOfPayments: 1,
-            billingDay: 1,
+            clientId: initialData?.clientId || 0,
+            name: initialData?.name || "",
+            serviceType: initialData?.serviceType || "General",
+            status: initialData?.status || "planning",
+            health: (initialData?.health as any) || "green",
+            progress: initialData?.progress || 0,
+            description: initialData?.description || "",
+            level: (initialData as any)?.level || "Plata",
+            quotationAmount: (initialData as any)?.quotationAmount?.toString() || "",
+            monthlyMaintenance: (initialData as any)?.monthlyMaintenance?.toString() || "",
+            deadline: initialData?.deadline ? new Date(initialData.deadline) : undefined,
+            startDate: (initialData as any)?.startDate ? new Date((initialData as any).startDate) : new Date(),
+            coverColor: (initialData as any)?.coverColor || "#3B82F6",
+            additionalNotes: (initialData as any)?.additionalNotes || "",
+            dealType: (initialData as any)?.dealType || "Proyecto",
+            totalAmount: (initialData as any)?.totalAmount?.toString() || "",
+            numberOfPayments: (initialData as any)?.numberOfPayments || 1,
+            billingDay: (initialData as any)?.billingDay || 1,
         },
     });
 
-    useEffect(() => {
-        if (open) {
-            setSelectedTeamMembers([]);
-            setSelectedServices([]);
-            setInstallments([]);
+    // --- Filtered Services Logic ---
+    const visibleServices = useMemo(() => {
+        if (selectedTeamMembers.length === 0) return services;
 
-            if (initialData) {
-                form.reset({
-                    clientId: initialData.clientId,
-                    name: initialData.name,
-                    serviceType: initialData.serviceType,
-                    status: initialData.status,
-                    health: (initialData.health as any) || "green",
-                    progress: initialData.progress,
-                    description: initialData.description || "",
-                    level: (initialData as any).level || "Plata",
-                    quotationAmount: (initialData as any).quotationAmount?.toString() || "",
-                    monthlyMaintenance: (initialData as any).monthlyMaintenance?.toString() || "",
-                    deadline: initialData.deadline ? new Date(initialData.deadline) : undefined,
-                    startDate: (initialData as any).startDate ? new Date((initialData as any).startDate) : undefined,
-                    coverColor: (initialData as any).coverColor || "#3B82F6",
-                    additionalNotes: (initialData as any).additionalNotes || "",
-                    dealType: (initialData as any).dealType || "Proyecto",
-                    totalAmount: (initialData as any).totalAmount?.toString() || "",
-                    numberOfPayments: (initialData as any).numberOfPayments || 1,
-                    billingDay: (initialData as any).billingDay || 1,
-                });
-            } else {
-                form.reset({
-                    clientId: 0,
-                    name: "",
-                    serviceType: "General",
-                    status: "planning",
-                    health: "green",
-                    progress: 0,
-                    description: "",
-                    level: "Plata",
-                    quotationAmount: "",
-                    monthlyMaintenance: "",
-                    coverColor: "#3B82F6",
-                    additionalNotes: "",
-                    dealType: "Proyecto",
-                    totalAmount: "",
-                    numberOfPayments: 1,
-                    billingDay: 1,
-                });
+        // 1. Get roles of selected team members
+        const selectedMemberRoles = selectedTeamMembers
+            .map(id => team.find(t => t.id === id)?.role)
+            .filter(Boolean);
+
+        // 2. Identify allowed service names for those roles
+        const allowedServiceNames = new Set<string>();
+        selectedMemberRoles.forEach(roleName => {
+            const roleConfig = agencyRoles.find(r => r.roleName === roleName);
+            if (roleConfig?.allowedActivities) {
+                try {
+                    const activities = typeof roleConfig.allowedActivities === 'string'
+                        ? JSON.parse(roleConfig.allowedActivities)
+                        : roleConfig.allowedActivities;
+                    if (Array.isArray(activities)) {
+                        activities.forEach(act => allowedServiceNames.add(act));
+                    }
+                } catch (e) {
+                    console.error("Error parsing allowedActivities for role:", roleName, e);
+                }
+            }
+        });
+
+        // 3. Filter the global catalog by these names
+        // If no roles are found in the catalog yet, we might want to show all or none. 
+        // Showing all if the set is empty (meaning no role mapping exists) is safer.
+        if (allowedServiceNames.size === 0) return services;
+
+        return services.filter(service => allowedServiceNames.has(service.name));
+    }, [services, selectedTeamMembers, team, agencyRoles]);
+
+    // Auto-calculation effect
+    useEffect(() => {
+        if (!selectedServices.length || !services.length) {
+            setMissingRoles([]);
+            return;
+        }
+
+        let totalCost = 0;
+        let totalDays = 0;
+        const requiredRolesSet = new Set<string>();
+
+        selectedServices.forEach(serviceId => {
+            const service = services.find(s => s.id === serviceId);
+            if (service) {
+                totalCost += service.defaultPrice ? parseFloat(service.defaultPrice) : 0;
+                totalDays += (service as any).estimatedDeliveryDays || 0;
+
+                const rawRoles = (service as any).requiredRoles;
+                if (rawRoles) {
+                    try {
+                        const roles = typeof rawRoles === 'string' ? JSON.parse(rawRoles) : rawRoles;
+                        if (Array.isArray(roles)) roles.forEach(r => requiredRolesSet.add(r));
+                    } catch (e) {
+                        if (typeof rawRoles === 'string') {
+                            rawRoles.split(',').forEach((r: string) => requiredRolesSet.add(r.trim()));
+                        }
+                    }
+                }
+            }
+        });
+
+        // Use functional getters and only set if different to prevent the loop
+        const currentQuotation = form.getValues("quotationAmount");
+        if (totalCost > 0 && Math.abs(parseFloat(currentQuotation || "0") - totalCost) > 0.01) {
+            form.setValue("quotationAmount", totalCost.toString(), { shouldDirty: true });
+        }
+
+        if (totalDays > 0) {
+            const startDate = form.getValues("startDate");
+            if (startDate) {
+                const newDeadline = addDays(startDate, totalDays);
+                const currentDeadline = form.getValues("deadline");
+
+                if (!currentDeadline || Math.abs(currentDeadline.getTime() - newDeadline.getTime()) > 1000) {
+                    form.setValue("deadline", newDeadline, { shouldDirty: true });
+                }
             }
         }
-    }, [open, initialData, form]);
 
-    // Automatic cost calculation based on selected services
-    useEffect(() => {
-        if (!services.length || !selectedServices.length) return;
+        const currentRoles = selectedTeamMembers.map(id => team.find(t => t.id === id)?.role).filter(Boolean) as string[];
+        const missing = Array.from(requiredRolesSet).filter(req => !currentRoles.some(curr => curr.toLowerCase().includes(req.toLowerCase())));
 
-        const totalCost = selectedServices.reduce((sum, serviceId) => {
-            const service = services.find(s => s.id === serviceId);
-            const price = service?.defaultPrice ? parseFloat(service.defaultPrice) : 0;
-            return sum + price;
-        }, 0);
-
-        if (totalCost > 0) {
-            form.setValue("quotationAmount", totalCost.toString(), { shouldDirty: true, shouldValidate: true });
-        }
-    }, [selectedServices, services, form]);
+        setMissingRoles(prev => JSON.stringify(prev) === JSON.stringify(missing) ? prev : missing);
+    }, [selectedServices, services, selectedTeamMembers, team, form]);
 
     const createMutation = useMutation({
         mutationFn: async (data: z.infer<typeof formSchema>) => {
@@ -261,8 +297,8 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                                 <FormField control={form.control} name="level" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Nivel/Categoría *</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || "Plata"}>
-                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar nivel..." /></SelectTrigger></FormControl>
                                             <SelectContent>{PROJECT_LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -271,8 +307,8 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                                 <FormField control={form.control} name="status" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Estado del Proyecto *</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || "planning"}>
-                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar estado..." /></SelectTrigger></FormControl>
                                             <SelectContent>
                                                 <SelectItem value="planning">Planificación</SelectItem>
                                                 <SelectItem value="active">En Desarrollo</SelectItem>
@@ -446,13 +482,37 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
                         {/* === SERVICES SECTION === */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium pt-4 border-t">Servicios Incluidos</h3>
+                            {selectedTeamMembers.length > 0 && Array.from(new Set(selectedTeamMembers.map(id => team.find(t => t.id === id)?.role).filter(Boolean))).length > 0 && (
+                                <div className="bg-primary/10 border border-primary/20 text-primary p-3 rounded-lg text-xs flex items-center justify-between">
+                                    <span>Filtrando servicios permitidos para el equipo seleccionado ({visibleServices.length} disponibles)</span>
+                                    {visibleServices.length < services.length && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-[10px] hover:bg-primary/20"
+                                            onClick={() => setSelectedTeamMembers([])}
+                                        >
+                                            Limpiar Filtro
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                            {missingRoles.length > 0 && (
+                                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs animate-pulse">
+                                    <span className="font-bold">Aviso:</span> Faltan perfiles en el equipo para cubrir los servicios: {missingRoles.join(", ")}
+                                </div>
+                            )}
                             <div className="space-y-4">
                                 <div className="text-sm font-medium">Catálogo de Servicios</div>
                                 <ScrollArea className="h-[200px] border rounded-xl p-4">
-                                    {services.length === 0 ? (
-                                        <div className="text-center text-muted-foreground py-8">No hay servicios disponibles.</div>
+                                    {visibleServices.length === 0 ? (
+                                        <div className="text-center text-muted-foreground py-8">
+                                            {selectedTeamMembers.length > 0
+                                                ? "No hay servicios compatibles con los roles seleccionados."
+                                                : "No hay servicios disponibles."}
+                                        </div>
                                     ) : (
-                                        services.map((service) => (
+                                        visibleServices.map((service: any) => (
                                             <div key={service.id} className="flex items-center space-x-2 py-2 border-b last:border-0">
                                                 <Checkbox
                                                     id={`service-${service.id}`}

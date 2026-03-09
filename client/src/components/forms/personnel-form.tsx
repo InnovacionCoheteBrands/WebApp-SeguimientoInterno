@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 interface PersonnelFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: Team | null;
+    initialData?: (Team & { roleData?: AgencyRole | null }) | null;
 }
 
 

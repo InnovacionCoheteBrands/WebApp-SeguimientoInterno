@@ -26,7 +26,7 @@ async function comprehensiveSeed() {
 
         const createdServices = [];
         for (const s of services) {
-            createdServices.push(await storage.createServiceCatalog(s));
+            createdServices.push(await storage.createServiceCatalog(s as any));
         }
 
         // 2. SUPPLIERS
@@ -43,15 +43,15 @@ async function comprehensiveSeed() {
         // 3. TEAM MEMBERS (The Talent)
         console.log("👥 Seeding Team Members...");
         const teamMembers = [
-            { firstName: "Sofía", lastName: "Valdez", email: "sofia.valdez@cohete.mx", payrollType: "Fija" as any, name: "Sofía Valdez" },
-            { firstName: "Andrés", lastName: "Mendoza", email: "andres.mendoza@cohete.mx", payrollType: "Fija" as any, name: "Andrés Mendoza" },
-            { firstName: "Lucía", lastName: "Torres", email: "lucia.torres@cohete.mx", payrollType: "Variable" as any, name: "Lucía Torres" },
-            { firstName: "Roberto", lastName: "Velasco", email: "roberto.v@cohete.mx", payrollType: "Fija" as any, name: "Roberto Velasco" },
-            { firstName: "Camila", lastName: "Ríos", email: "camila.rios@cohete.mx", payrollType: "Fija" as any, name: "Camila Ríos" },
+            { firstName: "Sofía", lastName: "Valdez", email: "sofia.valdez@cohete.mx", payrollType: "Fija" as const, name: "Sofía Valdez", role: "Manager", status: "Available", seniority: "Mid" },
+            { firstName: "Andrés", lastName: "Mendoza", email: "andres.mendoza@cohete.mx", payrollType: "Fija" as const, name: "Andrés Mendoza", role: "Designer", status: "Available", seniority: "Junior" },
+            { firstName: "Lucía", lastName: "Torres", email: "lucia.torres@cohete.mx", payrollType: "Variable" as const, name: "Lucía Torres", role: "Developer", status: "Available", seniority: "Senior" },
+            { firstName: "Roberto", lastName: "Velasco", email: "roberto.v@cohete.mx", payrollType: "Fija" as const, name: "Roberto Velasco", role: "Copywriter", status: "Available", seniority: "Mid" },
+            { firstName: "Camila", lastName: "Ríos", email: "camila.rios@cohete.mx", payrollType: "Fija" as const, name: "Camila Ríos", role: "Account Executive", status: "Available", seniority: "Senior" },
         ];
         const createdTeam = [];
         for (const t of teamMembers) {
-            createdTeam.push(await storage.createTeam(t));
+            createdTeam.push(await storage.createTeam(t as any));
         }
 
         // 4. CLIENTS (The Revenue)
@@ -78,7 +78,7 @@ async function comprehensiveSeed() {
         ];
         const createdProjects = [];
         for (const p of projectsData) {
-            createdProjects.push(await storage.createProject(p));
+            createdProjects.push(await storage.createProject(p as any));
         }
 
         // 6. FINANCES - TRANSACTIONS (Past 3 months)

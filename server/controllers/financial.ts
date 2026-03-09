@@ -93,13 +93,23 @@ router.delete("/transactions/:id", async (req, res) => {
 
 router.get("/finance/summary", async (req, res) => {
     try {
-        const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-        const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+        const parseDate = (val: any) => {
+            if (!val) return undefined;
+            const d = new Date(val as string);
+            return isNaN(d.getTime()) ? undefined : d;
+        };
+
+        const startDate = parseDate(req.query.startDate);
+        const endDate = parseDate(req.query.endDate);
         const summary = await storage.getFinancialSummary(startDate, endDate);
         res.json(summary);
     } catch (error) {
         logger.error({ err: error }, "Failed to fetch financial summary:");
-        res.status(500).json({ error: "Failed to fetch financial summary" });
+        res.status(500).json({
+            error: "Failed to fetch financial summary",
+            details: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+        });
     }
 });
 
