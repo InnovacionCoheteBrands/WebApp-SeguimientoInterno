@@ -104,6 +104,16 @@ router.post('/login', async (req, res) => {
         // Generate Refresh Token
         const refreshToken = await generateRefreshToken(user.id);
 
+        // Audit log for login
+        storage.createAuditLog({
+            userId: user.id,
+            username: user.username,
+            action: "LOGIN",
+            entityType: "AUTH",
+            details: `Inicio de sesión exitoso`,
+            ipAddress: req.ip || req.socket.remoteAddress || undefined,
+        }).catch(err => console.error("[AuditLog] Login log failed:", err.message));
+
         res.json({
             token,
             refreshToken,

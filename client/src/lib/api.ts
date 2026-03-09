@@ -1277,3 +1277,32 @@ export async function removeProjectTeamMember(assignmentId: number): Promise<voi
   });
   if (!res.ok) throw new Error("Failed to remove team member");
 }
+
+// ===========================================
+// 📋 AUDIT LOGS
+// ===========================================
+
+export interface AuditLogEntry {
+  id: number;
+  userId: string | null;
+  username: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  details: string;
+  metadata: any;
+  ipAddress: string | null;
+  timestamp: string;
+}
+
+export async function fetchAuditLogs(options?: { limit?: number; userId?: string; entityType?: string }): Promise<AuditLogEntry[]> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set("limit", options.limit.toString());
+  if (options?.userId) params.set("userId", options.userId);
+  if (options?.entityType) params.set("entityType", options.entityType);
+
+  const url = `/api/audit-logs${params.toString() ? `?${params.toString()}` : ""}`;
+  const res = await request(url);
+  if (!res.ok) throw new Error("Failed to fetch audit logs");
+  return res.json();
+}

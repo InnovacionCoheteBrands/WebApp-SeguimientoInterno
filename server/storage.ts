@@ -122,6 +122,9 @@ import {
   refreshTokens,
   type RefreshToken,
   type InsertRefreshToken,
+  auditLogs,
+  type AuditLog,
+  type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -150,6 +153,10 @@ export interface IStorage {
   getRefreshToken(tokenHash: string): Promise<RefreshToken | undefined>;
   revokeRefreshToken(tokenHash: string): Promise<void>;
   revokeAllUserRefreshTokens(userId: string): Promise<void>;
+
+  // Audit Logs
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(options?: { limit?: number; userId?: string; entityType?: string }): Promise<AuditLog[]>;
 
   getCampaigns(): Promise<Campaign[]>;
   getCampaignById(id: number): Promise<Campaign | undefined>;
@@ -3579,6 +3586,38 @@ export class DBStorage implements IStorage {
       projectsCount: projectIds.size,
       hoursLogged,
     };
+  }
+
+  // ===========================================
+  // 📋 AUDIT LOGS
+  // ===========================================
+
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [entry] = await db.insert(auditLogs).values(log).returning();
+    return entry;
+  }
+
+  async getAuditLogs(options?: { limit?: number; userId?: string; entityType?: string }): Promise<AuditLog[]> {
+    const limit = options?.limit || 100;
+    const conditions = [];
+
+    if (options?.userId) {
+      conditions.push(eq(auditLogs.userId, options.userId));
+    }
+    if (options?.entityType) {
+      conditions.push(eq(auditLogs.entityType, options.entityType));
+    }
+
+    if (conditions.length > 0) {
+      return db.select().from(auditLogs)
+        .where(and(...conditions))
+        .orderBy(desc(auditLogs.timestamp))
+        .limit(limit);
+    }
+
+    return db.select().from(auditLogs)
+      .orderBy(desc(auditLogs.timestamp))
+      .limit(limit);
   }
 }
 

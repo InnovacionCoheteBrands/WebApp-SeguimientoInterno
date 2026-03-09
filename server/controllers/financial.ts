@@ -8,6 +8,7 @@ import {
     updateRecurringTransactionSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.post("/transactions", async (req, res) => {
         const validatedData = insertTransactionSchema.parse(req.body);
 
         const transaction = await storage.createTransaction(validatedData);
+        logAction(req, "CREATE", "FINANCE", transaction.id.toString(), `Registró transacción: ${validatedData.description || 'Sin descripción'} ($${validatedData.amount})`);
         res.status(201).json(transaction);
     } catch (error) {
         logger.error({ err: error }, "Failed to create transaction");

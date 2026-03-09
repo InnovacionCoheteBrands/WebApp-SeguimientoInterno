@@ -29,6 +29,7 @@ import leadsRouter from "./controllers/leads";
 import poesRouter from "./controllers/poes";
 import projectTeamRouter from "./controllers/project-team";
 import usersRouter from "./controllers/users";
+import auditRouter from "./controllers/audit";
 import { requireAuth } from "./middleware/auth";
 import { setupGoogleAuth } from "./auth-google";
 
@@ -74,6 +75,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/poes", requireAuth, poesRouter);
   app.use("/api/users", requireAuth, usersRouter);
   app.use("/api", requireAuth, projectTeamRouter);
+  // Audit Logs
+  app.use("/api", requireAuth, auditRouter);
 
   const httpServer = createServer(app);
 

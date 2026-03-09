@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { insertClientAccountSchema, updateClientAccountSchema } from "@shared/schema";
 import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -34,6 +35,7 @@ router.post("/clients", async (req, res) => {
     try {
         const validatedData = insertClientAccountSchema.parse(req.body);
         const account = await storage.createClientAccount(validatedData);
+        logAction(req, "CREATE", "CLIENT", account.id.toString(), `Registró al cliente '${account.companyName}'`);
         res.status(201).json(account);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -52,6 +54,7 @@ router.patch("/clients/:id", async (req, res) => {
         if (!account) {
             return res.status(404).json({ error: "Client account not found" });
         }
+        logAction(req, "UPDATE", "CLIENT", id.toString(), `Actualizó al cliente '${account.companyName}'`, validatedData as Record<string, any>);
         res.json(account);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -69,6 +72,7 @@ router.delete("/clients/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Client account not found" });
         }
+        logAction(req, "DELETE", "CLIENT", id.toString(), `Eliminó al cliente #${id}`);
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: "Failed to delete client account" });

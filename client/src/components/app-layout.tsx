@@ -21,6 +21,7 @@ import {
   LogOut,
   Truck,
   Briefcase,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -175,6 +176,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <NavButton icon={FileText} label="POES" active={location === "/poes"} href="/poes" collapsed={isCollapsed} />
               <NavButton icon={CalendarDays} label="Calendario" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
               <NavButton icon={Shield} label="Usuarios" active={location === "/usuarios"} href="/usuarios" collapsed={isCollapsed} />
+              <NavButton icon={Activity} label="Actividad" active={location === "/actividad"} href="/actividad" collapsed={isCollapsed} />
             </div>
           </nav>
 

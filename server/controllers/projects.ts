@@ -10,7 +10,8 @@ import {
     insertProjectServiceSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { desc } from "drizzle-orm"; // Note: storage implementation handles sorting, but checking just in case
+import { desc } from "drizzle-orm";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.post("/projects", async (req, res) => {
     try {
         const validatedData = insertProjectSchema.parse(req.body);
         const project = await storage.createProject(validatedData);
+        logAction(req, "CREATE", "PROJECT", project.id.toString(), `Creó el proyecto '${project.name}'`);
         res.status(201).json(project);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -76,6 +78,7 @@ router.patch("/projects/:id", async (req, res) => {
         if (!project) {
             return res.status(404).json({ error: "Project not found" });
         }
+        logAction(req, "UPDATE", "PROJECT", id.toString(), `Actualizó el proyecto '${project.name}'`, validatedData as Record<string, any>);
         res.json(project);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -93,6 +96,7 @@ router.delete("/projects/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Project not found" });
         }
+        logAction(req, "DELETE", "PROJECT", id.toString(), `Eliminó el proyecto #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Failed to delete project:");

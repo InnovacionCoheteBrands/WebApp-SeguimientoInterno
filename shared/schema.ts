@@ -154,6 +154,31 @@ export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
 export type RefreshToken = typeof refreshTokens.$inferSelect;
 export type InsertRefreshToken = z.infer<typeof insertRefreshTokenSchema>;
 
+// ===========================================
+// 📋 AUDIT LOGS
+// ===========================================
+
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  username: text("username").notNull(),
+  action: text("action").notNull(), // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+  entityType: text("entity_type").notNull(), // PROJECT, CLIENT, TEAM, FINANCE, AUTH, etc.
+  entityId: text("entity_id"), // ID of the affected resource (nullable for AUTH actions)
+  details: text("details").notNull(), // Human-readable description
+  metadata: json("metadata"), // JSON with before/after values or extra context
+  ipAddress: text("ip_address"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
 export const campaigns = pgTable("campaigns", {
   id: serial("id").primaryKey(),
   campaignCode: text("campaign_code").notNull().unique(),

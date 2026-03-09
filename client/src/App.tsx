@@ -37,6 +37,7 @@ const ControlProyectos = lazy(() => import("@/pages/control-proyectos"));
 const Usuarios = lazy(() => import("@/pages/usuarios"));
 const Suppliers = lazy(() => import("@/pages/suppliers"));
 const Services = lazy(() => import("@/pages/services"));
+const ActivityLog = lazy(() => import("@/pages/activity-log"));
 
 function LoadingFallback() {
   return (
@@ -111,6 +112,7 @@ function Router() {
               <Route path="/usuarios" component={Usuarios} />
               <Route path="/proveedores" component={Suppliers} />
               <Route path="/servicios" component={Services} />
+              <Route path="/actividad" component={ActivityLog} />
               <Route component={NotFound} />
             </Switch>
           </ProtectedLayout>
