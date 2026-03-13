@@ -124,7 +124,7 @@ router.post("/projects/:id/deliverables", async (req, res) => {
             projectId
         });
         const deliverable = await storage.createProjectDeliverable(validatedData);
-        logAction(req, "CREATE", "DELIVERABLE", deliverable.id.toString(), `Creó el entregable '${deliverable.name}' en el proyecto #${projectId}`);
+        logAction(req, "CREATE", "DELIVERABLE", deliverable.id.toString(), `Creó el entregable '${deliverable.title}' en el proyecto #${projectId}`);
         res.status(201).json(deliverable);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -195,7 +195,7 @@ router.patch("/deliverables/:id", async (req, res) => {
         if (!deliverable) {
             return res.status(404).json({ error: "Deliverable not found" });
         }
-        logAction(req, "UPDATE", "DELIVERABLE", id.toString(), `Actualizó el entregable '${deliverable.name}'`, validatedData as Record<string, any>);
+        logAction(req, "UPDATE", "DELIVERABLE", id.toString(), `Actualizó el entregable '${deliverable.title}'`, validatedData as Record<string, any>);
         res.json(deliverable);
     } catch (error) {
         if (error instanceof z.ZodError) {

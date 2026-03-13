@@ -163,86 +163,82 @@ const Settings = memo(function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-back">
-                  <ArrowLeft className="size-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-display font-bold tracking-wide">{t("system_configuration")}</h1>
-                <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
-                  {t("settings_description") || "Application preferences and settings"}
-                </p>
+    <div className="min-h-screen bg-[#030303] text-zinc-100 p-3 sm:p-8 font-sans selection:bg-primary/30">
+      <div className="max-w-[1400px] mx-auto space-y-12">
+        {/* Intel Header & Configuration Nexus */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 pb-6 border-b border-white/5">
+          <div className="flex items-center gap-6">
+            <Link href="/">
+              <Button variant="outline" size="icon" className="size-12 rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group-back">
+                <ArrowLeft className="size-5 text-zinc-400 group-hover:text-white" />
+              </Button>
+            </Link>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10 border border-white/10 text-primary">
+                  <Plug className="size-5" />
+                </div>
+                <h1 className="text-4xl font-display italic tracking-tight text-white">System Nexus</h1>
               </div>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.4em] pl-1 opacity-60">Global Application Configuration Vault</p>
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || saveMutation.isPending}
-              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              data-testid="button-save-settings"
-            >
-              <Save className="size-4 mr-2" />
-              {saveMutation.isPending ? "Saving..." : t("save_changes")}
-            </Button>
           </div>
+          
+          <Button
+            onClick={handleSave}
+            disabled={!hasChanges || saveMutation.isPending}
+            className="h-12 px-8 rounded-2xl bg-primary text-black font-mono font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.2)]"
+            data-testid="button-save-settings"
+          >
+            <Save className="size-4 mr-2" />
+            {saveMutation.isPending ? "Syncing..." : "Apply Configuration"}
+          </Button>
         </div>
-      </header>
 
       {/* Content */}
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* System Preferences */}
-          <Card className="shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
-            <CardHeader className="p-4 sm:p-6 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10 border border-primary/20">
-                  <Globe className="size-5 text-primary" />
+          {/* Visual Architecture */}
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/10 ring-1 ring-white/5 rounded-[2.5rem] overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            <CardHeader className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-xl bg-primary/10 border border-white/10 text-primary">
+                  <Globe className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-display uppercase tracking-tight">System</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                    Display preferences
-                  </CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">System Environment</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Global UX Core Parameters</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="theme" className="text-xs font-mono uppercase text-muted-foreground">Theme</Label>
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-4">
+                <Label htmlFor="theme" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Interface Mode</Label>
                 <Select
                   value={localSettings.theme}
                   onValueChange={(value) => updateSetting("theme", value as ThemeSetting)}
                 >
-                  <SelectTrigger className="rounded-xl" data-testid="select-theme">
+                  <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20" data-testid="select-theme">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dark">Dark Mode</SelectItem>
-                    <SelectItem value="light">Light Mode</SelectItem>
-                    <SelectItem value="system">Auto (System)</SelectItem>
+                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
+                    <SelectItem value="dark" className="focus:bg-primary/10 focus:text-primary">DARK_STITCH</SelectItem>
+                    <SelectItem value="light" className="focus:bg-primary/10 focus:text-primary">BRIGHT_SHELL</SelectItem>
+                    <SelectItem value="system" className="focus:bg-primary/10 focus:text-primary">AUTO_SYNC</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-xs font-mono uppercase text-muted-foreground">Appearance</Label>
-                    <p className="text-xs text-muted-foreground">Acentos</p>
-                  </div>
-                  <span className="text-[10px] font-mono uppercase text-muted-foreground">
-                    {presetOptions.find((option) => option.value === themeColor)?.label || "Custom"}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <Label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Aura Coloration</Label>
+                  <span className="text-[10px] font-mono text-primary font-bold">
+                    {presetOptions.find((option) => option.value === themeColor)?.label || "RAW_HEX"}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {presetOptions.map((option) => {
                     const isActive = option.value === themeColor;
                     return (
@@ -254,9 +250,9 @@ const Settings = memo(function Settings() {
                         onClick={() => setThemeColor(option.value)}
                         style={{ backgroundColor: `hsl(${option.value})` }}
                         className={[
-                          "size-10 rounded-full border border-border transition",
-                          "ring-offset-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                          isActive ? "ring-2 ring-primary" : "ring-0"
+                          "size-10 rounded-2xl border border-white/10 transition-all duration-300",
+                          "ring-offset-2 ring-offset-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          isActive ? "ring-2 ring-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.3)]" : "opacity-60 hover:opacity-100 hover:scale-105"
                         ].join(" ")}
                       />
                     );
@@ -264,230 +260,191 @@ const Settings = memo(function Settings() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="language" className="text-xs font-mono uppercase text-muted-foreground">Language</Label>
+              <div className="space-y-4">
+                <Label htmlFor="language" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Neural Translation</Label>
                 <Select
                   value={localSettings.language}
                   onValueChange={(value) => updateSetting("language", value as LanguageSetting)}
                 >
-                  <SelectTrigger className="rounded-xl" data-testid="select-language">
+                  <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20" data-testid="select-language">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="de">Deutsch</SelectItem>
-                    <SelectItem value="ja">日本語</SelectItem>
+                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
+                    <SelectItem value="en" className="focus:bg-primary/10 focus:text-primary">ENGLISH_US</SelectItem>
+                    <SelectItem value="es" className="focus:bg-primary/10 focus:text-primary">ESPANOL_MX</SelectItem>
+                    <SelectItem value="fr" className="focus:bg-primary/10 focus:text-primary">FRANCAIS_FR</SelectItem>
+                    <SelectItem value="de" className="focus:bg-primary/10 focus:text-primary">DEUTSCH_DE</SelectItem>
+                    <SelectItem value="ja" className="focus:bg-primary/10 focus:text-primary">NIHONGO_JP</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="timezone" className="text-xs font-mono uppercase text-muted-foreground">Timezone</Label>
+              <div className="space-y-4">
+                <Label htmlFor="timezone" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Temporal Node Sync</Label>
                 <Select
                   value={localSettings.timezone}
                   onValueChange={(value) => updateSetting("timezone", value)}
                 >
-                  <SelectTrigger className="rounded-xl" data-testid="select-timezone">
+                  <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20" data-testid="select-timezone">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC">UTC (Universal)</SelectItem>
-                    <SelectItem value="America/New_York">EST (New York)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">PST (Los Angeles)</SelectItem>
-                    <SelectItem value="Europe/London">GMT (London)</SelectItem>
-                    <SelectItem value="Europe/Paris">CET (Paris)</SelectItem>
-                    <SelectItem value="Asia/Tokyo">JST (Tokyo)</SelectItem>
+                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
+                    <SelectItem value="UTC" className="focus:bg-primary/10 focus:text-primary">UTC_UNIVERSAL</SelectItem>
+                    <SelectItem value="America/New_York" className="focus:bg-primary/10 focus:text-primary">EST_NEW_YORK</SelectItem>
+                    <SelectItem value="America/Los_Angeles" className="focus:bg-primary/10 focus:text-primary">PST_LOS_ANGELES</SelectItem>
+                    <SelectItem value="Europe/Paris" className="focus:bg-primary/10 focus:text-primary">CET_PARIS</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
           </Card>
 
-          {/* Notifications */}
-          <Card className="shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500 to-blue-500/0 opacity-50" />
-            <CardHeader className="p-4 sm:p-6 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-                  <Bell className="size-5 text-blue-500" />
+          {/* Intelligence Alerts */}
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/10 ring-1 ring-white/5 rounded-[2.5rem] overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+            <CardHeader className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/10 text-blue-400">
+                  <Bell className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-display uppercase tracking-tight">Notifications</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                    Alert preferences
-                  </CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Node Intelligence</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Real-Time Alert Feed Configuration</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Campaign Alerts</Label>
-                  <p className="text-xs text-muted-foreground">Critical campaign updates</p>
+            <CardContent className="p-8 space-y-6">
+              {[
+                { label: "Campaign Flux", sub: "Tactical operation updates", key: "campaignAlerts" },
+                { label: "Data Anomalies", sub: "Neural stream verification", key: "analyticsAlerts" },
+                { label: "Core Security", sub: "Infrastructure integrity", key: "systemAlerts" },
+                { label: "External Sync", sub: "Remote email relay", key: "emailNotifications" },
+              ].map((item, idx) => (
+                <div key={item.key} className="space-y-6">
+                  <div className="flex items-center justify-between group/item">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-mono font-bold text-white tracking-wide">{item.label}</Label>
+                      <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{item.sub}</p>
+                    </div>
+                    <Switch
+                      checked={localSettings[item.key as keyof Settings] as boolean}
+                      onCheckedChange={(checked) => updateSetting(item.key as keyof Settings, checked)}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
+                  {idx < 3 && <Separator className="bg-white/5" />}
                 </div>
-                <Switch
-                  checked={localSettings.campaignAlerts}
-                  onCheckedChange={(checked) => updateSetting("campaignAlerts", checked)}
-                  data-testid="switch-campaign-alerts"
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Analytics Alerts</Label>
-                  <p className="text-xs text-muted-foreground">Real-time analytics anomalies</p>
-                </div>
-                <Switch
-                  checked={localSettings.analyticsAlerts}
-                  onCheckedChange={(checked) => updateSetting("analyticsAlerts", checked)}
-                  data-testid="switch-analytics-alerts"
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">System Alerts</Label>
-                  <p className="text-xs text-muted-foreground">Infrastructure warnings</p>
-                </div>
-                <Switch
-                  checked={localSettings.systemAlerts}
-                  onCheckedChange={(checked) => updateSetting("systemAlerts", checked)}
-                  data-testid="switch-system-alerts"
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Email Notifications</Label>
-                  <p className="text-xs text-muted-foreground">Receive alerts via email</p>
-                </div>
-                <Switch
-                  checked={localSettings.emailNotifications}
-                  onCheckedChange={(checked) => updateSetting("emailNotifications", checked)}
-                  data-testid="switch-email-notifications"
-                />
-              </div>
+              ))}
             </CardContent>
           </Card>
 
-          {/* Visualization */}
-          <Card className="shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-green-500/0 via-green-500 to-green-500/0 opacity-50" />
-            <CardHeader className="p-4 sm:p-6 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-green-500/10 border border-green-500/20">
-                  <Eye className="size-5 text-green-500" />
+          {/* Data Dynamics */}
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/10 ring-1 ring-white/5 rounded-[2.5rem] overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+            <CardHeader className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/10 text-emerald-400">
+                  <Eye className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-display uppercase tracking-tight">Visualization</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                    Dashboard display
-                  </CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Stream Dynamics</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Real-Time Visualization Parameters</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="refresh-rate" className="text-xs font-mono uppercase text-muted-foreground">Data Refresh Rate</Label>
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-4">
+                <Label htmlFor="refresh-rate" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Neural Refresh Frequency</Label>
                 <Select
                   value={localSettings.refreshRate}
                   onValueChange={(value) => updateSetting("refreshRate", value)}
                 >
-                  <SelectTrigger className="rounded-xl" data-testid="select-refresh-rate">
+                  <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20" data-testid="select-refresh-rate">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 second</SelectItem>
-                    <SelectItem value="5">5 seconds</SelectItem>
-                    <SelectItem value="10">10 seconds</SelectItem>
-                    <SelectItem value="30">30 seconds</SelectItem>
-                    <SelectItem value="60">1 minute</SelectItem>
+                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
+                    <SelectItem value="1" className="focus:bg-primary/10 focus:text-primary">1 SEC (ULTRA)</SelectItem>
+                    <SelectItem value="5" className="focus:bg-primary/10 focus:text-primary">5 SEC (STANDARD)</SelectItem>
+                    <SelectItem value="10" className="focus:bg-primary/10 focus:text-primary">10 SEC (BALANCED)</SelectItem>
+                    <SelectItem value="30" className="focus:bg-primary/10 focus:text-primary">30 SEC (THROTTLE)</SelectItem>
+                    <SelectItem value="60" className="focus:bg-primary/10 focus:text-primary">60 SEC (EFFICIENT)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Chart Animations</Label>
-                  <p className="text-xs text-muted-foreground">Smooth transitions</p>
+              <div className="flex items-center justify-between px-1">
+                <div className="space-y-1">
+                  <Label className="text-sm font-mono font-bold text-white tracking-wide">Motion Frames</Label>
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Fluid transitions</p>
                 </div>
                 <Switch
                   checked={localSettings.chartAnimations}
                   onCheckedChange={(checked) => updateSetting("chartAnimations", checked)}
-                  data-testid="switch-chart-animations"
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* API & Integrations */}
-          <Card className="shadow-sm relative overflow-hidden group lg:col-span-3">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0 opacity-50" />
-            <CardHeader className="p-4 sm:p-6 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-orange-500/10 border border-orange-500/20">
-                  <Plug className="size-5 text-orange-500" />
+          {/* Encryption & Protocols */}
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/10 ring-1 ring-white/5 rounded-[2.5rem] overflow-hidden lg:col-span-3">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+            <CardHeader className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/10 text-orange-400">
+                  <Plug className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-display uppercase tracking-tight">API & Integrations</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                    External connections and webhooks
-                  </CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Neural Handshake & Protocols</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">API Key Management and Secure Webhooks</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="api-key" className="text-xs font-mono uppercase text-muted-foreground">API Key</Label>
-                  <div className="flex gap-2">
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <Label htmlFor="api-key" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Primary Access Hash</Label>
+                  <div className="flex gap-3">
                     <Input
                       id="api-key"
                       value={localSettings.apiKey || ""}
                       readOnly
-                      placeholder="No API Key generated"
-                      className="rounded-xl font-mono text-sm"
+                      placeholder="NO_HASH_GENERATED"
+                      className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20 blur-[2px] hover:blur-none transition-all duration-300"
                       data-testid="input-api-key"
                     />
                     <Button
                       onClick={handleGenerateApiKey}
                       disabled={regenerateKeyMutation.isPending}
-                      variant="outline"
-                      className="rounded-full"
+                      className="h-12 px-8 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white/20 font-mono text-[10px] uppercase tracking-widest font-bold"
                       data-testid="button-regenerate-api-key"
                     >
-                      {regenerateKeyMutation.isPending ? "Generating..." : "Regenerate"}
+                      {regenerateKeyMutation.isPending ? "REGEN..." : "REGENERATE"}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Use this key to authenticate API requests. Keep it secure.
+                  <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest leading-relaxed">
+                    CRITICAL: Use this cryptographic string for external node authentication. Keep encrypted.
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="webhook-url" className="text-xs font-mono uppercase text-muted-foreground">Webhook URL</Label>
+                <div className="space-y-6">
+                  <Label htmlFor="webhook-url" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Remote Webhook Listener</Label>
                   <Input
                     id="webhook-url"
                     type="url"
                     value={localSettings.webhookUrl || ""}
                     onChange={(e) => updateSetting("webhookUrl", e.target.value)}
-                    placeholder="https://your-domain.com/webhook"
-                    className="rounded-xl opacity-50 cursor-not-allowed"
+                    placeholder="https://nexus.cohete.io/gatekeeper"
+                    className="h-12 rounded-xl opacity-30 cursor-not-allowed bg-white/5 border-white/10 font-mono text-xs"
                     data-testid="input-webhook-url"
                     disabled
                   />
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-yellow-500"></span>
-                    Coming Soon: Webhook integration is currently in development.
-                  </p>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                    <div className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <p className="text-[9px] font-mono text-amber-500/80 uppercase tracking-widest">
+                      Protocol under development: Webhook relay is currently in SANDBOX mode.
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -498,47 +455,48 @@ const Settings = memo(function Settings() {
 
       {/* SEC-004: Robust confirmation dialog for API key regeneration */}
       <AlertDialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-950/90 backdrop-blur-2xl border-white/10 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="size-5" />
-              Regenerar API Key
+            <AlertDialogTitle className="flex items-center gap-3 text-rose-500 font-display italic text-2xl">
+              <AlertTriangle className="size-6" />
+              Regenerate Neural Key?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                <strong>¡Advertencia!</strong> Esta acción invalidará tu API Key actual.
-                Todas las integraciones activas que usen esta clave dejarán de funcionar inmediatamente.
+            <AlertDialogDescription className="space-y-6 pt-4">
+              <p className="text-zinc-400 font-mono text-xs leading-relaxed">
+                <strong className="text-rose-400">CRITICAL_WARNING:</strong> This operation will immediately void current credentials. 
+                All active node integrations using this hash will lose synchronization instantly.
               </p>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-regenerate" className="text-sm">
-                  Escribe <code className="bg-muted px-1 py-0.5 rounded text-destructive font-bold">REGENERAR</code> para confirmar:
+              <div className="space-y-3">
+                <Label htmlFor="confirm-regenerate" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">
+                  Type <code className="bg-rose-500/10 px-2 py-1 rounded text-rose-400 font-bold uppercase">REGENERAR</code> to verify authorization:
                 </Label>
                 <Input
                   id="confirm-regenerate"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                  placeholder="REGENERAR"
-                  className="font-mono uppercase"
+                  placeholder="AUTHORIZE_COMMAND"
+                  className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs uppercase"
                   data-testid="input-confirm-regenerate"
                 />
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmText("")}>
-              Cancelar
+          <AlertDialogFooter className="pt-6">
+            <AlertDialogCancel onClick={() => setConfirmText("")} className="h-12 rounded-xl bg-white/5 border-white/10 text-white hover:bg-white/10 font-mono text-[10px] uppercase tracking-widest">
+              Abort Op
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRegenerateApiKey}
               disabled={confirmText !== "REGENERAR" || regenerateKeyMutation.isPending}
-              className="bg-destructive hover:bg-destructive/90"
+              className="h-12 rounded-xl bg-rose-600 text-white hover:bg-rose-700 font-mono text-[10px] uppercase tracking-widest font-bold shadow-[0_0_20px_rgba(225,29,72,0.3)] border-none"
               data-testid="button-confirm-regenerate"
             >
-              {regenerateKeyMutation.isPending ? "Regenerando..." : "Confirmar Regeneración"}
+              {regenerateKeyMutation.isPending ? "Syncing..." : "Execute Regeneration"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 });

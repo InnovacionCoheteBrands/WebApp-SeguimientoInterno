@@ -208,50 +208,50 @@ export default function Finanzas() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-card/50 border-border">
+                <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
                             Ingresos Netos
                         </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        <TrendingUp className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold font-mono text-foreground">
+                        <div className="text-3xl font-bold font-mono text-zinc-50 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                             {formatCurrency(Number(summary?.totalIncome || 0))}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-tighter opacity-60">
                             Facturado en el periodo total
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-card/50 border-border">
+                <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
                             Gastos Totales
                         </CardTitle>
-                        <TrendingDown className="h-4 w-4 text-rose-500" />
+                        <TrendingDown className="h-4 w-4 text-zinc-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold font-mono text-foreground">
+                        <div className="text-3xl font-bold font-mono text-zinc-200">
                             {formatCurrency(Number(summary?.totalExpenses || 0))}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-tighter opacity-60">
                             Egreso operativo total
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-card/50 border-border">
+                <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
                             Balance Operativo
                         </CardTitle>
-                        <DollarSign className="h-4 w-4 text-blue-500" />
+                        <DollarSign className="h-4 w-4 text-primary shadow-[0_0_10px_rgba(212,175,55,0.3)]" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold font-mono ${(summary?.netProfit || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        <div className={`text-3xl font-bold font-mono ${(summary?.netProfit || 0) >= 0 ? "text-primary" : "text-rose-400"}`}>
                             {formatCurrency(Number(summary?.netProfit || 0))}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-tighter opacity-60">
                             Margen bruto antes de impuestos
                         </p>
                     </CardContent>
@@ -287,8 +287,8 @@ export default function Finanzas() {
 
                         {/* Monthly Receivables (Cuentas por Cobrar) */}
                         {monthlyReceivables.length > 0 && (
-                            <Card className="rounded-[2rem] bg-card/40 border-border relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-emerald-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                            <Card className="rounded-[2.5rem] bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-primary/50 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
                                 <CardHeader className="pb-2 pl-6">
                                     <div className="flex items-center gap-2">
                                         <CalendarClock className="h-4 w-4 text-emerald-500" />
@@ -341,8 +341,8 @@ export default function Finanzas() {
 
                         {/* Monthly Payables (Obligaciones) */}
                         {monthlyPayables.length > 0 && (
-                            <Card className="rounded-[2rem] bg-card/40 border-border relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-rose-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+                            <Card className="rounded-[2.5rem] bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-zinc-500/50 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
                                 <CardHeader className="pb-2 pl-6">
                                     <div className="flex items-center gap-2">
                                         <CalendarClock className="h-4 w-4 text-rose-500" />

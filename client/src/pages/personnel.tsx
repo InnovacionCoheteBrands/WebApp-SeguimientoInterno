@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { RoleCatalogDialog } from "@/components/role-catalog-dialog";
+import { PersonnelFormBoundary } from "@/components/forms/personnel-form-boundary";
 import {
   fetchTeam,
   fetchTeamAssignments,
@@ -242,76 +243,76 @@ export default function Personnel() {
 
         {/* Top Stats - Financial Tickers */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Efficiency Rate</p>
-                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.efficiencyRate}%</h3>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider opacity-60">Efficiency Rate</p>
+                <h3 className="text-2xl font-mono font-bold text-zinc-50 mt-1">{stats.efficiencyRate}%</h3>
               </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full bg-primary/10 border border-white/5 flex items-center justify-center">
                 <Zap className="size-5 text-primary" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500/50 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Saturated Resources</p>
-                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.saturatedCount}</h3>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider opacity-60">Saturated Resources</p>
+                <h3 className="text-2xl font-mono font-bold text-zinc-50 mt-1">{stats.saturatedCount}</h3>
               </div>
-              <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full bg-red-500/10 border border-white/5 flex items-center justify-center">
                 <AlertCircle className="size-5 text-red-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-zinc-500/50 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Available Capacity</p>
-                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">{stats.availableCount}</h3>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider opacity-60">Available Capacity</p>
+                <h3 className="text-2xl font-mono font-bold text-zinc-50 mt-1">{stats.availableCount}</h3>
               </div>
-              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="size-5 text-green-500" />
+              <div className="h-10 w-10 rounded-full bg-zinc-500/10 border border-white/5 flex items-center justify-center">
+                <CheckCircle2 className="size-5 text-zinc-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border rounded-xl relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Est. Revenue Potential</p>
-                <h3 className="text-2xl font-mono font-bold text-foreground mt-1">${(stats.potentialRevenue / 1000).toFixed(1)}k</h3>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider opacity-60">Est. Revenue Potential</p>
+                <h3 className="text-2xl font-mono font-bold text-primary mt-1">${(stats.potentialRevenue / 1000).toFixed(1)}k</h3>
               </div>
-              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <DollarSign className="size-5 text-blue-500" />
+              <div className="h-10 w-10 rounded-full bg-primary/10 border border-white/5 flex items-center justify-center">
+                <DollarSign className="size-5 text-primary shadow-[0_0_10px_rgba(212,175,55,0.2)]" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Smart Filters */}
-        <Card className="bg-card/50 border-border rounded-2xl">
+        <Card className="bg-zinc-950/40 backdrop-blur-md border-white/10 ring-1 ring-inset ring-white/5 rounded-2xl">
           <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-50" />
               <Input
                 placeholder="Filter by Name, Skill (e.g. React, Copy)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background border-border rounded-full h-10 focus-visible:ring-primary/20"
+                className="pl-10 bg-white/5 border-white/15 focus:border-white/30 rounded-full h-10 transition-all"
               />
             </div>
             <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-full md:w-[200px] h-10 bg-background border-border rounded-full">
+              <SelectTrigger className="w-full md:w-[200px] h-10 bg-white/5 border-white/15 rounded-full hover:bg-white/10 transition-colors">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-950 border-white/15">
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="Creative Director">Creative Director</SelectItem>
                 <SelectItem value="Senior Strategist">Senior Strategist</SelectItem>
@@ -322,7 +323,7 @@ export default function Personnel() {
             {/* Mobile Catalog Button */}
             <Button
               variant="outline"
-              className="border-border text-muted-foreground hover:text-foreground hover:bg-muted sm:hidden w-full"
+              className="border-white/15 text-muted-foreground hover:text-foreground hover:bg-white/5 sm:hidden w-full rounded-full"
               onClick={() => setIsCatalogOpen(true)}
             >
               <Settings className="size-4 mr-2" />
@@ -336,14 +337,14 @@ export default function Personnel() {
           {filteredTeam.map((member) => (
             <Card
               key={member.id}
-              className={`bg-card border-border hover:border-muted-foreground/30 transition-all group relative overflow-hidden rounded-[2rem]
-                  ${member.utilizationRate >= 95 ? 'hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 'hover:shadow-[0_0_20px_rgba(34,197,94,0.1)]'}
+              className={`bg-zinc-900/40 backdrop-blur-md border-white/10 ring-1 ring-inset ring-white/5 hover:border-white/30 transition-all group relative overflow-hidden rounded-[2.5rem]
+                  ${member.utilizationRate >= 95 ? 'hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 'hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]'}
                 `}
             >
               {/* Status Indicator Line */}
               <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent 
                    ${member.utilizationRate >= 95 ? 'via-red-500' :
-                  member.utilizationRate >= 75 ? 'via-yellow-500' : 'via-green-500'}
+                  member.utilizationRate >= 75 ? 'via-yellow-500/50' : 'via-primary/50'}
                    to-transparent opacity-70 group-hover:opacity-100 transition-opacity
                 `} />
 
@@ -351,16 +352,16 @@ export default function Personnel() {
                 {/* Header */}
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 rounded-full border border-border">
-                      <AvatarFallback className="bg-muted text-muted-foreground font-mono">{getInitials(member.name)}</AvatarFallback>
+                    <Avatar className="h-10 w-10 rounded-full border border-white/15">
+                      <AvatarFallback className="bg-zinc-800 text-zinc-400 font-mono text-xs">{getInitials(member.name)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <h4 className="font-bold text-foreground text-sm">{member.name}</h4>
-                      <p className="text-xs text-muted-foreground">{member.roleData?.roleName || member.role}</p>
+                      <h4 className="font-bold text-zinc-100 text-sm tracking-tight">{member.name}</h4>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider opacity-60">{member.roleData?.roleName || member.role}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className={`rounded-full text-[10px] font-mono
-                         ${(member.roleData?.roleLevel || member.seniority) === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-border text-muted-foreground'}
+                  <Badge variant="outline" className={`rounded-full text-[9px] font-mono
+                         ${(member.roleData?.roleLevel || member.seniority) === 'Director' ? 'border-primary/50 text-primary bg-primary/5' : 'border-white/10 text-muted-foreground'}
                       `}>
                     {member.area ? `${member.area} • ` : ''}{member.roleData?.roleLevel || member.seniority}
                   </Badge>
@@ -459,11 +460,14 @@ export default function Personnel() {
             </DialogDescription>
           </DialogHeader>
           <div className="px-10 pb-10 overflow-y-auto flex-1">
-            <PersonnelForm
-              open={isTeamDialogOpen}
-              onOpenChange={setIsTeamDialogOpen}
-              initialData={editingMember}
-            />
+            <PersonnelFormBoundary key={`personnel-form-${isTeamDialogOpen}-${editingMember?.id ?? "new"}`}>
+              <PersonnelForm
+                open={isTeamDialogOpen}
+                onOpenChange={setIsTeamDialogOpen}
+                initialData={editingMember}
+                onManageRoles={() => setIsCatalogOpen(true)}
+              />
+            </PersonnelFormBoundary>
           </div>
         </DialogContent>
       </Dialog>

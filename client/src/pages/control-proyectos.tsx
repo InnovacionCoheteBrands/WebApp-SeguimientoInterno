@@ -185,70 +185,74 @@ export default function ControlProyectos() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
+            <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-primary/10 border border-white/10 shadow-[0_0_15px_rgba(212,175,55,0.1)]">
                     <Target className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold">Control de Proyectos</h1>
-                    <p className="text-muted-foreground">
-                        Gestiona el progreso y avance de tus proyectos
+                    <h1 className="text-3xl font-display font-bold tracking-tight text-zinc-100">Control de Proyectos</h1>
+                    <p className="text-muted-foreground font-mono text-[10px] uppercase tracking-[0.2em] opacity-60 mt-1">
+                        Operational Intelligence & Progress Monitoring
                     </p>
                 </div>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-card/50 border-border/50">
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-2xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50" />
                     <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 rounded-full bg-primary/10 border border-white/5">
                                 <FolderKanban className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.total}</p>
-                                <p className="text-xs text-muted-foreground">Total Proyectos</p>
+                                <p className="text-2xl font-mono font-bold text-zinc-100">{stats.total}</p>
+                                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">Total Proyectos</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-card/50 border-border/50">
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-2xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent opacity-50" />
                     <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-500/10">
-                                <Play className="w-5 h-5 text-blue-500" />
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 rounded-full bg-blue-500/10 border border-white/5">
+                                <Play className="w-5 h-5 text-blue-400" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.active}</p>
-                                <p className="text-xs text-muted-foreground">Activos</p>
+                                <p className="text-2xl font-mono font-bold text-zinc-100">{stats.active}</p>
+                                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">Activos</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-card/50 border-border/50">
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-2xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent opacity-50" />
                     <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-green-500/10">
-                                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 rounded-full bg-emerald-500/10 border border-white/5">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.completed}</p>
-                                <p className="text-xs text-muted-foreground">Completados</p>
+                                <p className="text-2xl font-mono font-bold text-zinc-100">{stats.completed}</p>
+                                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">Completados</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-card/50 border-border/50">
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-2xl relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-50" />
                     <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-500/10">
-                                <TrendingUp className="w-5 h-5 text-purple-500" />
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 rounded-full bg-primary/10 border border-white/5">
+                                <TrendingUp className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.avgProgress}%</p>
-                                <p className="text-xs text-muted-foreground">Progreso Promedio</p>
+                                <p className="text-2xl font-mono font-bold text-primary">{stats.avgProgress}%</p>
+                                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">Avg Momentum</p>
                             </div>
                         </div>
                     </CardContent>
@@ -256,50 +260,52 @@ export default function ControlProyectos() {
             </div>
 
             {/* Search Bar */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
                 <Input
                     placeholder="Buscar proyecto por nombre o cliente..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-11 bg-card/50"
+                    className="pl-12 h-12 bg-zinc-950/40 backdrop-blur-md border-white/15 focus:border-white/30 rounded-full transition-all font-mono text-xs"
                 />
             </div>
 
             {/* Projects Table */}
-            <Card className="bg-card/50 border-border/50">
-                <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Proyectos</CardTitle>
+            <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] overflow-hidden">
+                <CardHeader className="p-8 pb-4">
+                    <CardTitle className="text-xl font-display uppercase tracking-tight text-zinc-100">Directorio de Ejecución</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 overflow-x-auto">
                     <Table className="min-w-[900px]">
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="font-semibold">Proyecto</TableHead>
-                                <TableHead className="font-semibold">Cliente</TableHead>
-                                <TableHead className="font-semibold">Estado</TableHead>
-                                <TableHead className="font-semibold">Tipo</TableHead>
-                                <TableHead className="font-semibold">Progreso</TableHead>
-                                <TableHead className="font-semibold text-right">Cotización</TableHead>
-                                <TableHead className="font-semibold text-right">Mantenimiento</TableHead>
-                                <TableHead className="font-semibold text-right">Acciones</TableHead>
+                        <TableHeader className="bg-white/5">
+                            <TableRow className="hover:bg-transparent border-white/10">
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground pl-8">Proyecto</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground">Cliente</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground">Estado</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground">Tier</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground">Progreso</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground text-right">Cotización</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground text-right">Retainer</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase text-muted-foreground text-right pr-8">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredProjects.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
-                                        No hay proyectos que mostrar
+                                    <TableCell colSpan={8} className="text-center text-muted-foreground py-16 font-mono text-xs italic opacity-40">
+                                        No se detectaron activos en la búsqueda actual.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredProjects.map((project) => (
-                                    <TableRow key={project.id} className="group">
+                                    <TableRow key={project.id} className="group border-white/5 hover:bg-white/5 transition-colors">
                                         {/* Project Name */}
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="w-4 h-4 text-muted-foreground" />
-                                                <span className="font-medium">{project.name}</span>
+                                        <TableCell className="pl-8">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-1.5 rounded-lg bg-zinc-800 border border-white/5 group-hover:border-primary/30 transition-colors">
+                                                    <Clock className="w-3.5 h-3.5 text-zinc-400 group-hover:text-primary transition-colors" />
+                                                </div>
+                                                <span className="font-bold text-zinc-100 text-sm tracking-tight">{project.name}</span>
                                             </div>
                                         </TableCell>
 
@@ -315,23 +321,22 @@ export default function ControlProyectos() {
                                         <TableCell>{getTypeBadge(project)}</TableCell>
 
                                         {/* Progress */}
+                                        {/* Progress */}
                                         <TableCell>
-                                            <div className="space-y-1.5 min-w-[120px]">
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="font-medium">{project.progress || 0}%</span>
+                                            <div className="space-y-2 min-w-[140px]">
+                                                <div className="flex items-center justify-between text-[10px] font-mono">
+                                                    <span className="text-zinc-100 font-bold">{project.progress || 0}%</span>
+                                                    <span className="text-muted-foreground opacity-60 uppercase">{getProgressLabel(project.progress || 0)}</span>
                                                 </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden ring-1 ring-inset ring-white/5">
                                                     <div
                                                         className={cn(
-                                                            "h-full transition-all duration-300 rounded-full",
-                                                            getProgressColor(project.progress || 0)
+                                                            "h-full transition-all duration-1000 rounded-full",
+                                                            getProgressColor(project.progress || 0).replace('bg-', 'bg-opacity-80 bg-')
                                                         )}
                                                         style={{ width: `${project.progress || 0}%` }}
                                                     />
                                                 </div>
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    {getProgressLabel(project.progress || 0)}
-                                                </p>
                                             </div>
                                         </TableCell>
 

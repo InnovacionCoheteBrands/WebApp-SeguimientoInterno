@@ -13,8 +13,10 @@ import {
   CrmWidget,
   ProjectsWidget,
   FinanceWidget,
-  HrWidget
+  HrWidget,
+  KpiDetailsDialog
 } from "@/components/dashboard-widgets";
+import { useState } from "react";
 import {
   fetchLeads,
   fetchLeadsMetrics,
@@ -27,6 +29,7 @@ import { formatCurrency } from "@/lib/format-currency";
 
 export default function Dashboard() {
   const { data: settings } = useSystemSettings();
+  const [activeModal, setActiveModal] = useState<"finance" | "leads" | "projects" | "hr" | null>(null);
 
   // --- Data Fetching ---
   const { data: leadsMetrics, isLoading: loadingLeads } = useQuery({
@@ -91,6 +94,7 @@ export default function Dashboard() {
           trend={balance >= 0 ? "+ Rentable" : "- Déficit"}
           trendUp={balance >= 0}
           color="green"
+          onClick={() => setActiveModal("finance")}
         />
         <KpiCard
           title="Leads Activos"
@@ -100,6 +104,7 @@ export default function Dashboard() {
           trend="+ Nuevo Hoy"
           trendUp={true}
           color="blue"
+          onClick={() => setActiveModal("leads")}
         />
         <KpiCard
           title="Proyectos Activos"
@@ -109,6 +114,7 @@ export default function Dashboard() {
           color="amber"
           trend="En tiempo"
           trendUp={true}
+          onClick={() => setActiveModal("projects")}
         />
         <KpiCard
           title="Empleados"
@@ -118,6 +124,7 @@ export default function Dashboard() {
           color="purple"
           trend="Estable"
           trendUp={true}
+          onClick={() => setActiveModal("hr")}
         />
       </div>
 
@@ -143,6 +150,40 @@ export default function Dashboard() {
           <HrWidget data={team} loading={loadingTeam} />
         </div>
       </div>
+
+      {/* --- Modales de KPI --- */}
+      <KpiDetailsDialog 
+        isOpen={activeModal === "finance"} 
+        onClose={() => setActiveModal(null)}
+        title="Balance Financiero"
+        description="Listado exhaustivo del estado financiero"
+        data={financialSummary}
+        moduleName="finance"
+      />
+      <KpiDetailsDialog 
+        isOpen={activeModal === "leads"} 
+        onClose={() => setActiveModal(null)}
+        title="Leads Activos"
+        description="Resumen del CRM y prospectos comerciales"
+        data={leads}
+        moduleName="leads"
+      />
+      <KpiDetailsDialog 
+        isOpen={activeModal === "projects"} 
+        onClose={() => setActiveModal(null)}
+        title="Proyectos Activos"
+        description="Estado de ejecución y cotizaciones"
+        data={projects?.filter(p => p.status === "Active" || p.status === "In Progress")}
+        moduleName="projects"
+      />
+      <KpiDetailsDialog 
+        isOpen={activeModal === "hr"} 
+        onClose={() => setActiveModal(null)}
+        title="Equipo y Recursos Humanos"
+        description="Empleados registrados en el sistema"
+        data={team}
+        moduleName="hr"
+      />
     </div>
   );
 }

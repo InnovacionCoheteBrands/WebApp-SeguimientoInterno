@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+﻿import express, { type Express } from "express";
 import { type Server } from "http";
 import { createServer } from "http";
 import path from "path";
@@ -16,7 +16,6 @@ import adsRouter from "./controllers/ads";
 import agentRouter from "./controllers/agent";
 import agencyRouter from "./controllers/agency";
 import settingsRouter from "./controllers/settings";
-// New Agency Module Controllers
 import contactsRouter from "./controllers/contacts";
 import billingProfilesRouter from "./controllers/billing-profiles";
 import digitalAssetsRouter from "./controllers/digital-assets";
@@ -24,33 +23,33 @@ import clientDocumentsRouter from "./controllers/client-documents";
 import installmentsRouter from "./controllers/installments";
 import servicesRouter from "./controllers/services";
 import suppliersRouter from "./controllers/suppliers";
-// Cohete Replica Module Controllers
 import leadsRouter from "./controllers/leads";
 import poesRouter from "./controllers/poes";
 import projectTeamRouter from "./controllers/project-team";
 import usersRouter from "./controllers/users";
 import auditRouter from "./controllers/audit";
 import { requireAuth } from "./middleware/auth";
+import { asyncHandler } from "./middleware/error-handler";
 import { setupGoogleAuth } from "./auth-google";
+import { checkDatabaseConnection } from "../db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Serve uploaded files statically
   const uploadDir = path.join(process.cwd(), "uploads");
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
-  app.use("/uploads", express.static(uploadDir));
+  app.use("/uploads", requireAuth, express.static(uploadDir));
 
-  // Debug route to verify API is working
-  app.get("/api/health", (req, res) => {
-    console.log("Health check hit");
-    res.json({ status: "ok" });
-  });
+  app.get("/api/health", asyncHandler(async (_req, res) => {
+    const isDatabaseConnected = await checkDatabaseConnection();
+    res.status(isDatabaseConnected ? 200 : 503).json({
+      status: isDatabaseConnected ? "ok" : "degraded",
+      database: isDatabaseConnected ? "up" : "down",
+    });
+  }));
 
-  // Public routes (no authentication required)
   app.use("/api/auth", authRouter);
 
-  // Protected routes (require JWT authentication)
   app.use("/api", requireAuth, campaignsRouter);
   app.use("/api", requireAuth, clientsRouter);
   app.use("/api", requireAuth, teamRouter);
@@ -62,7 +61,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", requireAuth, agentRouter);
   app.use("/api", requireAuth, agencyRouter);
   app.use("/api", requireAuth, settingsRouter);
-  // New Agency Module Routes
   app.use("/api", requireAuth, contactsRouter);
   app.use("/api", requireAuth, billingProfilesRouter);
   app.use("/api", requireAuth, digitalAssetsRouter);
@@ -70,19 +68,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", requireAuth, installmentsRouter);
   app.use("/api", requireAuth, servicesRouter);
   app.use("/api", requireAuth, suppliersRouter);
-  // Cohete Replica Module Routes
   app.use("/api/leads", requireAuth, leadsRouter);
   app.use("/api/poes", requireAuth, poesRouter);
   app.use("/api/users", requireAuth, usersRouter);
   app.use("/api", requireAuth, projectTeamRouter);
-  // Audit Logs
   app.use("/api", requireAuth, auditRouter);
 
   const httpServer = createServer(app);
 
-  // Setup Google Auth
   setupGoogleAuth(app);
-
   setupWebSocket(httpServer);
+
   return httpServer;
 }

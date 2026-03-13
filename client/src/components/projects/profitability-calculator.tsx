@@ -182,76 +182,78 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
     return (
         <div className="space-y-4">
             {/* Header row */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    <h3 className="text-base font-semibold">Calculadora de Rentabilidad</h3>
+            <div className="flex items-center justify-between px-8 pt-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-white/10">
+                        <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-display uppercase tracking-tight text-zinc-100 italic">Profitability Logic</h3>
+                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">Financial Yield Analysis</p>
+                    </div>
                     {isRecurringMonthly && (
-                        <Badge variant="outline" className="gap-1 text-xs text-sky-400 border-sky-400/40 bg-sky-500/10">
-                            <Repeat2 className="w-3 h-3" /> Iguala Mensual
+                        <Badge variant="outline" className="gap-2 text-[9px] font-mono uppercase tracking-widest text-sky-400 border-sky-400/20 bg-sky-500/10 px-3 h-6">
+                            <Repeat2 className="w-3 h-3" /> Recurring Model
                         </Badge>
                     )}
                 </div>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button size="icon" variant="ghost" onClick={() => refetch()} className="w-8 h-8">
-                            <RefreshCcw className="w-3.5 h-3.5" />
+                        <Button size="icon" variant="ghost" onClick={() => refetch()} className="w-10 h-10 rounded-full hover:bg-white/5 border border-white/5 transition-all">
+                            <RefreshCcw className="w-4 h-4 text-zinc-500" />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Recalcular</TooltipContent>
+                    <TooltipContent className="bg-zinc-950 border-white/10 font-mono text-[9px] uppercase tracking-widest">Recalcular</TooltipContent>
                 </Tooltip>
             </div>
 
             {lines.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border/50 py-12 text-center">
-                    <p className="text-sm text-muted-foreground">
-                        Aún no hay servicios asignados a este proyecto.
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                        Agrega servicios desde la pestaña "Servicios" para ver el análisis de rentabilidad.
+                <div className="m-8 rounded-[2rem] border border-dashed border-white/10 py-16 text-center bg-white/5">
+                    <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground opacity-60 italic">
+                        No se detectaron activos de servicio asociados.
                     </p>
                 </div>
             ) : (
-                <>
+                <div className="p-8 space-y-8">
                     {/* Services table */}
-                    <div className="rounded-2xl border border-border/50 overflow-hidden">
+                    <div className="rounded-[1.5rem] border border-white/10 overflow-hidden bg-zinc-950/20">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-xs">
                                 <thead>
-                                    <tr className="bg-muted/40 text-xs text-muted-foreground">
-                                        <th className="text-left px-4 py-3 font-medium">Servicio</th>
-                                        <th className="text-center px-3 py-3 font-medium w-20">Cant.</th>
-                                        <th className="text-right px-3 py-3 font-medium w-32">Costo Unit.</th>
-                                        <th className="text-right px-3 py-3 font-medium w-32">Precio Unit.</th>
-                                        <th className="text-right px-3 py-3 font-medium w-28">Costo Total</th>
-                                        <th className="text-right px-4 py-3 font-medium w-28">Precio Total</th>
-                                        <th className="text-right px-4 py-3 font-medium w-24">Margen</th>
+                                    <tr className="bg-white/5 text-[10px] uppercase font-mono tracking-widest text-muted-foreground">
+                                        <th className="text-left px-6 py-4 font-bold">Servicio / Glosario</th>
+                                        <th className="text-center px-4 py-4 font-bold w-20">Qty</th>
+                                        <th className="text-right px-4 py-4 font-bold w-32">Costo U.</th>
+                                        <th className="text-right px-4 py-4 font-bold w-32">Precio U.</th>
+                                        <th className="text-right px-4 py-4 font-bold w-32">Gasto</th>
+                                        <th className="text-right px-6 py-4 font-bold w-32">Factura</th>
+                                        <th className="text-right px-6 py-4 font-bold w-24 pr-8">Yield</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border/40">
+                                <tbody className="divide-y divide-white/5">
                                     {lines.map(line => {
                                         const isEditingQty = editing?.lineId === line.id && editing.field === "qty";
                                         const isEditingCost = editing?.lineId === line.id && editing.field === "cost";
                                         const isEditingPrice = editing?.lineId === line.id && editing.field === "price";
 
                                         return (
-                                            <tr key={line.id} className="group hover:bg-muted/20 transition-colors">
+                                            <tr key={line.id} className="group hover:bg-white/5 transition-all duration-300">
                                                 {/* Service name */}
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium leading-tight">{line.serviceName}</div>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-zinc-100 italic">{line.serviceName}</div>
                                                     {line.supplierName && (
-                                                        <div className="text-xs text-muted-foreground mt-0.5">{line.supplierName}</div>
+                                                        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1 opacity-50">{line.supplierName}</div>
                                                     )}
                                                 </td>
 
                                                 {/* Quantity — editable */}
-                                                <td className="px-3 py-3 text-center">
+                                                <td className="px-4 py-4 text-center">
                                                     {isEditingQty ? (
                                                         <Input
                                                             autoFocus
                                                             type="number"
                                                             min={1}
-                                                            className="w-16 h-7 text-center text-xs px-1"
+                                                            className="w-16 h-7 text-center text-[10px] font-mono px-1 bg-white/5 border-white/20 rounded-lg focus:border-primary/50"
                                                             value={editing.value}
                                                             onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
                                                             onBlur={() => commitEdit(line)}
@@ -259,7 +261,7 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                                                         />
                                                     ) : (
                                                         <button
-                                                            className="px-2 py-0.5 rounded hover:bg-muted transition-colors cursor-text"
+                                                            className="px-3 py-1 font-mono text-[10px] rounded-lg text-zinc-400 border border-white/5 hover:bg-white/5 group-hover:border-white/20 transition-all cursor-text"
                                                             onClick={() => setEditing({ lineId: line.id, field: "qty", value: String(line.quantity) })}
                                                         >
                                                             {line.quantity}
@@ -268,14 +270,15 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                                                 </td>
 
                                                 {/* Unit cost — editable */}
-                                                <td className="px-3 py-3 text-right">
+                                                {/* Unit cost — editable */}
+                                                <td className="px-4 py-4 text-right">
                                                     {isEditingCost ? (
                                                         <Input
                                                             autoFocus
                                                             type="number"
                                                             min={0}
                                                             step={0.01}
-                                                            className="w-28 h-7 text-right text-xs px-1"
+                                                            className="w-28 h-7 text-right text-[10px] font-mono px-1 bg-white/5 border-white/20 rounded-lg focus:border-primary/50"
                                                             value={editing.value}
                                                             onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
                                                             onBlur={() => commitEdit(line)}
@@ -283,7 +286,7 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                                                         />
                                                     ) : (
                                                         <button
-                                                            className="text-right w-full px-1 py-0.5 rounded hover:bg-muted transition-colors cursor-text text-muted-foreground"
+                                                            className="text-right w-full px-2 py-1 font-mono text-[10px] rounded-lg text-muted-foreground border border-transparent hover:border-white/5 hover:bg-white/5 transition-all cursor-text"
                                                             onClick={() => setEditing({ lineId: line.id, field: "cost", value: String(line.unitCost) })}
                                                         >
                                                             {fmt(line.unitCost)}
@@ -292,14 +295,14 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                                                 </td>
 
                                                 {/* Unit price — editable */}
-                                                <td className="px-3 py-3 text-right">
+                                                <td className="px-4 py-4 text-right">
                                                     {isEditingPrice ? (
                                                         <Input
                                                             autoFocus
                                                             type="number"
                                                             min={0}
                                                             step={0.01}
-                                                            className="w-28 h-7 text-right text-xs px-1"
+                                                            className="w-28 h-7 text-right text-[10px] font-mono px-1 bg-white/5 border-white/20 rounded-lg focus:border-primary/50"
                                                             value={editing.value}
                                                             onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
                                                             onBlur={() => commitEdit(line)}
@@ -307,7 +310,7 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                                                         />
                                                     ) : (
                                                         <button
-                                                            className="text-right w-full px-1 py-0.5 rounded hover:bg-muted transition-colors cursor-text"
+                                                            className="text-right w-full px-2 py-1 font-mono text-[10px] rounded-lg text-zinc-100 border border-transparent hover:border-white/5 hover:bg-white/5 transition-all cursor-text font-bold"
                                                             onClick={() => setEditing({ lineId: line.id, field: "price", value: String(line.unitPrice) })}
                                                         >
                                                             {fmt(line.unitPrice)}
@@ -316,11 +319,11 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                                                 </td>
 
                                                 {/* Line totals (read-only) */}
-                                                <td className="px-3 py-3 text-right text-muted-foreground tabular-nums">{fmt(line.lineCost)}</td>
-                                                <td className="px-4 py-3 text-right tabular-nums">{fmt(line.linePrice)}</td>
+                                                <td className="px-4 py-4 text-right text-muted-foreground font-mono text-[10px] tabular-nums opacity-40">{fmt(line.lineCost)}</td>
+                                                <td className="px-6 py-4 text-right text-zinc-100 font-mono text-[10px] tabular-nums opacity-80">{fmt(line.linePrice)}</td>
 
                                                 {/* Margin */}
-                                                <td className={`px-4 py-3 text-right tabular-nums font-medium ${pctColor(line.lineMarginPct)}`}>
+                                                <td className={`px-6 py-4 text-right tabular-nums font-mono text-[10px] pr-8 ${pctColor(line.lineMarginPct)}`}>
                                                     {line.lineMarginPct.toFixed(1)}%
                                                 </td>
                                             </tr>
@@ -332,38 +335,41 @@ export function ProfitabilityCalculator({ projectId }: { projectId: number }) {
                     </div>
 
                     {/* Totals Panel */}
-                    <div className={`rounded-2xl border p-5 ${hCfg.bg}`}>
-                        <div className="flex items-center gap-2 mb-4">
-                            <HealthIcon className={`w-5 h-5 ${hCfg.color}`} />
-                            <span className={`text-sm font-semibold ${hCfg.color}`}>{hCfg.label}</span>
+                    <div className={`rounded-[1.5rem] border p-8 bg-zinc-950/40 backdrop-blur-md relative overflow-hidden group shadow-[0_0_25px_rgba(0,0,0,0.2)] ${hCfg.bg.replace('bg-', 'bg-opacity-5 ')}`}>
+                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className={`p-2 rounded-lg bg-zinc-950/60 border border-white/5 ${hCfg.color}`}>
+                                <HealthIcon className="w-5 h-5 shadow-[0_0_10px_currentColor]" />
+                            </div>
+                            <span className={`text-[10px] font-mono uppercase tracking-[0.2em] font-bold ${hCfg.color}`}>{hCfg.label}</span>
                             {isRecurringMonthly && (
-                                <span className="text-xs text-muted-foreground ml-auto">* Importes mensuales (Iguala)</span>
+                                <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-auto opacity-40 italic">* Real-time Recurrent Valuation</span>
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <TotalItem label="Costo Total" value={fmt(totals.totalCost)} sub="Proveedor / Interno" />
-                            <TotalItem label="Precio Total" value={fmt(totals.totalPrice)} sub="Facturado al cliente" />
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                            <TotalItem label="Total Exposure" value={fmt(totals.totalCost)} sub="Internal Costing" />
+                            <TotalItem label="Project Revenue" value={fmt(totals.totalPrice)} sub="Client Invoicing" />
                             <TotalItem
-                                label="Margen Bruto"
+                                label="Aggregated Margin"
                                 value={fmt(totals.totalMargin)}
-                                sub={totals.totalMargin >= 0 ? "Utilidad" : "Pérdida"}
+                                sub={totals.totalMargin >= 0 ? "Net Surplus" : "Resource Deficit"}
                                 valueClass={pctColor(totals.profitabilityPct)}
                             />
                             <TotalItem
-                                label="Rentabilidad"
+                                label="Operational Yield"
                                 value={`${totals.profitabilityPct.toFixed(1)}%`}
-                                sub="Sobre precio de venta"
-                                valueClass={`text-2xl font-bold ${pctColor(totals.profitabilityPct)}`}
+                                sub="Conversion Efficiency"
+                                valueClass={`text-3xl font-display italic font-bold ${pctColor(totals.profitabilityPct)}`}
                             />
                         </div>
 
-                        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Info className="w-3.5 h-3.5 shrink-0" />
-                            Haz clic en Cant., Costo o Precio de cualquier línea para editarlo en línea. Los cambios se guardan automáticamente.
+                        <div className="mt-8 flex items-center gap-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground opacity-30 group-hover:opacity-50 transition-opacity">
+                            <Info className="w-4 h-4 shrink-0" />
+                            Global inline editing active. System persists all tactical adjustments in real-time.
                         </div>
                     </div>
-                </>
+                </div>
             )}
         </div>
     );
@@ -381,10 +387,10 @@ function TotalItem({
     valueClass?: string;
 }) {
     return (
-        <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className={`text-xl font-bold tabular-nums ${valueClass}`}>{value}</p>
-            <p className="text-xs text-muted-foreground/60">{sub}</p>
+        <div className="space-y-1 group/item">
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground opacity-50 group-hover/item:opacity-80 transition-opacity">{label}</p>
+            <p className={`text-xl font-bold font-mono tracking-tight tabular-nums ${valueClass}`}>{value}</p>
+            <p className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground opacity-30">{sub}</p>
         </div>
     );
 }

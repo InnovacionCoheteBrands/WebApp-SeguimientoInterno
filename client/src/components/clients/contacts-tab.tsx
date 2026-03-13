@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, User, Mail, Phone, Bell, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, User, Mail, Phone, Bell, Star, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -136,214 +135,240 @@ export function ContactsTab({ clientId }: ContactsTabProps) {
     };
 
     return (
-        <>
-            <Card className="rounded-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Contactos</CardTitle>
-                    <Button onClick={() => handleOpenDialog()} className="rounded-sm" size="sm">
-                        <Plus className="size-4 mr-2" />
-                        Agregar Contacto
+        <div className="space-y-6">
+            <div className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-50" />
+                <div className="flex items-center justify-between p-8 border-b border-white/10">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-2xl bg-primary/10 border border-white/10 text-primary">
+                            <User className="size-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-display uppercase tracking-tight text-zinc-100 italic">Personnel Directory</h3>
+                            <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest opacity-60 italic">Managed Entity Contacts</p>
+                        </div>
+                    </div>
+                    <Button 
+                        onClick={() => handleOpenDialog()} 
+                        className="h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all font-mono text-[10px] uppercase tracking-widest px-6"
+                    >
+                        <Plus className="size-3.5 mr-2" />
+                        Initialize Resource
                     </Button>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-8">
                     {isLoading ? (
-                        <p className="text-muted-foreground">Cargando...</p>
+                        <div className="space-y-4">
+                            {[1, 2].map(i => <div key={i} className="h-20 bg-white/5 animate-pulse rounded-2xl" />)}
+                        </div>
                     ) : contacts.length === 0 ? (
-                        <div className="text-center py-8">
-                            <User className="size-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground">No hay contactos registrados</p>
+                        <div className="text-center py-12 space-y-4">
+                            <div className="size-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto">
+                                <User className="size-8 text-zinc-600 opacity-20" />
+                            </div>
+                            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground opacity-40 italic">No registered personnel detected.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="grid gap-4">
                             {contacts.map((contact) => (
                                 <div
                                     key={contact.id}
-                                    className="flex items-center justify-between p-4 border border-border rounded-sm bg-card hover:bg-muted/50 transition-colors"
+                                    className="flex items-center justify-between p-6 bg-zinc-950/20 border border-white/5 rounded-3xl hover:bg-white/5 hover:border-white/10 transition-all duration-300 group/item"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                            <User className="size-5 text-primary" />
+                                    <div className="flex items-center gap-6">
+                                        <div className="size-12 rounded-2xl bg-zinc-900 border border-white/5 shadow-inner flex items-center justify-center">
+                                            <User className="size-6 text-zinc-500 group-hover/item:text-primary transition-colors duration-500" />
                                         </div>
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-medium">
+                                            <div className="flex items-center gap-3">
+                                                <p className="font-display text-zinc-100 text-lg italic tracking-tight">
                                                     {contact.firstName} {contact.lastName}
                                                 </p>
                                                 {contact.isPrimary && (
-                                                    <Badge variant="outline" className="text-xs rounded-sm text-primary border-primary/30">
-                                                        <Star className="size-3 mr-1" />
+                                                    <Badge className="bg-primary/10 text-primary border border-primary/20 rounded-full h-5 px-3 text-[9px] font-mono font-bold uppercase tracking-widest">
                                                         Principal
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                                <span className="flex items-center gap-1">
-                                                    <Mail className="size-3" />
+                                            <div className="flex flex-wrap items-center gap-4 mt-2">
+                                                <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground opacity-60 group-hover/item:opacity-100 transition-opacity">
+                                                    <Mail className="size-3 opacity-40" />
                                                     {contact.email}
-                                                </span>
+                                                </div>
                                                 {contact.phone && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Phone className="size-3" />
+                                                    <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground opacity-60 group-hover/item:opacity-100 transition-opacity">
+                                                        <Phone className="size-3 opacity-40" />
                                                         {contact.phone}
-                                                    </span>
+                                                    </div>
                                                 )}
                                             </div>
                                             {contact.position && (
-                                                <p className="text-xs text-muted-foreground mt-1">{contact.position}</p>
+                                                <p className="text-[9px] font-mono text-primary/60 uppercase tracking-[0.2em] mt-2 italic">{contact.position}</p>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex gap-1 mr-4">
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex gap-2">
                                             {contact.notifyBilling && (
-                                                <Badge variant="secondary" className="text-xs rounded-sm">
-                                                    <Bell className="size-3 mr-1" />
-                                                    Fact
-                                                </Badge>
+                                                <div className="p-1 px-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-mono uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.05)]">
+                                                    <Bell className="size-2.5" />
+                                                    Fiscal
+                                                </div>
                                             )}
                                             {contact.notifyPayments && (
-                                                <Badge variant="secondary" className="text-xs rounded-sm">
-                                                    Pagos
-                                                </Badge>
+                                                <div className="p-1 px-3 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(245,158,11,0.05)]">
+                                                    Payments
+                                                </div>
                                             )}
                                         </div>
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(contact)}>
-                                            <Pencil className="size-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-muted-foreground hover:text-red-500"
-                                            onClick={() => setDeleteContactId(contact.id)}
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
+                                        <div className="flex items-center gap-1 opacity-20 group-hover/item:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(contact)} className="h-9 w-9 rounded-full hover:bg-white/10">
+                                                <Pencil className="size-4 text-zinc-400" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 rounded-full hover:bg-red-500/10 text-muted-foreground hover:text-red-400"
+                                                onClick={() => setDeleteContactId(contact.id)}
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-2xl rounded-sm">
-                    <DialogHeader>
-                        <DialogTitle>{editingContact ? "Editar Contacto" : "Nuevo Contacto"}</DialogTitle>
-                        <DialogDescription>
-                            {editingContact ? "Actualiza la información del contacto" : "Agrega un nuevo contacto para este cliente"}
+                <DialogContent className="sm:max-w-2xl bg-[#030303]/95 backdrop-blur-2xl border-white/10 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                    <DialogHeader className="space-y-4">
+                        <DialogTitle className="text-2xl font-display text-white italic tracking-tight">
+                            {editingContact ? "Modify Personnel Data" : "Initiate Resource"}
+                        </DialogTitle>
+                        <DialogDescription className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">
+                            Managed Contact Configuration Protocol
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={handleSubmit} className="space-y-8 mt-6">
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="firstName">Nombre *</Label>
+                                <Label htmlFor="firstName" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">First Name</Label>
                                 <Input
                                     id="firstName"
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                    className="h-10"
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-display italic"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="lastName">Apellido *</Label>
+                                <Label htmlFor="lastName" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Last Name</Label>
                                 <Input
                                     id="lastName"
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                    className="h-10"
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-display italic"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email *</Label>
+                            <Label htmlFor="email" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Email Endpoint</Label>
                             <Input
                                 id="email"
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="h-10"
+                                className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono"
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="phone">Teléfono</Label>
+                                <Label htmlFor="phone" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Office Line</Label>
                                 <Input
                                     id="phone"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="h-10"
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="mobile">Celular</Label>
+                                <Label htmlFor="mobile" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Mobile Secure</Label>
                                 <Input
                                     id="mobile"
                                     value={formData.mobile}
                                     onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                                    className="h-10"
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="position">Puesto</Label>
+                            <Label htmlFor="position" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Strategic Position</Label>
                             <Input
                                 id="position"
                                 value={formData.position}
                                 onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                                className="h-10"
+                                className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-display italic"
                             />
                         </div>
 
-                        <div className="space-y-3 pt-2 border-t border-border">
-                            <Label className="text-sm font-medium">Notificaciones</Label>
-                            <div className="flex flex-wrap gap-4">
-                                <div className="flex items-center space-x-2">
+                        <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary italic">Notification Protocols</Label>
+                                <Badge variant="outline" className="text-[8px] border-white/10 text-zinc-500 uppercase tracking-widest">Active Monitoring</Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-8">
+                                <div className="flex items-center space-x-3">
                                     <Checkbox
                                         id="notifyBilling"
                                         checked={formData.notifyBilling}
                                         onCheckedChange={(checked) => setFormData({ ...formData, notifyBilling: !!checked })}
+                                        className="rounded-md border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
-                                    <Label htmlFor="notifyBilling" className="text-sm font-normal">Facturación</Label>
+                                    <Label htmlFor="notifyBilling" className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">Fiscal / Billing</Label>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-3">
                                     <Checkbox
                                         id="notifyPayments"
                                         checked={formData.notifyPayments}
                                         onCheckedChange={(checked) => setFormData({ ...formData, notifyPayments: !!checked })}
+                                        className="rounded-md border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
-                                    <Label htmlFor="notifyPayments" className="text-sm font-normal">Pagos</Label>
+                                    <Label htmlFor="notifyPayments" className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">Payments</Label>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-3">
                                     <Checkbox
                                         id="notifyGeneral"
                                         checked={formData.notifyGeneral}
                                         onCheckedChange={(checked) => setFormData({ ...formData, notifyGeneral: !!checked })}
+                                        className="rounded-md border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
-                                    <Label htmlFor="notifyGeneral" className="text-sm font-normal">General</Label>
+                                    <Label htmlFor="notifyGeneral" className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">General</Label>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 pt-2">
+                        <div className="flex items-center space-x-3 p-4 bg-primary/5 border border-primary/10 rounded-2xl">
                             <Checkbox
                                 id="isPrimary"
                                 checked={formData.isPrimary}
                                 onCheckedChange={(checked) => setFormData({ ...formData, isPrimary: !!checked })}
+                                className="rounded-md border-primary/30 data-[state=checked]:bg-primary"
                             />
-                            <Label htmlFor="isPrimary" className="text-sm font-normal">Marcar como contacto principal</Label>
+                            <Label htmlFor="isPrimary" className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">Designate Principal Authority</Label>
                         </div>
 
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-sm">
-                                Cancelar
+                        <DialogFooter className="pt-4 border-t border-white/10">
+                            <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-full h-10 px-6 font-mono text-[10px] uppercase tracking-widest text-zinc-500 hover:text-white">
+                                Abort
                             </Button>
-                            <Button type="submit" className="rounded-sm" disabled={createMutation.isPending || updateMutation.isPending}>
-                                {editingContact ? "Actualizar" : "Crear"}
+                            <Button type="submit" className="rounded-full h-10 px-8 bg-primary text-black font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]" disabled={createMutation.isPending || updateMutation.isPending}>
+                                {editingContact ? "Overwrite" : "Authorize"}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -352,24 +377,24 @@ export function ContactsTab({ clientId }: ContactsTabProps) {
 
             {/* Delete Confirmation */}
             <AlertDialog open={deleteContactId !== null} onOpenChange={() => setDeleteContactId(null)}>
-                <AlertDialogContent className="rounded-sm">
+                <AlertDialogContent className="bg-[#030303]/95 backdrop-blur-2xl border-white/10 rounded-[2.5rem]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Eliminar Contacto</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que deseas eliminar este contacto? Esta acción no se puede deshacer.
+                        <AlertDialogTitle className="font-display italic text-white">Decommission Resource</AlertDialogTitle>
+                        <AlertDialogDescription className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                            Warning: This operation will permanently remove the personnel record from active database nodes. This action is irreversible.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-sm">Cancelar</AlertDialogCancel>
+                    <AlertDialogFooter className="mt-6 gap-3">
+                        <AlertDialogCancel className="rounded-full h-10 px-6 font-mono text-[10px] uppercase tracking-widest border-white/10 bg-white/5 text-zinc-400">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => deleteContactId && deleteMutation.mutate(deleteContactId)}
-                            className="rounded-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="rounded-full h-10 px-8 bg-red-500 text-white font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.3)]"
                         >
-                            Eliminar
+                            Execute
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
 }

@@ -1,0 +1,421 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [5 0 R 7 0 R 9 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 4391 >>
+stream
+BT
+/F2 20 Tf
+1 0 0 1 48.00 740.00 Tm
+(Auditoria de seguridad y despliegue para VPS en Hostinger) Tj
+/F1 10 Tf
+1 0 0 1 48.00 707.00 Tm
+(Proyecto auditado: DesignSystemMissionControl | Fecha: 2026-03-10 | Solo auditoria, sin cambios de codigo) Tj
+/F2 14 Tf
+1 0 0 1 48.00 670.00 Tm
+(Resumen ejecutivo) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 647.00 Tm
+(Se reprodujo exactamente el mensaje observado en el VPS: 13 vulnerabilities \(4 low, 6) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 633.50 Tm
+(moderate, 3 high\). Ese conteo corresponde al arbol completo instalado y mezcla dependencias de) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 620.00 Tm
+(produccion y desarrollo.) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 602.50 Tm
+(Al recalcular con npm audit --omit=dev, el riesgo efectivo de runtime baja a 8) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 589.00 Tm
+(vulnerabilidades: 2 high, 2 moderate y 4 low. Las dependencias mas sensibles en produccion son) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 575.50 Tm
+(express-rate-limit y multer.) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 558.00 Tm
+(La razon mas probable de que Hostinger muestre las 13 es que el servidor esta instalando el) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 544.50 Tm
+(arbol completo para compilar en el VPS o durante la etapa builder de Docker. El warning de npm) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 531.00 Tm
+(audit no implica por si mismo que el deploy haya fallado, pero si confirma que hay trabajo) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 517.50 Tm
+(pendiente de remediacion.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 492.00 Tm
+(Metodologia) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 469.00 Tm
+(- npm audit --json: 13 vulnerabilidades totales, 4 low, 6 moderate, 3 high.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 451.50 Tm
+(- npm audit --omit=dev --json: 8 vulnerabilidades de produccion, 4 low, 2 moderate, 2 high.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 434.00 Tm
+(- npm ls --depth=4: lodash entra por recharts; rollup entra por vite.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 416.50 Tm
+(- Revision de codigo y configuracion: server/index.ts, server/middleware/upload.ts,) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 403.00 Tm
+(  server/controllers/digital-assets.ts, server/routes.ts, package.json, Dockerfile,) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 389.50 Tm
+(  DEPLOYMENT.md, ecosystem.config.cjs, db/index.ts.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 364.00 Tm
+(Por que aparece exactamente el conteo de 13 en el VPS) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 341.00 Tm
+(- package.json define un build que depende de vite, esbuild y drizzle-kit, por lo que un) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 327.50 Tm
+(  build local o en servidor necesita toolchain completo.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 310.00 Tm
+(- Dockerfile: la etapa builder instala todas las dependencias con npm ci y la etapa final) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 296.50 Tm
+(  instala solo produccion con npm ci --omit=dev.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 279.00 Tm
+(- DEPLOYMENT.md tiene una inconsistencia: recomienda npm ci --omit=dev y despues npm run) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 265.50 Tm
+(  build. Ese flujo no es compatible y empuja a hacer una instalacion completa en el VPS.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 240.00 Tm
+(Hallazgos de produccion) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 217.00 Tm
+(- express-rate-limit 8.2.1 - High. Riesgo de bypass del rate limiting con IPv4 mapeado sobre) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 203.50 Tm
+(  IPv6. Evidencia: server/index.ts:33-43. Objetivo sugerido: 8.3.1.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 186.00 Tm
+(- multer 2.0.2 - High. Riesgo de DoS por cleanup incompleto, agotamiento de recursos y) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 172.50 Tm
+(  recursion no controlada. Evidencia: server/middleware/upload.ts:24-29;) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 159.00 Tm
+(  server/controllers/digital-assets.ts:29, 78, 119. Objetivo sugerido: 2.1.1.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 141.50 Tm
+(- express 4.21.2 con body-parser y qs transitivos - Low/Moderate. Riesgos de parsing y) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 128.00 Tm
+(  consumo de memoria. Evidencia: server/index.ts:2 y 51-56. Objetivo sugerido: 4.22.1.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 110.50 Tm
+(- express-session 1.18.1 con on-headers - Low. Se encontro instalado en package.json:73 pero) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 97.00 Tm
+(  sin uso activo en server/, client/, shared/ ni scripts/. Recomendacion: remover si no es) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 83.50 Tm
+(  necesario; si se conserva, subir a 1.19.0.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 66.00 Tm
+(- lodash 4.17.21 via recharts 2.15.4 - Moderate. Recomendacion: override a lodash 4.17.23 o) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 4277 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 62.00 740.00 Tm
+(  evaluar upgrade de recharts.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 714.50 Tm
+(Hallazgos de toolchain / desarrollo) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 691.50 Tm
+(- vite 7.1.12 -> rollup 4.52.5 - High. Impacta build, no el runtime final. Objetivo sugerido:) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 678.00 Tm
+(  una combinacion con rollup 4.59.0; recomendado vite 7.3.1.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 660.50 Tm
+(- drizzle-kit 0.31.4 -> @esbuild-kit/esm-loader -> esbuild - Moderate. Impacta migraciones y) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 647.00 Tm
+(  tooling. npm view muestra que 0.31.x sigue usando @esbuild-kit/esm-loader. Probar primero) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 633.50 Tm
+(  drizzle-kit 0.31.9 y, si el advisory persiste, aislarlo a CI o builder.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 608.00 Tm
+(Revision de codigo y exposicion real) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 585.00 Tm
+(- Rate limiting: el limitador global esta en server/index.ts:33-43, pero PM2 corre en cluster) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 571.50 Tm
+(  segun ecosystem.config.cjs:5-6. El store en memoria no comparte conteos entre workers, por) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 558.00 Tm
+(  lo que el limite deja de ser estricto.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 540.50 Tm
+(- No se encontro configuracion trust proxy. En Hostinger + Nginx esto puede degradar la) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 527.00 Tm
+(  precision de req.ip y afectar el rate limiting.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 509.50 Tm
+(- Uploads: hay dos configuraciones separadas de multer. La de avatares limita tamano a 5 MB,) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 496.00 Tm
+(  pero no valida tipo ni cantidad. La de activos digitales no define limites explicitos de) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 482.50 Tm
+(  tamano o cantidad.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 465.00 Tm
+(- Exposicion publica de archivos: server/routes.ts:37-42 sirve /uploads de forma publica con) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 451.50 Tm
+(  app.use\("/uploads", express.static\(uploadDir\)\).) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 434.00 Tm
+(- Dependencia no usada: express-session parece ser superficie instalada sin uso real.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 408.50 Tm
+(Conexion y posibles errores a considerar en VPS) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 385.50 Tm
+(- Si se intenta compilar con solo dependencias de produccion, pueden aparecer errores como) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 372.00 Tm
+(  vite, esbuild o tsx no encontrados.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 354.50 Tm
+(- server/index.ts ya valida JWT_SECRET, BASE_URL y PORT. Fallas posibles: Invalid runtime) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 341.00 Tm
+(  configuration e Invalid PORT.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 323.50 Tm
+(- db/index.ts exige DATABASE_URL. Si la conexion falla, son esperables errores como) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 310.00 Tm
+(  ENOTFOUND, ECONNREFUSED, ETIMEDOUT o CERT_HAS_EXPIRED.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 292.50 Tm
+(- Despues del hardening de uploads son esperables respuestas 413 Payload Too Large, 415) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 279.00 Tm
+(  Unsupported Media Type y MulterError. Deben tratarse como efectos controlados, no como) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 265.50 Tm
+(  regresiones.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 248.00 Tm
+(- Sin trust proxy y con cluster, el rate limit puede dar 429 inesperados o no aplicar) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 234.50 Tm
+(  correctamente.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 209.00 Tm
+(Recomendaciones sin editar aun el codigo) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 186.00 Tm
+(- Actualizar primero express-rate-limit, multer y express; remover express-session si no se) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 172.50 Tm
+(  usa.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 155.00 Tm
+(- Unificar el middleware de uploads con limites de tamano, cantidad, tipos permitidos,) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 141.50 Tm
+(  extensiones y limpieza ante fallo.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 124.00 Tm
+(- Configurar trust proxy y usar un store compartido compatible con cluster para el rate) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 110.50 Tm
+(  limiting.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 93.00 Tm
+(- Corregir el flujo de despliegue: build en CI y despliegue de artefacto, o Docker) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 79.50 Tm
+(  multi-stage, o build temporal con prune posterior; evitar npm ci --omit=dev seguido de) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 66.00 Tm
+(  build.) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 4128 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 62.00 738.00 Tm
+(- Documentar el tratamiento de dependencias transitivas como lodash y drizzle-kit antes de la) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 724.50 Tm
+(  remediacion.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 707.00 Tm
+(- Ejecutar build, smoke tests, upload tests, login, health endpoint y npm audit --omit=dev) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 693.50 Tm
+(  --audit-level=high antes de promover a produccion.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 668.00 Tm
+(Plan de implementacion propuesto) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 645.00 Tm
+(- Fase 0: congelar baseline, capturar lockfile actual y confirmar la via de despliegue real) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 631.50 Tm
+(  usada en Hostinger.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 614.00 Tm
+(- Fase 1: corregir el riesgo alto de runtime actualizando express-rate-limit y multer, y) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 600.50 Tm
+(  revisando compatibilidad de Express 4.22.1.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 583.00 Tm
+(- Fase 2: revisar el codigo afectado con pruebas de uploads, acceso a /uploads y rate limit) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 569.50 Tm
+(  detras de proxy.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 552.00 Tm
+(- Fase 3: normalizar despliegue y corregir la guia oficial de deployment.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 534.50 Tm
+(- Fase 4: prevencion continua con pipeline de audit, SCA, smoke tests y health check con DB.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 509.00 Tm
+(Manejo de errores para que no reaparezcan) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 486.00 Tm
+(- Centralizar un handler para MulterError con respuestas 400, 413 y 415 claramente) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 472.50 Tm
+(  diferenciadas.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 455.00 Tm
+(- Registrar cada bloqueo de upload con usuario, ruta, tamano y motivo.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 437.50 Tm
+(- Agregar preflight de conectividad de base de datos al health check, no solo al proceso) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 424.00 Tm
+(  HTTP.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 406.50 Tm
+(- Versionar el lockfile y ejecutar npm audit --omit=dev en CI en cada merge o release.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 389.00 Tm
+(- Usar store compartido para rate limit si PM2 sigue en cluster.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 371.50 Tm
+(- Hacer revisiones periodicas de dependencias no usadas para reducir superficie de ataque.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 354.00 Tm
+(- Registrar un procedimiento unico de build, rollback y despliegue para evitar instalaciones) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 340.50 Tm
+(  improvisadas en el VPS.) Tj
+/F2 14 Tf
+1 0 0 1 48.00 315.00 Tm
+(Evidencia clave revisada) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 292.00 Tm
+(- package.json: express 4.21.2, express-rate-limit 8.2.1, multer 2.0.2, express-session) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 278.50 Tm
+(  1.18.1, recharts 2.15.4, drizzle-kit 0.31.4 y vite 7.1.9.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 261.00 Tm
+(- server/index.ts: rate limiter global, validacion de variables de entorno y handler global) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 247.50 Tm
+(  de errores.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 230.00 Tm
+(- server/middleware/upload.ts: multer con limite de tamano para avatar, sin filtro de tipos.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 212.50 Tm
+(- server/controllers/digital-assets.ts: multer separado sin limites explicitos, rutas de) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 199.00 Tm
+(  carga multiples.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 181.50 Tm
+(- server/routes.ts: ruta publica /uploads y health endpoint basico.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 164.00 Tm
+(- Dockerfile: builder con deps completas y runtime final con npm ci --omit=dev.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 146.50 Tm
+(- DEPLOYMENT.md: inconsistencia entre instalacion prod-only y build posterior.) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 129.00 Tm
+(- db/index.ts: fail-fast por DATABASE_URL, pero sin health check de conectividad real al) Tj
+/F1 10.5 Tf
+1 0 0 1 62.00 115.50 Tm
+(  arrancar.) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 98.00 Tm
+(Fuentes tecnicas adicionales consultadas durante la auditoria: npm view para versiones) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 84.50 Tm
+(objetivo de express, express-rate-limit, multer, express-session, vite, rollup, drizzle-kit,) Tj
+/F1 10.5 Tf
+1 0 0 1 48.00 71.00 Tm
+(recharts y lodash.) Tj
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000000272 00000 n 
+0000000408 00000 n 
+0000004851 00000 n 
+0000004987 00000 n 
+0000009316 00000 n 
+0000009453 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+13634
+%%EOF

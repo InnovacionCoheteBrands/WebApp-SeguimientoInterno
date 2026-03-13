@@ -146,58 +146,78 @@ export function BillingProfilesTab({ clientId }: BillingProfilesTabProps) {
     };
 
     return (
-        <>
-            <Card className="rounded-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Perfiles de Facturación</CardTitle>
-                    <Button onClick={() => handleOpenDialog()} className="rounded-sm" size="sm">
-                        <Plus className="size-4 mr-2" />
-                        Agregar RFC
+        <div className="space-y-6">
+            <div className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-50" />
+                <div className="flex items-center justify-between p-8 border-b border-white/10">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-2xl bg-primary/10 border border-white/10 text-primary">
+                            <FileText className="size-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-display uppercase tracking-tight text-zinc-100 italic">Tax & Fiscal Registry</h3>
+                            <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest opacity-60 italic">Managed Billing Profiles</p>
+                        </div>
+                    </div>
+                    <Button 
+                        onClick={() => handleOpenDialog()} 
+                        className="h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all font-mono text-[10px] uppercase tracking-widest px-6"
+                    >
+                        <Plus className="size-3.5 mr-2" />
+                        Register New RFC
                     </Button>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-8">
                     {isLoading ? (
-                        <p className="text-muted-foreground">Cargando...</p>
+                        <div className="space-y-4">
+                            {[1, 2].map(i => <div key={i} className="h-24 bg-white/5 animate-pulse rounded-2xl" />)}
+                        </div>
                     ) : profiles.length === 0 ? (
-                        <div className="text-center py-8">
-                            <FileText className="size-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground">No hay perfiles de facturación</p>
+                        <div className="text-center py-12 space-y-4">
+                            <div className="size-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto">
+                                <FileText className="size-8 text-zinc-600 opacity-20" />
+                            </div>
+                            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground opacity-40 italic">No fiscal data archives detected.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="grid gap-4">
                             {profiles.map((profile) => (
                                 <div
                                     key={profile.id}
-                                    className="flex items-center justify-between p-4 border border-border rounded-sm bg-card hover:bg-muted/50 transition-colors"
+                                    className="flex items-center justify-between p-6 bg-zinc-950/20 border border-white/5 rounded-3xl hover:bg-white/5 hover:border-white/10 transition-all duration-300 group/item"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                            <Building className="size-5 text-primary" />
+                                    <div className="flex items-center gap-6">
+                                        <div className="size-12 rounded-2xl bg-zinc-900 border border-white/5 shadow-inner flex items-center justify-center">
+                                            <Building className="size-6 text-zinc-500 group-hover/item:text-primary transition-colors duration-500" />
                                         </div>
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-mono font-medium">{profile.rfc}</p>
+                                            <div className="flex items-center gap-3">
+                                                <p className="font-mono text-zinc-100 text-lg font-bold tracking-tight">
+                                                    {profile.rfc}
+                                                </p>
                                                 {profile.isDefault && (
-                                                    <Badge variant="outline" className="text-xs rounded-sm text-green-500 border-green-500/30">
-                                                        <CheckCircle className="size-3 mr-1" />
-                                                        Default
+                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full h-5 px-3 text-[9px] font-mono font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                                        Active Default
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground mt-1">{profile.businessName}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {CFDI_USES.find(u => u.value === profile.cfdiUse)?.label || profile.cfdiUse}
+                                            <p className="text-[10px] font-display uppercase tracking-tight text-muted-foreground mt-1 italic group-hover/item:text-zinc-300 transition-colors">
+                                                {profile.businessName}
                                             </p>
+                                            <div className="mt-2 text-[9px] font-mono text-primary/40 uppercase tracking-widest italic flex items-center gap-2">
+                                                <div className="size-1 rounded-full bg-primary/20" />
+                                                {CFDI_USES.find(u => u.value === profile.cfdiUse)?.label || profile.cfdiUse}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(profile)}>
-                                            <Pencil className="size-4" />
+                                    <div className="flex items-center gap-3 opacity-20 group-hover/item:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(profile)} className="h-9 w-9 rounded-full hover:bg-white/10">
+                                            <Pencil className="size-4 text-zinc-400" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="text-muted-foreground hover:text-red-500"
+                                            className="h-9 w-9 rounded-full hover:bg-red-500/10 text-muted-foreground hover:text-red-400"
                                             onClick={() => setDeleteProfileId(profile.id)}
                                         >
                                             <Trash2 className="size-4" />
@@ -207,110 +227,118 @@ export function BillingProfilesTab({ clientId }: BillingProfilesTabProps) {
                             ))}
                         </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-2xl rounded-sm">
-                    <DialogHeader>
-                        <DialogTitle>{editingProfile ? "Editar Perfil" : "Nuevo Perfil de Facturación"}</DialogTitle>
-                        <DialogDescription>
-                            Datos fiscales para facturación (RFC / Razón Social)
+                <DialogContent className="sm:max-w-2xl bg-[#030303]/95 backdrop-blur-2xl border-white/10 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                    <DialogHeader className="space-y-4">
+                        <DialogTitle className="text-2xl font-display text-white italic tracking-tight">
+                            {editingProfile ? "Modify Fiscal Archive" : "Initialize Tax Resource"}
+                        </DialogTitle>
+                        <DialogDescription className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">
+                            Fiscal Records & Structural Billing Setup
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="rfc">RFC *</Label>
-                            <Input
-                                id="rfc"
-                                value={formData.rfc}
-                                onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
-                                placeholder="XAXX010101000"
-                                className="h-10 font-mono"
-                            />
+                    <form onSubmit={handleSubmit} className="space-y-8 mt-6">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="rfc" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Legal ID / RFC</Label>
+                                <Input
+                                    id="rfc"
+                                    value={formData.rfc}
+                                    onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono uppercase text-primary tracking-wider"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="taxRegime" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Tax Regime Code</Label>
+                                <Input
+                                    id="taxRegime"
+                                    value={formData.taxRegime}
+                                    onChange={(e) => setFormData({ ...formData, taxRegime: e.target.value })}
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="businessName">Razón Social *</Label>
+                            <Label htmlFor="businessName" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Registered Business Entity</Label>
                             <Input
                                 id="businessName"
                                 value={formData.businessName}
                                 onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                                className="h-10"
+                                className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-display italic"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="cfdiUse">Uso CFDI *</Label>
+                            <Label htmlFor="cfdiUse" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Fiscal Purpose (CFDI Use)</Label>
                             <Select value={formData.cfdiUse} onValueChange={(value) => setFormData({ ...formData, cfdiUse: value })}>
-                                <SelectTrigger className="h-10">
+                                <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono text-xs">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-zinc-950 border-white/10 rounded-2xl">
                                     {CFDI_USES.map((use) => (
-                                        <SelectItem key={use.value} value={use.value}>{use.label}</SelectItem>
+                                        <SelectItem key={use.value} value={use.value} className="text-[10px] font-mono uppercase tracking-widest py-3">
+                                            {use.label}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="taxRegime">Régimen Fiscal</Label>
-                            <Input
-                                id="taxRegime"
-                                value={formData.taxRegime}
-                                onChange={(e) => setFormData({ ...formData, taxRegime: e.target.value })}
-                                placeholder="601 - General de Ley PM"
-                                className="h-10"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Dirección Fiscal</Label>
-                            <Input
-                                value={formData.fiscalStreet}
-                                onChange={(e) => setFormData({ ...formData, fiscalStreet: e.target.value })}
-                                placeholder="Calle y número"
-                                className="h-10"
-                            />
-                            <div className="grid grid-cols-3 gap-2">
+                        <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary italic">Fiscal Address Endpoint</Label>
+                            </div>
+                            <div className="space-y-4">
                                 <Input
-                                    value={formData.fiscalCity}
-                                    onChange={(e) => setFormData({ ...formData, fiscalCity: e.target.value })}
-                                    placeholder="Ciudad"
-                                    className="h-10"
+                                    value={formData.fiscalStreet}
+                                    onChange={(e) => setFormData({ ...formData, fiscalStreet: e.target.value })}
+                                    placeholder="STREET ARCHIVE"
+                                    className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono text-[10px] uppercase tracking-widest"
                                 />
-                                <Input
-                                    value={formData.fiscalState}
-                                    onChange={(e) => setFormData({ ...formData, fiscalState: e.target.value })}
-                                    placeholder="Estado"
-                                    className="h-10"
-                                />
-                                <Input
-                                    value={formData.fiscalZip}
-                                    onChange={(e) => setFormData({ ...formData, fiscalZip: e.target.value })}
-                                    placeholder="C.P."
-                                    className="h-10"
-                                />
+                                <div className="grid grid-cols-3 gap-4">
+                                    <Input
+                                        value={formData.fiscalCity}
+                                        onChange={(e) => setFormData({ ...formData, fiscalCity: e.target.value })}
+                                        placeholder="CITY"
+                                        className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono text-[10px] uppercase tracking-widest"
+                                    />
+                                    <Input
+                                        value={formData.fiscalState}
+                                        onChange={(e) => setFormData({ ...formData, fiscalState: e.target.value })}
+                                        placeholder="STATE"
+                                        className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono text-[10px] uppercase tracking-widest"
+                                    />
+                                    <Input
+                                        value={formData.fiscalZip}
+                                        onChange={(e) => setFormData({ ...formData, fiscalZip: e.target.value })}
+                                        placeholder="Z.O.N.E"
+                                        className="h-12 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/20 focus:border-primary/30 transition-all font-mono text-[10px] uppercase tracking-widest"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 pt-2">
+                        <div className="flex items-center space-x-3 p-4 bg-primary/5 border border-primary/10 rounded-2xl">
                             <Checkbox
                                 id="isDefault"
                                 checked={formData.isDefault}
                                 onCheckedChange={(checked) => setFormData({ ...formData, isDefault: !!checked })}
+                                className="rounded-md border-primary/30 data-[state=checked]:bg-primary"
                             />
-                            <Label htmlFor="isDefault" className="text-sm font-normal">Usar como perfil predeterminado</Label>
+                            <Label htmlFor="isDefault" className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">Priority Fiscal Path</Label>
                         </div>
 
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-sm">
-                                Cancelar
+                        <DialogFooter className="pt-4 border-t border-white/10">
+                            <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-full h-10 px-6 font-mono text-[10px] uppercase tracking-widest text-zinc-500 hover:text-white">
+                                Abort
                             </Button>
-                            <Button type="submit" className="rounded-sm" disabled={createMutation.isPending || updateMutation.isPending}>
-                                {editingProfile ? "Actualizar" : "Crear"}
+                            <Button type="submit" className="rounded-full h-10 px-8 bg-primary text-black font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]" disabled={createMutation.isPending || updateMutation.isPending}>
+                                {editingProfile ? "Apply Override" : "Finalize Archive"}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -319,24 +347,24 @@ export function BillingProfilesTab({ clientId }: BillingProfilesTabProps) {
 
             {/* Delete Confirmation */}
             <AlertDialog open={deleteProfileId !== null} onOpenChange={() => setDeleteProfileId(null)}>
-                <AlertDialogContent className="rounded-sm">
+                <AlertDialogContent className="bg-[#030303]/95 backdrop-blur-2xl border-white/10 rounded-[2.5rem]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Eliminar Perfil</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que deseas eliminar este perfil de facturación?
+                        <AlertDialogTitle className="font-display italic text-white">Purge Fiscal Data</AlertDialogTitle>
+                        <AlertDialogDescription className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                            Warning: This operation will permanently erase the fiscal profile from active registries. Existing invoices will not be affected.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-sm">Cancelar</AlertDialogCancel>
+                    <AlertDialogFooter className="mt-6 gap-3">
+                        <AlertDialogCancel className="rounded-full h-10 px-6 font-mono text-[10px] uppercase tracking-widest border-white/10 bg-white/5 text-zinc-400">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => deleteProfileId && deleteMutation.mutate(deleteProfileId)}
-                            className="rounded-sm bg-destructive text-destructive-foreground"
+                            className="rounded-full h-10 px-8 bg-red-500 text-white font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.3)]"
                         >
-                            Eliminar
+                            Execute Purge
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
 }

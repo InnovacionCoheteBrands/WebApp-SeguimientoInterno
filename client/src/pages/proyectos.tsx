@@ -228,54 +228,54 @@ export default function Proyectos() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="bg-card/50 border-border/50">
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-500">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-primary/10">
+                                <div className="p-2 rounded-lg bg-primary/10 border border-white/5">
                                     <FolderKanban className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold">{stats.total}</p>
-                                    <p className="text-xs text-muted-foreground">Total Proyectos</p>
+                                    <p className="text-2xl font-bold text-zinc-50">{stats.total}</p>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Proyectos</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-card/50 border-border/50">
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-500/10">
-                                    <DollarSign className="w-5 h-5 text-blue-500" />
+                                <div className="p-2 rounded-lg bg-zinc-500/10 border border-white/5">
+                                    <DollarSign className="w-5 h-5 text-zinc-400" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold">{formatCurrency(stats.totalBudget)}</p>
-                                    <p className="text-xs text-muted-foreground">Cotización Total</p>
+                                    <p className="text-2xl font-bold text-zinc-50">{formatCurrency(stats.totalBudget)}</p>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Cotización Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-card/50 border-border/50">
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-green-500/10">
-                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                <div className="p-2 rounded-lg bg-primary/10 border border-white/5">
+                                    <CheckCircle2 className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold">{formatCurrency(stats.collected)}</p>
-                                    <p className="text-xs text-muted-foreground">Total Cobrado</p>
+                                    <p className="text-2xl font-bold text-primary">{formatCurrency(stats.collected)}</p>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Cobrado</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-card/50 border-border/50">
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-yellow-500/10">
-                                    <Clock className="w-5 h-5 text-yellow-500" />
+                                <div className="p-2 rounded-lg bg-zinc-500/10 border border-white/5">
+                                    <Clock className="w-5 h-5 text-zinc-400" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-yellow-500">{formatCurrency(stats.pending)}</p>
-                                    <p className="text-xs text-muted-foreground">Pendiente por Cobrar</p>
+                                    <p className="text-2xl font-bold text-zinc-100">{formatCurrency(stats.pending)}</p>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Pendiente por Cobrar</p>
                                 </div>
                             </div>
                         </CardContent>

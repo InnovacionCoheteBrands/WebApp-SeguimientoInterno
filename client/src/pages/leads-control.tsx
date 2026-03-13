@@ -245,170 +245,182 @@ export default function LeadsControl() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header with Metrics */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold">CRM</h1>
-                    <p className="text-muted-foreground">Centro de comando de prospectos y ventas</p>
+        <div className="space-y-10">
+            {/* Intel Header & Control Center */}
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 pb-4 border-b border-white/5">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-primary/10 border border-white/10 text-primary">
+                            <TrendingUp className="size-5" />
+                        </div>
+                        <h1 className="text-4xl font-display italic tracking-tight text-white">Lead Intelligence</h1>
+                    </div>
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.3em] pl-12 opacity-60">Strategic Prospect Monitoring Node</p>
                 </div>
 
-                <div className="flex gap-2">
-                    <Button
-                        variant={showActiveOnly ? "secondary" : "ghost"}
-                        className="rounded-full"
-                        onClick={() => setShowActiveOnly(!showActiveOnly)}
-                    >
-                        {showActiveOnly ? "Activos" : "Todos"}
-                    </Button>
-                    <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="border-border rounded-full">
-                                <Settings className="w-4 h-4 mr-2" />
-                                Vista
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>Configuración de Pipeline</DialogTitle>
-                                <DialogDescription>
-                                    Define cómo quieres visualizar y organizar tus prospectos.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-6 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="group-mode" className="text-right">
-                                        Agrupar por
-                                    </Label>
-                                    <Select value={groupMode} onValueChange={(v: 'status' | 'origin') => {
-                                        setGroupMode(v);
-                                        setVisibleColumns(v === 'origin' ? [...LEAD_ORIGINS] : [...LEAD_STATUSES]);
-                                    }}>
-                                        <SelectTrigger className="col-span-3">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="status">Estado (Funnel)</SelectItem>
-                                            <SelectItem value="origin">Origen (Canal)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`rounded-xl px-6 h-9 font-mono text-[9px] uppercase tracking-widest transition-all ${showActiveOnly ? 'bg-primary text-black font-bold shadow-[0_0_15px_rgba(var(--primary),0.3)]' : 'text-zinc-500 hover:text-white'}`}
+                            onClick={() => setShowActiveOnly(true)}
+                        >
+                            Active Leads
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`rounded-xl px-6 h-9 font-mono text-[9px] uppercase tracking-widest transition-all ${!showActiveOnly ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-500 hover:text-white'}`}
+                            onClick={() => setShowActiveOnly(false)}
+                        >
+                            History Archive
+                        </Button>
+                    </div>
 
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-mono uppercase tracking-wider text-muted-foreground">Columnas Visibles</Label>
-                                    <p className="text-[10px] text-muted-foreground mb-2">Selecciona los estados que quieres ver en el tablero.</p>
-                                    <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto p-1 border border-border rounded-sm bg-muted/20">
-                                        {(groupMode === 'origin' ? LEAD_ORIGINS : LEAD_STATUSES).map((col) => (
-                                            <div key={col} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-sm transition-colors">
-                                                <Checkbox
-                                                    id={`col-${col}`}
-                                                    checked={visibleColumns.includes(col)}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked) {
-                                                            setVisibleColumns([...visibleColumns, col]);
-                                                        } else {
-                                                            if (visibleColumns.length > 1) {
-                                                                setVisibleColumns(visibleColumns.filter(c => c !== col));
-                                                            }
-                                                        }
-                                                    }}
-                                                />
-                                                <Label htmlFor={`col-${col}`} className="text-sm cursor-pointer flex-1">{col}</Label>
-                                            </div>
-                                        ))}
+                    <div className="h-10 w-[1px] bg-white/10 mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" className="h-11 w-11 rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 p-0">
+                                    <Settings className="w-4 h-4 text-zinc-400" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md bg-[#030303]/95 backdrop-blur-2xl border-white/10 rounded-[2.5rem]">
+                                <DialogHeader className="space-y-4">
+                                    <DialogTitle className="text-xl font-display italic text-white">Grid Configuration Protocol</DialogTitle>
+                                    <DialogDescription className="text-[10px] font-mono uppercase tracking-widest opacity-60">
+                                        Define Prospect Visualization Matrix
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-8 py-6">
+                                    <div className="space-y-3">
+                                        <Label className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Grouping Architecture</Label>
+                                        <Select value={groupMode} onValueChange={(v: 'status' | 'origin') => {
+                                            setGroupMode(v);
+                                            setVisibleColumns(v === 'origin' ? [...LEAD_ORIGINS] : [...LEAD_STATUSES]);
+                                        }}>
+                                            <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-2xl font-mono text-[10px] uppercase">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-zinc-950 border-white/10 rounded-2xl">
+                                                <SelectItem value="status" className="font-mono text-[10px] uppercase">Pipeline Stage (Funnel)</SelectItem>
+                                                <SelectItem value="origin" className="font-mono text-[10px] uppercase">Lead Source (Origin)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <Label className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 pl-1">Matrix Active Zones</Label>
+                                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-4 bg-white/5 border border-white/5 rounded-3xl">
+                                            {(groupMode === 'origin' ? LEAD_ORIGINS : LEAD_STATUSES).map((col) => (
+                                                <div key={col} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl transition-all group">
+                                                    <Checkbox
+                                                        id={`col-${col}`}
+                                                        checked={visibleColumns.includes(col)}
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) setVisibleColumns([...visibleColumns, col]);
+                                                            else if (visibleColumns.length > 1) setVisibleColumns(visibleColumns.filter(c => c !== col));
+                                                        }}
+                                                        className="size-4 border-white/20 data-[state=checked]:bg-primary"
+                                                    />
+                                                    <Label htmlFor={`col-${col}`} className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 group-hover:text-white cursor-pointer flex-1">
+                                                        {col}
+                                                    </Label>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>Cancelar</Button>
-                                <Button onClick={handleSaveSettings}>Guardar Cambios</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                                <DialogFooter className="border-t border-white/10 pt-6">
+                                    <Button variant="ghost" onClick={() => setIsSettingsOpen(false)} className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Cancel</Button>
+                                    <Button onClick={handleSaveSettings} className="bg-primary text-black font-mono text-[10px] font-bold uppercase tracking-widest rounded-full px-8">Save Matrix</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
 
-                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="rounded-full">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Nuevo Lead
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md rounded-sm">
-                            <DialogHeader>
-                                <DialogTitle>Crear Nuevo Lead</DialogTitle>
-                            </DialogHeader>
-                            <LeadForm open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
-                        </DialogContent>
-                    </Dialog>
+                        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="h-11 rounded-2xl bg-primary text-black font-mono text-[10px] font-bold uppercase tracking-[0.15em] px-8 hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Initiate Lead
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl bg-[#030303]/95 backdrop-blur-2xl border-white/10 rounded-[2.5rem]">
+                                <DialogHeader className="space-y-4">
+                                    <DialogTitle className="text-2xl font-display italic text-white tracking-tight">Lead Ingestion Protocol</DialogTitle>
+                                    <DialogDescription className="text-[10px] font-mono uppercase tracking-widest opacity-60">Registering Strategic Asset Data</DialogDescription>
+                                </DialogHeader>
+                                <div className="mt-6">
+                                    <LeadForm open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
-
-                {/* Edit Dialog */}
-                <Dialog open={!!editingLead} onOpenChange={(open) => !open && setEditingLead(null)}>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                            <DialogTitle>Editar Lead</DialogTitle>
-                        </DialogHeader>
-                        {editingLead && (
-                            <LeadForm
-                                open={!!editingLead}
-                                onOpenChange={(open) => !open && setEditingLead(null)}
-                                initialData={editingLead}
-                            />
-                        )}
-                    </DialogContent>
-                </Dialog>
             </div>
 
-            {/* Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-primary/10">
-                                <Users className="w-6 h-6 text-primary" />
+            {/* Metrics Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                    <CardContent className="p-8">
+                        <div className="space-y-4">
+                            <div className="size-12 rounded-2xl bg-primary/10 border border-white/10 flex items-center justify-center text-primary rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                <Users className="size-6" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{metrics?.total || 0}</p>
-                                <p className="text-sm text-muted-foreground">Total Leads</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-green-500/10">
-                                <TrendingUp className="w-6 h-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{(metrics?.conversionRate || 0).toFixed(1)}%</p>
-                                <p className="text-sm text-muted-foreground">Tasa de Conversión</p>
+                            <div className="space-y-1">
+                                <p className="text-3xl font-display font-bold italic tracking-tighter text-white">{metrics?.total || 0}</p>
+                                <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest group-hover:text-primary/60 transition-colors">Capture Capacity</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-yellow-500/10">
-                                <DollarSign className="w-6 h-6 text-yellow-500" />
+
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+                    <CardContent className="p-8">
+                        <div className="space-y-4">
+                            <div className="size-12 rounded-2xl bg-emerald-500/10 border border-white/10 flex items-center justify-center text-emerald-400 -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                <TrendingUp className="size-6" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">${(metrics?.avgValue || 0).toLocaleString()}</p>
-                                <p className="text-sm text-muted-foreground">Valor Promedio</p>
+                            <div className="space-y-1">
+                                <p className="text-3xl font-display font-bold italic tracking-tighter text-white">{(metrics?.conversionRate || 0).toFixed(1)}%</p>
+                                <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest group-hover:text-emerald-400/60 transition-colors">Success Velocity</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-blue-500/10">
-                                <Building2 className="w-6 h-6 text-blue-500" />
+
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
+                    <CardContent className="p-8">
+                        <div className="space-y-4">
+                            <div className="size-12 rounded-2xl bg-amber-500/10 border border-white/10 flex items-center justify-center text-amber-400 rotate-6 group-hover:rotate-0 transition-transform duration-500">
+                                <DollarSign className="size-6" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{Object.keys(metrics?.byOrigin || {}).length}</p>
-                                <p className="text-sm text-muted-foreground">Canales Activos</p>
+                            <div className="space-y-1">
+                                <p className="text-3xl font-display font-bold italic tracking-tighter text-white">
+                                    <span className="text-lg opacity-40 mr-1 font-mono">$</span>
+                                    {(metrics?.avgValue || 0).toLocaleString()}
+                                </p>
+                                <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest group-hover:text-amber-400/60 transition-colors">Yield Potential</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+                    <CardContent className="p-8">
+                        <div className="space-y-4">
+                            <div className="size-12 rounded-2xl bg-cyan-500/10 border border-white/10 flex items-center justify-center text-cyan-400 -rotate-6 group-hover:rotate-0 transition-transform duration-500">
+                                <BarChart3 className="size-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-3xl font-display font-bold italic tracking-tighter text-white">{Object.keys(metrics?.byOrigin || {}).length}</p>
+                                <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest group-hover:text-cyan-400/60 transition-colors">Signal Streams</p>
                             </div>
                         </div>
                     </CardContent>
@@ -424,7 +436,7 @@ export default function LeadsControl() {
                             className="w-80 flex-shrink-0 flex flex-col"
                         >
                             {/* Premium Minimal Column Header */}
-                            <div className="relative p-4 rounded-t-xl bg-[#09090b] border border-white/5 border-b-0 group-header">
+                            <div className="relative p-4 rounded-t-xl bg-zinc-950/80 backdrop-blur-md border border-white/15 border-b-0 ring-1 ring-inset ring-white/10 group-header">
                                 {/* The 'Flare' - Top Gradient Line */}
                                 <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${groupMode === 'origin' ? getOriginColor(col) : getStatusColor(col).replace('bg-', 'from-').replace('500', '500/80') + ' to-transparent'}`} />
 
@@ -443,150 +455,129 @@ export default function LeadsControl() {
                                 </div>
                             </div>
 
-                            {/* Column Body - Transparent/Subtle */}
-                            <div className="flex-1 p-2 space-y-3 bg-[#09090b]/50 border border-white/5 border-t-0 rounded-b-xl max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-none">
+                            {/* Column Body - Pure Stealth Glass */}
+                            <div className="flex-1 p-3 space-y-4 bg-zinc-950/20 backdrop-blur-sm border border-white/10 border-t-0 ring-1 ring-inset ring-white/5 rounded-b-[2rem] max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-none custom-kanban-scroll pb-10">
                                 {groupedLeads[col]?.map((lead) => (
                                     <div key={lead.id} className="group/card relative">
-                                        {/* Card Flare Effect (Hover) */}
-                                        <div className={`absolute -inset-[1px] rounded-[1.5rem] bg-gradient-to-b ${groupMode === 'origin' ? getOriginColor(col) : 'from-white/10 to-transparent'} opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 blur-sm`} />
+                                        <Card className="relative bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/5 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:bg-zinc-900/60 hover:border-white/30 overflow-hidden rounded-[2rem]">
+                                            {/* Priority Flare */}
+                                            <div className={`absolute top-0 left-0 bottom-0 w-[3px] bg-gradient-to-b from-transparent ${
+                                                lead.priority === 'Alta' ? 'via-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' :
+                                                lead.priority === 'Media' ? 'via-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' :
+                                                'via-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]'
+                                            } to-transparent opacity-40 group-hover/card:opacity-100 transition-opacity`} />
 
-                                        <Card className="relative bg-zinc-900/90 hover:bg-zinc-800 transition-colors border-white/10 shadow-md group-hover/card:translate-x-1 duration-300 overflow-hidden rounded-[1.5rem]">
-                                            {/* Neon Side Stripe */}
-                                            <div className={`absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-transparent ${lead.priority === 'Alta' ? 'via-red-500' :
-                                                lead.priority === 'Media' ? 'via-amber-500' :
-                                                    'via-blue-500'
-                                                } to-transparent opacity-70 group-hover/card:opacity-100 transition-opacity`} />
-
-                                            <CardContent className="p-4 pl-5 space-y-3">
-                                                {/* Lead Name & Actions */}
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <p className="font-medium text-sm">{lead.name}</p>
+                                            <CardContent className="p-6 space-y-5">
+                                                {/* Header & Status Dropdown */}
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="space-y-1">
+                                                        <h4 className="font-display italic text-zinc-100 group-hover/card:text-white transition-colors tracking-tight line-clamp-1">{lead.name}</h4>
                                                         {lead.company && (
-                                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                                <Building2 className="w-3 h-3" />
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.1em] text-zinc-500 italic">
+                                                                <Building2 className="size-2.5" />
                                                                 {lead.company}
-                                                            </p>
+                                                            </div>
                                                         )}
                                                     </div>
+                                                    
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                                <MoreVertical className="w-4 h-4" />
+                                                            <Button variant="ghost" size="icon" className="size-8 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10">
+                                                                <MoreVertical className="size-4 text-zinc-400" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => setEditingLead(lead)}>
-                                                                <Edit className="w-4 h-4 mr-2" />
-                                                                Editar
+                                                        <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10 rounded-2xl p-2 min-w-[150px]">
+                                                            <DropdownMenuItem onClick={() => setEditingLead(lead)} className="rounded-xl px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-zinc-400 focus:bg-white/10 focus:text-white">
+                                                                <Edit className="size-4 mr-3 opacity-40" /> Archive Control
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
+                                                            <DropdownMenuItem 
                                                                 onClick={() => convertMutation.mutate(lead.id)}
                                                                 disabled={lead.status === "Ganado"}
+                                                                className="rounded-xl px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-primary focus:bg-primary/10 focus:text-primary"
                                                             >
-                                                                <UserPlus className="w-4 h-4 mr-2" />
-                                                                Convertir a Cliente
+                                                                <UserPlus className="size-4 mr-3 opacity-40" /> Authorize Conversion
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
+                                                            <DropdownMenuSeparator className="bg-white/5" />
+                                                            <DropdownMenuItem 
                                                                 onClick={() => deleteMutation.mutate(lead.id)}
-                                                                className="text-destructive"
+                                                                className="rounded-xl px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-red-400 focus:bg-red-400/10 focus:text-red-400"
                                                             >
-                                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                                Eliminar
+                                                                <Trash2 className="size-4 mr-3 opacity-40" /> Purge Asset
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>
 
-                                                {/* Contact Info - Compact */}
-                                                <div className="flex flex-col gap-1.5">
+                                                {/* Contact Node Info */}
+                                                <div className="space-y-3 p-4 rounded-2xl bg-white/5 border border-white/5">
                                                     {lead.email && (
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/80 group-hover/card:text-muted-foreground transition-colors truncate">
-                                                            <Mail className="size-3 flex-shrink-0" />
-                                                            <span className="truncate">{lead.email}</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <Mail className="size-3 text-zinc-500 opacity-40" />
+                                                            <span className="text-[10px] font-mono text-zinc-400 truncate tracking-tight">{lead.email}</span>
                                                         </div>
                                                     )}
                                                     {lead.phone && (
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground/80 group-hover/card:text-muted-foreground transition-colors">
-                                                            <Phone className="size-3 flex-shrink-0" />
-                                                            <span>{lead.phone}</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <Phone className="size-3 text-zinc-500 opacity-40" />
+                                                            <span className="text-[10px] font-mono text-zinc-400 tracking-widest">{lead.phone}</span>
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* Status & Value */}
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Select
-                                                            value={lead.status}
-                                                            onValueChange={(value) => handleStatusChange(lead.id, value)}
-                                                        >
-                                                            <SelectTrigger className="h-6 text-xs w-auto">
-                                                                <Badge className={`${getStatusColor(lead.status)} text-white text-xs`}>
+                                                {/* Intelligence & Value Stats */}
+                                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <Select value={lead.status} onValueChange={(v) => handleStatusChange(lead.id, v)}>
+                                                            <SelectTrigger className="h-7 w-auto border-none bg-zinc-900/50 hover:bg-zinc-800 rounded-full px-3 transition-colors">
+                                                                <Badge className={`${getStatusColor(lead.status)} text-[9px] font-mono font-bold uppercase tracking-widest h-4 px-2 rounded-full border-none`}>
                                                                     {lead.status}
                                                                 </Badge>
                                                             </SelectTrigger>
-                                                            <SelectContent>
-                                                                {LEAD_STATUSES.map((status) => (
-                                                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                                            <SelectContent className="bg-zinc-950 border-white/10 rounded-2xl">
+                                                                {LEAD_STATUSES.map(s => (
+                                                                    <SelectItem key={s} value={s} className="text-[9px] font-mono uppercase tracking-widest py-3">{s}</SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
-                                                        {lead.priority && (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={`text-[10px] h-4 px-1 ${lead.priority === 'Alta' ? 'border-red-500 text-red-500 bg-red-500/10' :
-                                                                    lead.priority === 'Media' ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' :
-                                                                        'border-gray-400 text-gray-400 bg-gray-400/10'
-                                                                    }`}
-                                                            >
-                                                                {lead.priority}
-                                                            </Badge>
-                                                        )}
+                                                        <Badge variant="outline" className={`h-4 px-2 text-[8px] font-mono uppercase border-white/10 text-zinc-500 ${lead.priority === 'Alta' ? 'text-red-400' : ''}`}>
+                                                            {lead.priority}
+                                                        </Badge>
                                                     </div>
                                                     {lead.estimatedValue && (
-                                                        <span className="text-xs font-medium text-green-400">
+                                                        <p className="text-[11px] font-mono font-bold text-primary italic">
                                                             ${Number(lead.estimatedValue).toLocaleString()}
-                                                        </span>
+                                                        </p>
                                                     )}
                                                 </div>
 
-                                                {/* Quick Actions */}
-                                                <div className="flex items-center gap-1 pt-1 border-t border-border/50">
+                                                {/* Action Bridge */}
+                                                <div className="flex gap-2 w-full pt-1">
                                                     {lead.phone && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-6 w-6 text-green-500 hover:bg-green-500/10"
+                                                        <Button 
+                                                            variant="ghost" 
                                                             onClick={() => window.open(`https://wa.me/${lead.phone?.replace(/\D/g, '')}`, '_blank')}
+                                                            className="flex-1 h-9 rounded-xl bg-white/5 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/20 text-emerald-400/60 hover:text-emerald-400 transition-all font-mono text-[9px] uppercase tracking-widest"
                                                         >
-                                                            <MessageCircle className="w-3.5 h-3.5" />
+                                                            <MessageCircle className="size-3.5 mr-2" /> Message
                                                         </Button>
                                                     )}
-                                                    {lead.email && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-6 w-6 text-blue-500 hover:bg-blue-500/10"
-                                                            onClick={() => window.open(`mailto:${lead.email}`, '_blank')}
-                                                        >
-                                                            <Mail className="w-3.5 h-3.5" />
-                                                        </Button>
-                                                    )}
+                                                    <Button 
+                                                        variant="ghost"
+                                                        className="size-9 rounded-xl bg-white/5 border border-white/5 hover:bg-primary/20 hover:border-primary/40 text-primary transition-all flex items-center justify-center"
+                                                    >
+                                                        <ArrowRight className="size-4" />
+                                                    </Button>
                                                 </div>
                                             </CardContent>
                                         </Card>
                                     </div>
                                 ))}
 
-                                {/* Empty State */}
                                 {(!groupedLeads[col] || groupedLeads[col].length === 0) && (
-                                    <div className="text-center py-12 px-4 rounded-md border border-dashed border-border bg-background/20 group">
-                                        <div className="mb-2 p-2 rounded-full bg-muted/30 w-fit mx-auto opacity-50 group-hover:opacity-100 transition-opacity">
-                                            <Info className="size-4 text-muted-foreground" />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground font-medium">Bandeja Vacía</p>
-                                        <p className="text-[10px] text-muted-foreground/60">No hay prospectos en esta etapa.</p>
+                                    <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.02] group/empty">
+                                        <Info className="size-8 text-zinc-700 opacity-20 group-hover/empty:opacity-40 transition-opacity mb-4" />
+                                        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-600 text-center">Bandeja Vacía</p>
+                                        <p className="text-[8px] font-mono uppercase tracking-widest text-zinc-700 text-center mt-1">Ready for Signal Ingestion</p>
                                     </div>
                                 )}
                             </div>

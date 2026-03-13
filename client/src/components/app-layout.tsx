@@ -133,7 +133,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="hidden md:flex flex-col fixed left-4 top-4 bottom-4 z-30"
       >
-        <div className="flex-1 flex flex-col bg-sidebar/70 backdrop-blur-2xl border border-white/5 rounded-[2rem] shadow-2xl overflow-hidden">
+        <div className="flex-1 flex flex-col bg-sidebar/70 backdrop-blur-2xl border border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] shadow-2xl overflow-hidden">
           <div className={`p-6 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} h-24`}>
             {!isCollapsed && (
               <motion.img
@@ -181,7 +181,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           <div className="p-4 mt-auto">
-            <div className={`flex items-center gap-2 p-2 rounded-2xl bg-white/5 border border-white/5 ${isCollapsed ? "justify-center flex-col" : ""}`}>
+            <div className={`flex items-center gap-2 p-2 rounded-2xl bg-white/5 border border-white/10 ring-1 ring-inset ring-white/5 ${isCollapsed ? "justify-center flex-col" : ""}`}>
               <Link href="/profile" className={isCollapsed ? "" : "flex-1 min-w-0"}>
                 <div className={`flex items-center gap-3 cursor-pointer group ${isCollapsed ? "justify-center" : ""}`} data-testid="button-user-profile">
                   <div className="size-8 rounded-full bg-gradient-to-tr from-primary/30 to-secondary/30 border border-primary/20 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(212,175,55,0.2)]">
@@ -239,7 +239,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Search className="size-5" />
             </Button>
 
-            <div className="hidden md:flex items-center gap-3 text-muted-foreground bg-white/5 border border-white/5 rounded-full px-4 py-2 w-72 cursor-pointer hover:bg-white/10 transition-colors shadow-inner" onClick={() => setCommandOpen(true)}>
+            <div className="hidden md:flex items-center gap-3 text-muted-foreground bg-white/5 border border-white/10 ring-1 ring-inset ring-white/5 rounded-full px-4 py-2 w-72 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all shadow-inner" onClick={() => setCommandOpen(true)}>
               <Search className="size-4" />
               <input
                 type="text"
@@ -254,7 +254,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-primary/80 bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-primary/80 bg-primary/5 px-3 py-1 rounded-full border border-primary/20 ring-1 ring-inset ring-primary/10">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
@@ -264,7 +264,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
             <QuickCreateMenu />
 
-            <Button variant="outline" size="icon" className="rounded-full border-white/5 bg-white/5 hover:bg-white/10 hover:text-primary h-10 w-10 transition-all hover:scale-105" data-testid="button-notifications">
+            <Button variant="outline" size="icon" className="rounded-full border-white/10 ring-1 ring-inset ring-white/5 bg-white/5 hover:bg-white/10 hover:text-primary h-10 w-10 transition-all hover:scale-105" data-testid="button-notifications">
               <Bell className="size-5" />
             </Button>
           </div>

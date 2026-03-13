@@ -20,9 +20,9 @@ const Card = React.forwardRef<
       ref={ref}
       className={cn(
         // Base Glassmorphism & Geometry
-        "rounded-[2rem] border border-white/5 bg-card/60 backdrop-blur-xl text-card-foreground shadow-2xl relative overflow-hidden transition-all duration-300",
+        "rounded-[2rem] border border-white/15 ring-1 ring-inset ring-white/10 bg-card/60 backdrop-blur-xl text-card-foreground shadow-2xl relative overflow-hidden transition-all duration-300",
         // Hover Effects
-        "hover:border-white/10 hover:shadow-[0_0_40px_-10px_rgba(0,0,0,0.5)]",
+        "hover:border-white/30 hover:shadow-[0_0_40px_-10px_rgba(0,0,0,0.5)]",
         className
       )}
       {...props}

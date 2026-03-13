@@ -208,212 +208,195 @@ const DataCenter = memo(function DataCenter() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[#030303] text-zinc-100 p-3 sm:p-8 font-sans selection:bg-primary/30">
+      <div className="max-w-[1400px] mx-auto space-y-12">
+        {/* Intel Header & Control Node */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 pb-6 border-b border-white/5">
+          <div className="flex items-center gap-6">
             <Link href="/">
-              <Button variant="outline" size="icon" className="rounded-sm" data-testid="button-back">
-                <ArrowLeft className="size-4" />
+              <Button variant="outline" size="icon" className="size-12 rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group-back">
+                <ArrowLeft className="size-5 text-zinc-400 group-hover:text-white" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-display font-bold tracking-tight">Gestión de Recursos</h1>
-              <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">
-                Administrar Entregables y Assets
-              </p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10 border border-white/10 text-primary">
+                  <HardDrive className="size-5" />
+                </div>
+                <h1 className="text-4xl font-display italic tracking-tight text-white">Asset Intelligence</h1>
+              </div>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.4em] pl-1 opacity-60">Secure Infrastructure Resource Vault</p>
             </div>
           </div>
+          
           <Button
             onClick={() => handleOpenDialog()}
-            className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-12 px-8 rounded-2xl bg-primary text-black font-mono font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.2)]"
             data-testid="button-new-resource"
           >
             <Plus className="size-4 mr-2" />
-            Nuevo Recurso
+            Initialize Resource
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Storage - Blue Accent */}
-          <Card status="info" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">Almacenamiento Total</span>
-                <HardDrive className="size-4 text-blue-500 opacity-70 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="total-storage">
-                  {stats.totalSize} MB
-                </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Espacio utilizado</p>
-              </div>
-              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
-                <span className="text-blue-400">Total</span>
-                <span className="text-muted-foreground ml-2">en archivos</span>
+        {/* Infrastructure Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
+            <CardContent className="p-8">
+              <div className="space-y-4">
+                <div className="size-12 rounded-2xl bg-blue-500/10 border border-white/10 flex items-center justify-center text-blue-400 group-hover:bg-blue-500/20 transition-all duration-500">
+                  <HardDrive className="size-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-4xl font-display font-bold italic tracking-tighter text-white">{stats.totalSize} <span className="text-lg">MB</span></p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Total Payload Weight</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Available - Green Accent */}
-          <Card status="success" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">Recursos Disponibles</span>
-                <CheckCircle2 className="size-4 text-green-500 opacity-70 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="resources-available">
-                  {stats.disponibles}/{stats.total}
-                </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Listos para usar</p>
-              </div>
-              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
-                <span className={stats.disponibles > 0 ? "text-green-400" : "text-yellow-400"}>
-                  {stats.total > 0 ? Math.round((stats.disponibles / stats.total) * 100) : 0}%
-                </span>
-                <span className="text-muted-foreground ml-2">disponibilidad</span>
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+            <CardContent className="p-8">
+              <div className="space-y-4">
+                <div className="size-12 rounded-2xl bg-emerald-500/10 border border-white/10 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/20 transition-all duration-500">
+                  <CheckCircle2 className="size-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-4xl font-display font-bold italic tracking-tighter text-white">{stats.disponibles} / {stats.total}</p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Available Nodes</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* In Use - Yellow Accent */}
-          <Card status="warning" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">En Uso</span>
-                <Clock className="size-4 text-orange-500 opacity-70 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="resources-in-use">
-                  {stats.enUso}
-                </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Recursos activos</p>
-              </div>
-              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
-                <span className={stats.enUso > 0 ? "text-orange-400" : "text-green-400"}>
-                  {stats.enUso > 0 ? "Activo" : "Disponible"}
-                </span>
-                <span className="text-muted-foreground ml-2">estado</span>
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-400/30 to-transparent" />
+            <CardContent className="p-8">
+              <div className="space-y-4">
+                <div className="size-12 rounded-2xl bg-orange-500/10 border border-white/10 flex items-center justify-center text-orange-400 group-hover:bg-orange-500/20 transition-all duration-500">
+                  <Clock className="size-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-4xl font-display font-bold italic tracking-tighter text-white">{stats.enUso}</p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Active Deployments</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Total - Amber Accent (Primary) */}
-          <Card status="default" className="bg-card border-border shadow-sm hover:shadow-md transition-all group">
-            {/* Note: Card default status handles border color if empty, but usually we might want specific colors. Card component default is primary/amber. */}
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary" />
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <span className="text-[10px] sm:text-xs font-mono uppercase text-muted-foreground tracking-wider">Total de Recursos</span>
-                <FolderKanban className="size-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground" data-testid="total-resources">
-                  {stats.total}
-                </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Entregables registrados</p>
-              </div>
-              <div className="mt-3 sm:mt-4 flex items-center text-[10px] sm:text-xs font-mono">
-                <span className="text-primary">Activos</span>
-                <span className="text-muted-foreground ml-2">en catálogo</span>
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            <CardContent className="p-8">
+              <div className="space-y-4">
+                <div className="size-12 rounded-2xl bg-primary/10 border border-white/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-all duration-500">
+                  <FolderKanban className="size-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-4xl font-display font-bold italic tracking-tighter text-white">{stats.total}</p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Total Vault Registry</p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="border-border bg-card/50 shadow-sm relative overflow-hidden">
-          <CardHeader className="p-4 sm:p-6 pb-4">
-            <CardTitle className="text-lg font-display uppercase tracking-tight flex items-center gap-2">
-              <FolderKanban className="size-5 text-primary" />
-              Recursos y Entregables
-            </CardTitle>
+        {/* Assets Intelligence Vault Grid */}
+        <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/10 ring-1 ring-white/5 rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="p-8 border-b border-white/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-display italic text-white tracking-tight">Resource Inventory</CardTitle>
+                <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">High-Fidelity Neural Asset Registry</CardDescription>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="h-2 w-32 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                  <div 
+                    className="h-full bg-primary" 
+                    style={{ width: `${stats.total > 0 ? (stats.disponibles / stats.total) * 100 : 0}%` }} 
+                  />
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 uppercase">Load: {stats.total > 0 ? Math.round((stats.disponibles / stats.total) * 100) : 0}%</span>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {resources.map((resource) => {
-                // Determine accent color based on status
-                const statusColor =
+                const statusGlow =
+                  resource.status === "Disponible" ? "shadow-[0_0_15px_rgba(34,197,94,0.15)] border-green-500/30" :
+                    resource.status === "En Uso" ? "shadow-[0_0_15px_rgba(249,115,22,0.15)] border-orange-500/30" :
+                      resource.status === "En Revisión" ? "shadow-[0_0_15px_rgba(59,130,246,0.15)] border-blue-500/30" :
+                        resource.status === "Aprobado" ? "shadow-[0_0_15px_rgba(16,185,129,0.15)] border-emerald-500/30" : "border-white/10";
+
+                const statusDot =
                   resource.status === "Disponible" ? "bg-green-500" :
                     resource.status === "En Uso" ? "bg-orange-500" :
                       resource.status === "En Revisión" ? "bg-blue-500" :
-                        resource.status === "Aprobado" ? "bg-emerald-600" : "bg-muted-foreground/30";
+                        resource.status === "Aprobado" ? "bg-emerald-500" : "bg-zinc-600";
 
                 return (
                   <div
                     key={resource.id}
-                    className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-sm border border-border bg-card hover:bg-muted transition-all gap-3 relative overflow-hidden"
+                    className={`group bg-white/[0.03] border rounded-[2rem] p-6 transition-all duration-500 hover:bg-white/[0.06] hover:scale-[1.02] relative overflow-hidden ${statusGlow}`}
                     data-testid={`resource-card-${resource.id}`}
                   >
-                    {/* Status Accent Line */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${statusColor} opacity-70`} />
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="size-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-100 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500">
+                            {getResourceIcon(resource.type)}
+                          </div>
+                          <div>
+                            <h3 className="text-zinc-100 font-display font-medium tracking-tight text-base group-hover:text-white transition-colors">
+                              {resource.name}
+                            </h3>
+                            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest leading-none mt-1">{resource.type}</p>
+                          </div>
+                        </div>
+                        <Badge className={`rounded-full px-3 py-0.5 text-[8px] font-mono uppercase tracking-[0.1em] border-none flex items-center gap-1.5 ${resource.status === 'Disponible' ? 'bg-green-500/20 text-green-400' : resource.status === 'En Uso' ? 'bg-orange-500/20 text-orange-400' : 'bg-white/10 text-zinc-400'}`}>
+                          <div className={`size-1.5 rounded-full ${statusDot} animate-pulse`} />
+                          {resource.status}
+                        </Badge>
+                      </div>
 
-                    <div className="flex items-center gap-4 pl-2 w-full sm:w-auto">
-                      <div className="flex items-center justify-center size-10 rounded-full bg-background/40 shrink-0 border border-border">
-                        {getResourceIcon(resource.type)}
-                      </div>
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm text-foreground truncate" data-testid={`resource-name-${resource.id}`}>
-                            {resource.name}
+                      <div className="pt-2 grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Metadata</p>
+                          <p className="text-xs font-mono text-zinc-300">{resource.format} / {parseFloat(resource.fileSize || "0").toFixed(2)} MB</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Modified</p>
+                          <p className="text-xs font-mono text-zinc-300">
+                            {resource.lastModified ? formatDistanceToNow(new Date(resource.lastModified), { addSuffix: true, locale: es }) : 'N/A'}
                           </p>
-                          <Badge variant="outline" className="rounded-sm text-[10px] h-5 px-1.5 font-normal border-border bg-background text-muted-foreground">
-                            {resource.type}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground font-mono">
-                          <span data-testid={`resource-format-${resource.id}`}>
-                            {resource.format}
-                          </span>
-                          <span>•</span>
-                          <span data-testid={`resource-size-${resource.id}`}>
-                            {parseFloat(resource.fileSize || "0").toFixed(2)} MB
-                          </span>
-                          {resource.campaignId && getCampaignName(resource.campaignId) && (
-                            <>
-                              <span>•</span>
-                              <span data-testid={`resource-campaign-${resource.id}`}>
-                                {getCampaignName(resource.campaignId)}
-                              </span>
-                            </>
-                          )}
-                          {resource.lastModified && (
-                            <>
-                              <span className="hidden sm:inline">•</span>
-                              <span data-testid={`resource-modified-${resource.id}`} className="hidden sm:inline">
-                                {formatDistanceToNow(new Date(resource.lastModified), { addSuffix: true, locale: es })}
-                              </span>
-                            </>
-                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between w-full sm:w-auto gap-4 pl-2 sm:pl-0">
-                      <Badge
-                        variant="outline"
-                        className={`rounded-sm text-[10px] font-normal ${getStatusBadgeClass(resource.status)}`}
-                        data-testid={`resource-status-${resource.id}`}
-                      >
-                        {resource.status}
-                      </Badge>
-                      <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+
+                      {resource.campaignId && (
+                        <div className="pt-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl">
+                          <p className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest mb-1">Assigned Node</p>
+                          <p className="text-[10px] font-mono text-primary font-bold">{getCampaignName(resource.campaignId)}</p>
+                        </div>
+                      )}
+
+                      <div className="pt-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleOpenDialog(resource)}
-                          className="rounded-sm h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-                          data-testid={`button-edit-resource-${resource.id}`}
+                          className="flex-1 h-9 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white transition-all text-[10px] font-mono uppercase tracking-widest"
                         >
-                          <Pencil className="size-3.5" />
+                          <Pencil className="size-3.5 mr-2" /> Edit
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteId(resource.id)}
-                          className="rounded-sm h-8 w-8 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                          data-testid={`button-delete-resource-${resource.id}`}
+                          className="h-9 w-9 rounded-xl bg-rose-500/5 border border-rose-500/20 text-rose-500/60 hover:bg-rose-500/20 hover:text-rose-500 transition-all"
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4" />
                         </Button>
                       </div>
                     </div>
@@ -422,8 +405,11 @@ const DataCenter = memo(function DataCenter() {
               })}
             </div>
             {resources.length === 0 && (
-              <div className="py-12 text-center text-muted-foreground">
-                <p>No hay recursos disponibles</p>
+              <div className="py-24 text-center space-y-4">
+                <div className="size-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-zinc-700">
+                  <FolderKanban className="size-8" />
+                </div>
+                <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">Vault currently empty of deployable assets</p>
               </div>
             )}
           </CardContent>

@@ -53,6 +53,7 @@ interface ProjectFormProps {
 
 const formSchema = insertProjectSchema;
 const PROJECT_LEVELS = ["Bronce", "Plata", "Oro", "Diamante"];
+const EMPTY_ARRAY: any[] = [];
 
 export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProps) {
     const { toast } = useToast();
@@ -70,10 +71,10 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
     const [newInstallment, setNewInstallment] = useState<{ amount: string, date: Date | undefined, concept: string }>({ amount: "", date: new Date(), concept: "" });
     const [missingRoles, setMissingRoles] = useState<string[]>([]);
 
-    const { data: clients = [] } = useQuery({ queryKey: ["client-accounts"], queryFn: fetchClientAccounts });
-    const { data: team = [] } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
-    const { data: services = [] } = useQuery({ queryKey: ["service-catalog"], queryFn: fetchServiceCatalog });
-    const { data: agencyRoles = [] } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
+    const { data: clients = EMPTY_ARRAY } = useQuery({ queryKey: ["client-accounts"], queryFn: fetchClientAccounts });
+    const { data: team = EMPTY_ARRAY } = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
+    const { data: services = EMPTY_ARRAY } = useQuery({ queryKey: ["service-catalog"], queryFn: fetchServiceCatalog });
+    const { data: agencyRoles = EMPTY_ARRAY } = useQuery({ queryKey: ["agency-roles"], queryFn: fetchAgencyRoles });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -98,6 +99,8 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
             billingDay: (initialData as any)?.billingDay || 1,
         },
     });
+
+    const { setValue, getValues } = form;
 
     // --- Filtered Services Logic ---
     const visibleServices = useMemo(() => {
@@ -137,7 +140,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
     // Auto-calculation effect
     useEffect(() => {
         if (!selectedServices.length || !services.length) {
-            setMissingRoles([]);
+            setMissingRoles(prev => prev.length === 0 ? prev : []);
             return;
         }
 
@@ -166,19 +169,19 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
         });
 
         // Use functional getters and only set if different to prevent the loop
-        const currentQuotation = form.getValues("quotationAmount");
+        const currentQuotation = getValues("quotationAmount");
         if (totalCost > 0 && Math.abs(parseFloat(currentQuotation || "0") - totalCost) > 0.01) {
-            form.setValue("quotationAmount", totalCost.toString(), { shouldDirty: true });
+            setValue("quotationAmount", totalCost.toString(), { shouldDirty: true });
         }
 
         if (totalDays > 0) {
-            const startDate = form.getValues("startDate");
+            const startDate = getValues("startDate");
             if (startDate) {
                 const newDeadline = addDays(startDate, totalDays);
-                const currentDeadline = form.getValues("deadline");
+                const currentDeadline = getValues("deadline");
 
                 if (!currentDeadline || Math.abs(currentDeadline.getTime() - newDeadline.getTime()) > 1000) {
-                    form.setValue("deadline", newDeadline, { shouldDirty: true });
+                    setValue("deadline", newDeadline, { shouldDirty: true });
                 }
             }
         }
@@ -187,7 +190,7 @@ export function ProjectForm({ open, onOpenChange, initialData }: ProjectFormProp
         const missing = Array.from(requiredRolesSet).filter(req => !currentRoles.some(curr => curr.toLowerCase().includes(req.toLowerCase())));
 
         setMissingRoles(prev => JSON.stringify(prev) === JSON.stringify(missing) ? prev : missing);
-    }, [selectedServices, services, selectedTeamMembers, team, form]);
+    }, [selectedServices, services, selectedTeamMembers, team, setValue, getValues]);
 
     const createMutation = useMutation({
         mutationFn: async (data: z.infer<typeof formSchema>) => {

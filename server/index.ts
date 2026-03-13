@@ -1,8 +1,10 @@
-import 'dotenv/config';
-import express, { type Request, Response, NextFunction } from "express";
+﻿import 'dotenv/config';
+import express from "express";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { globalErrorHandler } from "./middleware/error-handler";
+import { logAiConfigStatus } from "./utils/ai";
 import { logger } from "./utils/logger";
 
 const app = express();
@@ -27,19 +29,33 @@ function validateRuntimeConfig() {
   }
 }
 
-validateRuntimeConfig();
+function registerProcessHandlers() {
+  process.on('unhandledRejection', (reason) => {
+    logger.fatal({ reason }, 'Unhandled Promise Rejection - shutting down');
+    process.exit(1);
+  });
 
-// Global rate limiter for API routes (100 requests per 15 minutes)
+  process.on('uncaughtException', (error) => {
+    logger.fatal({ error }, 'Uncaught Exception - shutting down');
+    process.exit(1);
+  });
+}
+
+validateRuntimeConfig();
+registerProcessHandlers();
+logAiConfigStatus();
+
+app.set('trust proxy', 1);
+
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: { error: "Too many requests", message: "Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => !req.path.startsWith("/api"), // Only limit /api routes
+  skip: (req) => !req.path.startsWith("/api"),
 });
 
-// Apply rate limiter before other middleware
 app.use(apiLimiter);
 
 declare module "http" {
@@ -77,33 +93,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // register routes
-  // force restart
   const server = await registerRoutes(app);
 
-  app.use((err: Error & { status?: number; statusCode?: number }, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  app.use(globalErrorHandler);
 
-    res.status(status).json({ message });
-    // Don't throw here, just log if needed
-    if (status >= 500) {
-      logger.error({ err }, "Unhandled server error");
-    }
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // Server configuration for VPS deployment
-  // Use HOST from environment variable, default to 0.0.0.0 for VPS
-  // In development/Replit, this can be overridden to localhost if needed
   const host = process.env.HOST || "0.0.0.0";
   const port = parseInt(process.env.PORT || "5000", 10);
 

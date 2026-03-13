@@ -26,11 +26,10 @@ import { createTeam, updateTeam, fetchAgencyRoles } from "@/lib/api";
 import { insertTeamSchema, type Team, type AgencyRole } from "@shared/schema";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload } from "lucide-react";
 import { ImageCropperDialog } from "@/components/ui/image-cropper";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Settings, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -39,13 +38,14 @@ interface PersonnelFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: (Team & { roleData?: AgencyRole | null }) | null;
+    onManageRoles?: () => void;
 }
 
 
 // Use insertTeamSchema directly - it has validations and defaults already configured
 const formSchema = insertTeamSchema;
 
-export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelFormProps) {
+export function PersonnelForm({ open, onOpenChange, initialData, onManageRoles }: PersonnelFormProps) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -182,7 +182,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
     };
 
     const onError = (errors: any) => {
-        console.log("❌ Form validation failed with errors:", errors);
+        console.log("âŒ Form validation failed with errors:", errors);
         console.log("Current form values:", form.getValues());
 
         // Build detailed error message showing which fields failed
@@ -192,7 +192,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
             return `${field}: ${error?.message || 'Inválido'}`;
         });
 
-        console.log("❌ Campos con error:", errorMessages);
+        console.log("âŒ Campos con error:", errorMessages);
 
         toast({
             title: "Error de validación",
@@ -459,26 +459,50 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                                         <p className="text-xs text-muted-foreground">
                                             Los roles definen las responsabilidades del empleado
                                         </p>
+                                        {onManageRoles && (
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={onManageRoles}
+                                                className="mt-4"
+                                            >
+                                                Crear Primer Rol
+                                            </Button>
+                                        )}
                                     </div>
                                 ) : (
-                                    <Select
-                                        onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
-                                        value={field.value?.toString() || "none"}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecciona un rol..." />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="none">Sin rol asignado</SelectItem>
-                                            {roles.map((role) => (
-                                                <SelectItem key={role.id} value={role.id.toString()}>
-                                                    {role.roleName} - {role.department}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex items-center gap-2">
+                                        <Select
+                                            onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                                            value={field.value?.toString() || "none"}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue placeholder="Selecciona un rol..." />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="none">Sin rol asignado</SelectItem>
+                                                {roles.map((role) => (
+                                                    <SelectItem key={role.id} value={role.id.toString()}>
+                                                        {role.roleName} - {role.department}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {onManageRoles && (
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="icon"
+                                                onClick={onManageRoles}
+                                                title="Administrar roles"
+                                            >
+                                                <Settings className="w-4 h-4 text-muted-foreground" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 )}
                                 <FormDescription className="text-xs">
                                     El rol define las actividades y responsabilidades del talento
@@ -519,7 +543,7 @@ export function PersonnelForm({ open, onOpenChange, initialData }: PersonnelForm
                             onClick={() => {
                                 console.log("🔘 Submit button clicked");
                                 console.log("📋 Form state:", form.formState);
-                                console.log("❓ Is form valid:", form.formState.isValid);
+                                console.log("â“ Is form valid:", form.formState.isValid);
                                 console.log("🔴 Form errors:", form.formState.errors);
                             }}
                         >

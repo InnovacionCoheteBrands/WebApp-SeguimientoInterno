@@ -1,7 +1,8 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { storage } from "../storage";
 import { insertAgencyRoleSchema, updateAgencyRoleSchema } from "@shared/schema";
 import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.post("/agency/roles", async (req, res) => {
     try {
         const validatedData = insertAgencyRoleSchema.parse(req.body);
         const role = await storage.createAgencyRole(validatedData);
+        logAction(req, "CREATE", "AGENCY_ROLE", role.id.toString(), `CreÃ³ el rol de agencia '${role.roleName}'`);
         res.status(201).json(role);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -35,6 +37,7 @@ router.patch("/agency/roles/:id", async (req, res) => {
         if (!role) {
             return res.status(404).json({ error: "Agency role not found" });
         }
+        logAction(req, "UPDATE", "AGENCY_ROLE", id.toString(), `ActualizÃ³ el rol de agencia '${role.roleName}'`);
         res.json(role);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -51,6 +54,7 @@ router.delete("/agency/roles/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Agency role not found" });
         }
+        logAction(req, "DELETE", "AGENCY_ROLE", id.toString(), `EliminÃ³ el rol de agencia #${id}`);
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: "Failed to delete agency role" });
@@ -58,3 +62,4 @@ router.delete("/agency/roles/:id", async (req, res) => {
 });
 
 export default router;
+

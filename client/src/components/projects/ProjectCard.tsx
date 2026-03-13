@@ -13,6 +13,7 @@ import {
     Trash2,
     ChevronDown,
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,12 +77,13 @@ export function ProjectCard({
     };
 
     return (
-        <div className="group relative flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
-            {/* Header with Initial */}
-            <div className="flex items-center justify-center h-32 bg-gradient-to-br from-blue-600 to-blue-700">
-                <div className="text-center">
-                    <span className="text-4xl font-bold text-white">{initial}</span>
-                    <p className="text-xs text-blue-200 mt-1">Proyecto</p>
+        <Card className="group relative flex flex-col overflow-hidden border-white/15 ring-1 ring-inset ring-white/10 bg-zinc-950/40 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-500">
+            {/* Header with Initial - Refined Zinc Gradient */}
+            <div className="flex items-center justify-center h-32 bg-gradient-to-br from-zinc-800/50 to-zinc-950/50 relative overflow-hidden border-b border-white/5">
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="text-center relative z-10">
+                    <span className="text-4xl font-display font-bold text-zinc-100 group-hover:text-primary transition-colors duration-500">{initial}</span>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 font-medium">Proyecto</p>
                 </div>
             </div>
 
@@ -177,6 +179,6 @@ export function ProjectCard({
                     </Button>
                 </div>
             </div>
-        </div>
+        </Card>
     );
 }

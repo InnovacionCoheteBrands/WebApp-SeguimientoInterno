@@ -197,46 +197,46 @@ export default function ProjectDetail() {
 
     return (
         <div className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans">
-            <div className="max-w-[1400px] mx-auto space-y-6">
+            <div className="max-w-[1400px] mx-auto space-y-8">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
                         <Link href="/proyectos">
-                            <Button variant="outline" size="icon" className="rounded-full h-11 w-11">
-                                <ArrowLeft className="size-5" />
+                            <Button variant="outline" size="icon" className="rounded-full h-12 w-12 border-white/10 hover:bg-white/5 transition-all">
+                                <ArrowLeft className="size-5 text-zinc-400" />
                             </Button>
                         </Link>
                         <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">
+                            <div className="flex items-center gap-4">
+                                <h1 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-zinc-100 italic">
                                     {project.name}
                                 </h1>
-                                <Badge className={`rounded-full ${healthStyle.bg} ${healthStyle.text} border-0`}>
+                                <Badge className={`rounded-full px-4 py-1 text-[10px] font-mono uppercase tracking-widest ${healthStyle.bg} ${healthStyle.text} border border-white/10 shadow-[0_0_15px_rgba(212,175,55,0.1)]`}>
                                     {healthStyle.label}
                                 </Badge>
                             </div>
-                            <div className="flex items-center gap-3 mt-1">
-                                <span className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
+                            <div className="flex items-center gap-4 mt-2">
+                                <span className="text-xs text-muted-foreground font-mono uppercase tracking-[0.2em] opacity-60">
                                     {project.client.companyName}
                                 </span>
-                                <span className="text-muted-foreground">•</span>
-                                <Badge variant="outline" className="rounded-full font-mono text-xs">
-                                    <ServiceIcon className="size-3 mr-1" />
+                                <span className="text-white/10 shrink-0">/</span>
+                                <Badge variant="outline" className="rounded-full font-mono text-[9px] uppercase tracking-widest bg-white/5 border-white/10 text-zinc-400 px-3 h-6">
+                                    <ServiceIcon className="size-3 mr-1.5 opacity-50" />
                                     {project.serviceType}
                                 </Badge>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="rounded-full font-mono font-normal">
+                    <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="rounded-full font-mono font-normal bg-zinc-950/40 border-white/10 text-zinc-500 text-[10px] uppercase tracking-widest px-4 py-1">
                             {project.status}
                         </Badge>
                         {project.deadline && (
                             <Badge
                                 variant="outline"
-                                className={`rounded-full font-mono ${isOverdue ? "text-rose-500 border-rose-500/50" : ""}`}
+                                className={`rounded-full font-mono text-[10px] uppercase tracking-widest px-4 py-1 border-white/10 ${isOverdue ? "text-rose-500 bg-rose-500/10 border-rose-500/20" : "bg-zinc-950/40 text-zinc-400"}`}
                             >
-                                <Calendar className="size-3 mr-1" />
+                                <Calendar className="size-3 mr-2 opacity-50" />
                                 {format(new Date(project.deadline), "dd MMM yyyy", { locale: es })}
                             </Badge>
                         )}
@@ -246,75 +246,78 @@ export default function ProjectDetail() {
                 {/* KPI Cards Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Budget Card */}
-                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-primary to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
-                        <CardHeader className="pb-2 pl-6">
-                            <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                                Presupuesto
+                    <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50" />
+                        <CardHeader className="pb-2 pt-8 px-8">
+                            <CardDescription className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                                Investment Cap
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="pl-6">
-                            <div className="text-2xl font-display font-bold">
+                        <CardContent className="px-8 pb-8">
+                            <div className="text-3xl font-display font-bold text-zinc-100 tracking-tight">
                                 {formatCurrency(financial.budget)}
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Actual Cost Card */}
-                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-blue-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
-                        <CardHeader className="pb-2 pl-6">
-                            <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                                Costo Real
+                    <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent opacity-50" />
+                        <CardHeader className="pb-2 pt-8 px-8">
+                            <CardDescription className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                                Burned Capital
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="pl-6">
-                            <div className="text-2xl font-display font-bold">
+                        <CardContent className="px-8 pb-8">
+                            <div className="text-3xl font-display font-bold text-zinc-100 tracking-tight">
                                 {formatCurrency(financial.actualCost)}
                             </div>
-                            <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                                <span>Gastos: {formatCurrency(financial.totalExpenses)}</span>
-                                <span>Mano de obra: {formatCurrency(financial.laborCosts)}</span>
+                            <div className="flex gap-4 mt-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground opacity-50">
+                                <span>Exp: {formatCurrency(financial.totalExpenses)}</span>
+                                <span className="opacity-30">|</span>
+                                <span>Labor: {formatCurrency(financial.laborCosts)}</span>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Margin Card */}
-                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-                        <div className={`absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent ${isPositiveMargin ? "via-emerald-500" : "via-rose-500"} to-transparent opacity-70 group-hover:opacity-100 transition-opacity`} />
-                        <CardHeader className="pb-2 pl-6">
-                            <CardDescription className="font-mono text-[10px] uppercase tracking-wider flex items-center gap-2">
-                                Margen Bruto
+                    <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                        <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent ${isPositiveMargin ? "via-emerald-500/30" : "via-rose-500/30"} to-transparent opacity-50`} />
+                        <CardHeader className="pb-2 pt-8 px-8">
+                            <CardDescription className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
+                                Tactical Margin
                                 {isPositiveMargin ? (
-                                    <TrendingUp className="size-3 text-emerald-500" />
+                                    <TrendingUp className="size-3 text-emerald-400 opacity-80" />
                                 ) : (
-                                    <TrendingDown className="size-3 text-rose-500" />
+                                    <TrendingDown className="size-3 text-rose-400 opacity-80" />
                                 )}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="pl-6">
-                            <div className={`text-3xl font-display font-bold ${isPositiveMargin ? "text-emerald-500" : "text-rose-500"}`}>
+                        <CardContent className="px-8 pb-8">
+                            <div className={`text-3xl font-display font-bold tracking-tight ${isPositiveMargin ? "text-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.1)]" : "text-rose-400 shadow-[0_0_15px_rgba(251,113,133,0.1)]"}`}>
                                 {formatCurrency(financial.margin)}
                             </div>
-                            <div className={`text-sm ${isPositiveMargin ? "text-emerald-500/80" : "text-rose-500/80"}`}>
-                                {financial.marginPercentage.toFixed(1)}% del presupuesto
+                            <div className={`text-[10px] font-mono mt-2 uppercase tracking-widest ${isPositiveMargin ? "text-emerald-500/60" : "text-rose-500/60"}`}>
+                                {financial.marginPercentage.toFixed(1)}% Yield Rate
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Progress Card */}
-                    <Card className="rounded-[2rem] relative overflow-hidden group hover:border-muted-foreground/30 transition-colors">
-                        <div className="absolute top-0 left-0 w-[4px] h-full bg-gradient-to-b from-transparent via-violet-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
-                        <CardHeader className="pb-2 pl-6">
-                            <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                                Progreso General
+                    <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group hover:border-white/30 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500/30 to-transparent opacity-50" />
+                        <CardHeader className="pb-2 pt-8 px-8">
+                            <CardDescription className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                                Tactical Completion
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="pl-6">
-                            <div className="text-2xl font-display font-bold">
+                        <CardContent className="px-8 pb-8">
+                            <div className="text-3xl font-display font-bold text-zinc-100 tracking-tight">
                                 {project.progress}%
                             </div>
-                            <Progress value={project.progress} className="h-2 mt-2" />
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mt-3 ring-1 ring-inset ring-white/5">
+                                <Progress value={project.progress} className="h-full bg-violet-500/80" />
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -329,36 +332,38 @@ export default function ProjectDetail() {
                     )}
 
                     {/* Deliverables Panel - Takes 2 columns */}
-                    <Card className="lg:col-span-2 rounded-[2rem] relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
-                        <CardHeader>
+                    <Card className="lg:col-span-2 bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50" />
+                        <CardHeader className="p-8 pb-4">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-full bg-primary/10 border border-primary/20">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-2xl bg-primary/10 border border-white/10">
                                         <Target className="size-5 text-primary" />
                                     </div>
                                     <div>
-                                        <CardTitle className="text-lg font-display uppercase tracking-tight">
+                                        <CardTitle className="text-xl font-display uppercase tracking-tight text-zinc-100">
                                             Panel de Hitos
                                         </CardTitle>
-                                        <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                                            Entregables del proyecto
+                                        <CardDescription className="font-mono text-[10px] uppercase tracking-wider opacity-60">
+                                            Operational Roadmap & Deliverables
                                         </CardDescription>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-display font-bold">{deliverablesProgress}%</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {deliverables.filter(d => d.completed).length} / {deliverables.length} completados
+                                    <div className="text-3xl font-display font-bold text-primary italic">{deliverablesProgress}%</div>
+                                    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-50">
+                                        {deliverables.filter(d => d.completed).length} / {deliverables.length} COMPLETED
                                     </div>
                                 </div>
                             </div>
-                            <Progress value={deliverablesProgress} className="h-2 mt-4" />
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mt-6 ring-1 ring-inset ring-white/5">
+                                <Progress value={deliverablesProgress} className="h-full bg-primary/80" />
+                            </div>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="px-8 pb-8 space-y-4">
                             {deliverables.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl">
-                                    No hay entregables definidos
+                                <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-[2rem] font-mono text-xs italic opacity-40">
+                                    No hay entregables definidos para este activo proyectual.
                                 </div>
                             ) : (
                                 deliverables.map((deliverable) => {
@@ -369,11 +374,11 @@ export default function ProjectDetail() {
                                     return (
                                         <div
                                             key={deliverable.id}
-                                            className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${deliverable.completed
-                                                ? "bg-muted/30 border-muted"
+                                            className={`flex items-start gap-4 p-5 rounded-[1.5rem] border transition-all duration-300 ${deliverable.completed
+                                                ? "bg-zinc-900/40 border-white/5 opacity-60"
                                                 : isBlocking
-                                                    ? "bg-rose-500/5 border-rose-500/50 animate-pulse-border"
-                                                    : "bg-card border-border hover:border-primary/50"
+                                                    ? "bg-rose-500/5 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.05)]"
+                                                    : "bg-white/5 border-white/10 hover:border-white/25 hover:bg-white/[0.07]"
                                                 }`}
                                         >
                                             {/* Checkbox - disabled if requires file and no attachment */}
@@ -391,31 +396,31 @@ export default function ProjectDetail() {
                                                                     });
                                                                 }
                                                             }}
-                                                            className={`mt-0.5 ${requiresFileWithoutAttachment ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            className={`mt-1 h-5 w-5 rounded-full border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all ${requiresFileWithoutAttachment ? "cursor-not-allowed opacity-30" : ""}`}
                                                         />
                                                     </span>
                                                 </TooltipTrigger>
                                                 {requiresFileWithoutAttachment && (
-                                                    <TooltipContent side="right">
+                                                    <TooltipContent side="right" className="bg-zinc-950 border-white/10 font-mono text-[9px] uppercase tracking-widest p-2">
                                                         <p>Sube un archivo para completar este hito</p>
                                                     </TooltipContent>
                                                 )}
                                             </Tooltip>
 
                                             <div className="flex-1 min-w-0">
-                                                <div className={`font-medium ${deliverable.completed ? "line-through text-muted-foreground" : ""}`}>
+                                                <div className={`font-bold text-zinc-100 italic ${deliverable.completed ? "line-through opacity-40 font-normal" : ""}`}>
                                                     {deliverable.title}
                                                 </div>
                                                 {deliverable.description && (
-                                                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2 opacity-60">
                                                         {deliverable.description}
                                                     </p>
                                                 )}
-                                                <div className="flex items-center gap-3 mt-2">
+                                                <div className="flex items-center gap-4 mt-3">
                                                     {deliverable.dueDate && (
-                                                        <div className={`flex items-center gap-1 text-xs ${isBlocking ? "text-rose-500 font-medium" : "text-muted-foreground"
+                                                        <div className={`flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest ${isBlocking ? "text-rose-400 font-bold" : "text-muted-foreground opacity-50"
                                                             }`}>
-                                                            <Clock className="size-3" />
+                                                            <Clock className="size-3 opacity-50" />
                                                             <span>
                                                                 {formatDistanceToNow(new Date(deliverable.dueDate), {
                                                                     addSuffix: true,
@@ -427,8 +432,8 @@ export default function ProjectDetail() {
 
                                                     {/* Blocking warning badge */}
                                                     {isBlocking && (
-                                                        <Badge variant="destructive" className="text-[10px] rounded-full">
-                                                            <AlertTriangle className="size-3 mr-1" />
+                                                        <Badge variant="destructive" className="text-[8px] font-mono rounded-full bg-rose-500/20 text-rose-400 border-0 uppercase tracking-widest px-2 group-hover:shadow-[0_0_10px_rgba(244,63,94,0.1)]">
+                                                            <AlertTriangle className="size-2.5 mr-1" />
                                                             Evidencia Requerida
                                                         </Badge>
                                                     )}
@@ -499,19 +504,19 @@ export default function ProjectDetail() {
                     {/* Right Column - Team & Service Info */}
                     <div className="space-y-6">
                         {/* Team Panel */}
-                        <Card className="rounded-[2rem] relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500 to-blue-500/0 opacity-50" />
-                            <CardHeader>
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-                                        <Users className="size-5 text-blue-500" />
+                        <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent opacity-50" />
+                            <CardHeader className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2.5 rounded-2xl bg-blue-500/10 border border-white/10">
+                                        <Users className="size-5 text-blue-400" />
                                     </div>
                                     <div>
-                                        <CardTitle className="text-lg font-display uppercase tracking-tight">
+                                        <CardTitle className="text-sm font-display uppercase tracking-tight text-zinc-100">
                                             Panel de Equipo
                                         </CardTitle>
-                                        <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                                            {teamAssignments.length} miembros asignados
+                                        <CardDescription className="font-mono text-[9px] uppercase tracking-widest opacity-60">
+                                            {teamAssignments.length} Operational Units
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -527,9 +532,9 @@ export default function ProjectDetail() {
                                             <Tooltip key={assignment.id}>
                                                 <TooltipTrigger asChild>
                                                     <div className="relative cursor-pointer group">
-                                                        <Avatar className="size-12 border-2 border-background ring-2 ring-border group-hover:ring-primary transition-all">
+                                                        <Avatar className="size-12 border border-white/10 ring-2 ring-zinc-950 group-hover:ring-primary/50 transition-all duration-300">
                                                             <AvatarImage src={assignment.member.avatarUrl || undefined} />
-                                                            <AvatarFallback className="bg-muted text-sm font-mono">
+                                                            <AvatarFallback className="bg-zinc-800 text-xs font-mono text-zinc-400">
                                                                 {assignment.member.name
                                                                     .split(" ")
                                                                     .map((n) => n[0])
@@ -539,8 +544,8 @@ export default function ProjectDetail() {
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         {assignment.hoursAllocated && assignment.hoursAllocated > 0 && (
-                                                            <Badge className="absolute -bottom-1 -right-1 h-5 px-1.5 text-[10px] bg-primary text-primary-foreground rounded-full">
-                                                                {assignment.hoursAllocated}h
+                                                            <Badge className="absolute -bottom-1 -right-1 h-5 px-1.5 text-[8px] bg-primary text-primary-foreground rounded-full font-mono border border-white/20">
+                                                                {assignment.hoursAllocated}H
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -563,22 +568,22 @@ export default function ProjectDetail() {
 
                         {/* Service Specific Card */}
                         {serviceFields && (
-                            <Card className="rounded-[2rem] relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500/0 via-violet-500 to-violet-500/0 opacity-50" />
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-full bg-violet-500/10 border border-violet-500/20">
-                                            <ServiceIcon className="size-5 text-violet-500" />
+                            <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500/30 to-transparent opacity-50" />
+                                <CardHeader className="p-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-2.5 rounded-2xl bg-violet-500/10 border border-white/10">
+                                            <ServiceIcon className="size-5 text-violet-400" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-lg font-display uppercase tracking-tight">
+                                            <CardTitle className="text-sm font-display uppercase tracking-tight text-zinc-100">
                                                 {project.serviceType === "SEO" ? "Estrategia de Keywords" :
                                                     project.serviceType === "Web" ? "Tech Stack" :
                                                         project.serviceType === "Ads" ? "Configuración de Ads" :
                                                             "Detalles del Servicio"}
                                             </CardTitle>
-                                            <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
-                                                Campos específicos
+                                            <CardDescription className="font-mono text-[9px] uppercase tracking-widest opacity-60">
+                                                Technical Specifications
                                             </CardDescription>
                                         </div>
                                     </div>
@@ -588,10 +593,10 @@ export default function ProjectDetail() {
                                         <>
                                             {serviceFields.keywords && (
                                                 <div>
-                                                    <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Keywords Objetivo</div>
+                                                    <div className="text-[9px] font-mono uppercase text-muted-foreground mb-3 tracking-widest opacity-50">Keywords Objetivo</div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(serviceFields.keywords as string[]).map((keyword: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-full">
+                                                            <Badge key={i} variant="secondary" className="rounded-full bg-white/5 border border-white/10 text-zinc-400 font-mono text-[10px] px-3">
                                                                 {keyword}
                                                             </Badge>
                                                         ))}
@@ -616,11 +621,11 @@ export default function ProjectDetail() {
                                         <>
                                             {serviceFields.technologies && (
                                                 <div>
-                                                    <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Tecnologías</div>
+                                                    <div className="text-[9px] font-mono uppercase text-muted-foreground mb-3 tracking-widest opacity-50">Tecnologías</div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(serviceFields.technologies as string[]).map((tech: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-full">
-                                                                <Code className="size-3 mr-1" />
+                                                            <Badge key={i} variant="secondary" className="rounded-full bg-white/5 border border-white/10 text-zinc-400 font-mono text-[10px] px-3">
+                                                                <Code className="size-3 mr-1.5 opacity-50" />
                                                                 {tech}
                                                             </Badge>
                                                         ))}
@@ -645,10 +650,10 @@ export default function ProjectDetail() {
                                         <>
                                             {serviceFields.platforms && (
                                                 <div>
-                                                    <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Plataformas</div>
+                                                    <div className="text-[9px] font-mono uppercase text-muted-foreground mb-3 tracking-widest opacity-50">Plataformas</div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(serviceFields.platforms as string[]).map((platform: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-full">
+                                                            <Badge key={i} variant="secondary" className="rounded-full bg-white/5 border border-white/10 text-zinc-400 font-mono text-[10px] px-3">
                                                                 {platform}
                                                             </Badge>
                                                         ))}
@@ -680,14 +685,14 @@ export default function ProjectDetail() {
 
                         {/* Description */}
                         {project.description && (
-                            <Card className="rounded-[2rem]">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-display uppercase tracking-tight text-muted-foreground">
-                                        Descripción
+                            <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] overflow-hidden">
+                                <CardHeader className="p-6 pb-2">
+                                    <CardTitle className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground opacity-50">
+                                        Executive Summary
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm leading-relaxed">{project.description}</p>
+                                <CardContent className="p-6 pt-0">
+                                    <p className="text-xs leading-relaxed text-zinc-400 italic">"{project.description}"</p>
                                 </CardContent>
                             </Card>
                         )}
@@ -695,9 +700,9 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* Profitability Calculator - full width */}
-                <Card className="rounded-[2rem] relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-teal-500/0 via-teal-500 to-teal-500/0 opacity-50" />
-                    <CardContent className="p-6">
+                <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent opacity-50" />
+                    <CardContent className="p-0">
                         <ProfitabilityCalculator projectId={projectId} />
                     </CardContent>
                 </Card>

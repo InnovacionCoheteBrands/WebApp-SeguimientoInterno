@@ -136,22 +136,22 @@ export default function Usuarios() {
                         placeholder="Buscar usuario..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="max-w-[300px] bg-background border-border font-mono text-xs"
+                        className="max-w-[300px] bg-white/5 border-white/15 focus:border-white/30 font-mono text-xs transition-all h-10 rounded-full"
                     />
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-10 px-6 font-mono text-xs uppercase tracking-wider">
                         <Plus className="mr-2 h-4 w-4" /> Invitar Usuario
                     </Button>
                 </div>
             </div>
 
-            <div className="bg-card/50 border border-border rounded-lg overflow-hidden">
+            <div className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2rem] overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-muted/50">
-                        <TableRow className="border-border">
-                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground">Usuario</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground">ID</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground text-center">Rol</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground text-center">Estado</TableHead>
+                    <TableHeader className="bg-white/5">
+                        <TableRow className="border-white/10 hover:bg-transparent">
+                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground/80 pl-6">Usuario</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground/80">ID</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground/80 text-center">Rol</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase text-muted-foreground/80 text-center">Estado</TableHead>
                             <TableHead className="w-[100px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -170,13 +170,13 @@ export default function Usuarios() {
                             </TableRow>
                         ) : (
                             filteredUsers.map((user) => (
-                                <TableRow key={user.id} className="border-border hover:bg-muted/30 transition-colors">
-                                    <TableCell>
+                                <TableRow key={user.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                                    <TableCell className="pl-6">
                                         <div className="flex items-center gap-3">
-                                            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                                                <UserIcon className="size-4 text-primary" />
+                                            <div className="size-9 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center">
+                                                <UserIcon className="size-4 text-zinc-400" />
                                             </div>
-                                            <span className="font-medium text-foreground">{user.username}</span>
+                                            <span className="font-medium text-zinc-100">{user.username}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-mono text-[10px] text-muted-foreground truncate max-w-[120px]">
@@ -185,9 +185,9 @@ export default function Usuarios() {
                                     <TableCell className="text-center">
                                         <Badge
                                             variant="outline"
-                                            className={`font-mono text-[10px] uppercase border shadow-none ${user.role === "admin"
-                                                    ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                                                    : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                            className={`font-mono text-[9px] uppercase border shadow-none rounded-full px-2 py-0.5 ${user.role === "admin"
+                                                    ? "bg-primary/10 text-primary border-primary/20"
+                                                    : "bg-zinc-500/10 text-zinc-400 border-white/10"
                                                 }`}
                                         >
                                             {user.role === "admin" ? (
@@ -201,7 +201,7 @@ export default function Usuarios() {
                                     <TableCell className="text-center">
                                         <Badge
                                             variant="outline"
-                                            className="font-mono text-[10px] uppercase bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                            className="font-mono text-[9px] uppercase bg-zinc-500/10 text-zinc-400 border-white/10 rounded-full px-2 py-0.5"
                                         >
                                             Activo
                                         </Badge>
@@ -209,11 +209,11 @@ export default function Usuarios() {
                                     <TableCell>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="hover:bg-muted">
-                                                    <MoreVertical className="size-4 text-muted-foreground" />
+                                                <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full h-8 w-8">
+                                                    <MoreVertical className="size-4 text-muted-foreground opacity-60" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-card border-border">
+                                            <DropdownMenuContent align="end" className="bg-zinc-950 border-white/15">
                                                 <DropdownMenuLabel className="font-mono text-[10px] uppercase text-muted-foreground">Acciones</DropdownMenuLabel>
                                                 <DropdownMenuItem onClick={() => handleEdit(user)}>
                                                     Editar Usuario

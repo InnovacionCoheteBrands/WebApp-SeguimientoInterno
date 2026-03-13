@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { PersonnelFormBoundary } from "@/components/forms/personnel-form-boundary";
 import { LeadForm } from "@/components/forms/lead-form";
 import { ProjectForm } from "@/components/forms/project-form";
 import { PersonnelForm } from "@/components/forms/personnel-form";
@@ -98,10 +99,12 @@ export function QuickCreateMenu() {
                             />
                         )}
                         {activeModal === 'personnel' && (
-                            <PersonnelForm
-                                open={activeModal === 'personnel'}
-                                onOpenChange={(open) => !open && setActiveModal(null)}
-                            />
+                            <PersonnelFormBoundary>
+                                <PersonnelForm
+                                    open={activeModal === 'personnel'}
+                                    onOpenChange={(open) => !open && setActiveModal(null)}
+                                />
+                            </PersonnelFormBoundary>
                         )}
                         {activeModal === 'transaction' && (
                             <TransactionForm

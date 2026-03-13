@@ -199,26 +199,26 @@ const ProfilePage = memo(function ProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-white/10 bg-zinc-950/40 backdrop-blur-md sticky top-0 z-10 ring-1 ring-inset ring-white/5">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-back">
-                  <ArrowLeft className="size-5" />
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10" data-testid="button-back">
+                  <ArrowLeft className="size-5 text-zinc-400" />
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-display font-bold tracking-wide">USER PROFILE</h1>
-                <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
+                <h1 className="text-2xl font-display font-bold tracking-tight text-zinc-100">USER PROFILE</h1>
+                <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-[0.2em] opacity-60">
                   Personal information and security
                 </p>
               </div>
             </div>
             <Button
               onClick={handleSave}
-              disabled={true} // Disabled as we only focused on avatar
-              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={true}
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-6 font-mono text-xs uppercase tracking-wider"
               data-testid="button-save-profile"
             >
               <Save className="size-4 mr-2" />
@@ -233,16 +233,16 @@ const ProfilePage = memo(function ProfilePage() {
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* Profile Information */}
-          <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
-            <CardHeader className="p-4 sm:p-6 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10 border border-primary/20">
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50" />
+            <CardHeader className="p-8 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-full bg-primary/10 border border-white/10">
                   <User className="size-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-display uppercase tracking-tight">Personal Information</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
+                  <CardTitle className="text-xl font-display uppercase tracking-tight text-zinc-100">Personal Information</CardTitle>
+                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider opacity-60">
                     Your platform credentials
                   </CardDescription>
                 </div>
@@ -251,16 +251,16 @@ const ProfilePage = memo(function ProfilePage() {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="relative group">
-                  <Avatar className="size-24 border-2 border-primary/20 cursor-pointer transition-opacity group-hover:opacity-80" onClick={() => fileInputRef.current?.click()}>
+                  <Avatar className="size-24 border-2 border-white/10 ring-4 ring-primary/5 cursor-pointer transition-all hover:border-primary/40" onClick={() => fileInputRef.current?.click()}>
                     {user?.avatarUrl ? (
                       <AvatarImage src={user.avatarUrl} className="object-cover" />
                     ) : null}
-                    <AvatarFallback className="bg-muted text-2xl font-display font-bold text-muted-foreground">
+                    <AvatarFallback className="bg-zinc-900 text-2xl font-display font-bold text-zinc-500">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-                    <Camera className="size-6 text-foreground bg-background/50 rounded-full p-1" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                    <Camera className="size-6 text-zinc-100 bg-zinc-950/60 backdrop-blur-sm rounded-full p-1.5 border border-white/15" />
                   </div>
                   <input
                     type="file"
@@ -282,75 +282,75 @@ const ProfilePage = memo(function ProfilePage() {
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-xs font-mono uppercase text-muted-foreground">Username</Label>
+                  <Label htmlFor="username" className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider pl-1 opacity-60">Username</Label>
                   <Input
                     id="username"
                     value={user?.username || ''}
                     disabled
-                    className="rounded-xl border-border bg-muted/50"
+                    className="rounded-xl border-white/10 bg-white/5 text-zinc-300 font-mono text-xs"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs font-mono uppercase text-muted-foreground">Email Address</Label>
+                  <Label htmlFor="email" className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider pl-1 opacity-60">Email Address</Label>
                   <Input
                     id="email"
                     value={user?.email || ''}
                     disabled
-                    className="rounded-xl border-border bg-muted/50"
+                    className="rounded-xl border-white/10 bg-white/5 text-zinc-300 font-mono text-xs"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role" className="text-xs font-mono uppercase text-muted-foreground">Role / Position</Label>
+                  <Label htmlFor="role" className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider pl-1 opacity-60">Role / Position</Label>
                   <Input
                     id="role"
                     value={user?.role || ''}
                     disabled
-                    className="rounded-xl border-border bg-muted/50"
+                    className="rounded-xl border-white/10 bg-white/5 text-zinc-300 font-mono text-xs"
                   />
                 </div>
 
                 {/* Placeholder for fields technically not in DB User model yet but required by UI design */}
                 <div className="space-y-2">
-                  <Label htmlFor="clearance" className="text-xs font-mono uppercase text-muted-foreground">Clearance Level</Label>
-                  <Input value="Level 5" disabled className="rounded-xl border-border bg-muted/50" />
+                  <Label htmlFor="clearance" className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider pl-1 opacity-60">Clearance Level</Label>
+                  <Input value="Level 5" disabled className="rounded-xl border-white/10 bg-white/5 text-zinc-300 font-mono text-xs" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Security */}
-          <Card className="border-border bg-card shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500/0 via-red-500 to-red-500/0 opacity-50" />
-            <CardHeader className="p-4 sm:p-6 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-red-500/10 border border-red-500/20">
+          <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500/30 to-transparent opacity-50" />
+            <CardHeader className="p-8 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-full bg-red-500/10 border border-white/10">
                   <Lock className="size-5 text-red-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-display uppercase tracking-tight">Security</CardTitle>
-                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider">
+                  <CardTitle className="text-xl font-display uppercase tracking-tight text-zinc-100">Security</CardTitle>
+                  <CardDescription className="font-mono text-[10px] uppercase tracking-wider opacity-60">
                     Authentication and password management
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-xl bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-3">
+            <CardContent className="px-8 pb-8">
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-sm text-muted-foreground mb-4 opacity-70">
                   Password management is available via the admin portal or by contacting support.
                 </p>
                 <Button
                   variant="outline"
-                  className="rounded-full w-full border-border hover:bg-muted"
+                  className="rounded-full w-full border-white/15 hover:bg-white/10 font-mono text-xs uppercase tracking-widest h-11"
                   disabled
                   data-testid="button-change-password"
                 >
                   <Lock className="size-4 mr-2" />
-                  Change Password
+                  Request Access Key
                 </Button>
               </div>
             </CardContent>

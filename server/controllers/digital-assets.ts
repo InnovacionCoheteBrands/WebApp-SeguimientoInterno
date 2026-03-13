@@ -1,35 +1,14 @@
-import { Router } from "express";
+﻿import { Router } from "express";
+import express from "express";
 import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertDigitalAssetSchema, updateDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
-import multer from "multer";
-import path from "path";
-import fs from "fs";
-import express from "express";
+import { upload, uploadDir } from "../middleware/upload";
 
-// Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure storage
-const diskStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        // Create unique filename: timestamp-originalName
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({ storage: diskStorage });
 const router = Router();
 
-// Serve uploads statically - middleware allows access to uploaded files
+// Serve uploads statically for authenticated access via /api/uploads
 router.use('/uploads', express.static(uploadDir));
 
 // GET /clients/:clientId/digital-assets - Get all digital assets for a client
@@ -37,7 +16,7 @@ router.get("/clients/:clientId/digital-assets", async (req, res) => {
     try {
         const clientId = parseInt(req.params.clientId);
         if (isNaN(clientId)) {
-            return res.status(400).json({ error: "ID de cliente invÃƒÂ¡lido" });
+            return res.status(400).json({ error: "ID de cliente invÃ¡lido" });
         }
         const assets = await storage.getDigitalAssetsByClientId(clientId);
         res.json(assets);
@@ -75,23 +54,19 @@ router.get("/digital-assets/:id", async (req, res) => {
 });
 
 // POST /digital-assets - Create a new digital asset with optional files
-router.post("/digital-assets", upload.array('files'), async (req, res) => {
+router.post("/digital-assets", upload.array('files', 5), async (req, res) => {
     try {
-        // Parse the body as it comes as form-data strings
         const formData = req.body;
-
-        // Coerce types from string (form-data) to expected schema types
         const payload: any = {
             ...formData,
             clientId: parseInt(formData.clientId),
-            cost: formData.cost ? String(formData.cost) : undefined, // Schema expects string or number, keep loose
+            cost: formData.cost ? String(formData.cost) : undefined,
             autoRenew: formData.autoRenew === 'true',
             alertDaysBefore: formData.alertDaysBefore ? parseInt(formData.alertDaysBefore) : 30,
             assignedManagerId: formData.assignedManagerId ? parseInt(formData.assignedManagerId) : undefined,
             files: []
         };
 
-        // Handle uploaded files
         if ((req as any).files && Array.isArray((req as any).files)) {
             const uploadedFiles = (req as any).files.map((file: any) => ({
                 name: file.originalname,
@@ -116,24 +91,16 @@ router.post("/digital-assets", upload.array('files'), async (req, res) => {
 });
 
 // PATCH /digital-assets/:id - Update a digital asset
-router.patch("/digital-assets/:id", upload.array('files'), async (req, res) => {
+router.patch("/digital-assets/:id", upload.array('files', 5), async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-
-        // Parse the body
         const formData = req.body;
-        const payload: any = { ...formData }; // Start with raw body
+        const payload: any = { ...formData };
 
-        // Coerce numeric/boolean fields if they exist in update
         if (payload.clientId) payload.clientId = parseInt(payload.clientId);
         if (payload.cost) payload.cost = String(payload.cost);
         if (payload.autoRenew !== undefined) payload.autoRenew = payload.autoRenew === 'true';
         if (payload.alertDaysBefore) payload.alertDaysBefore = parseInt(payload.alertDaysBefore);
-
-        // Handle files - Append to existing or replace? 
-        // Logic: specific implementation usually requires retrieving existing files + new ones.
-        // For simplicity: If new files are uploaded, we ADD them to existing. 
-        // NOTE: The request body might also contain a 'existingFiles' JSON string if we want to support deleting from frontend.
 
         if ((req as any).files && Array.isArray((req as any).files) && (req as any).files.length > 0) {
             const newFiles = (req as any).files.map((file: any) => ({
@@ -143,31 +110,23 @@ router.patch("/digital-assets/:id", upload.array('files'), async (req, res) => {
                 size: file.size
             }));
 
-            // Retrieve existing asset to merge files
             const existingAsset = await storage.getDigitalAssetById(id);
             const currentFiles = (existingAsset?.files as any[]) || [];
 
-            // Allow frontend to specify which *old* files to keep via a JSON string 'keptFiles'
-            // If keptFiles is not sent, we assume appending to all existing.
-            // If keptFiles IS sent, we filter existing.
             let filesToKeep = currentFiles;
             if (formData.keptFiles) {
                 try {
-                    const kept = JSON.parse(formData.keptFiles); // Array of file objects
-                    // Simple validation/filtering could go here
+                    const kept = JSON.parse(formData.keptFiles);
                     filesToKeep = kept;
-                } catch (e) { }
+                } catch { }
             }
 
             payload.files = [...filesToKeep, ...newFiles];
         } else if (formData.keptFiles) {
-            // Only deleting files, no new uploads
             try {
                 payload.files = JSON.parse(formData.keptFiles);
-            } catch (e) { }
+            } catch { }
         }
-        // If neither new files nor keptFiles provided, we generally don't touch the 'files' column 
-        // unless explicitly intended. Schema partial() allows undefined.
 
         const validatedData = updateDigitalAssetSchema.parse(payload);
         const asset = await storage.updateDigitalAsset(id, validatedData);

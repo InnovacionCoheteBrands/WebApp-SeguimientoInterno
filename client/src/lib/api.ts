@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Campaign,
   InsertCampaign,
   UpdateCampaign,
@@ -48,7 +48,7 @@ export type Project = DBProject & {
 
 let refreshPromise: Promise<string | null> | null = null;
 
-// 🔒 Security Wrapper: Auto-injects JWT token and handles refresh
+// ðŸ”’ Security Wrapper: Auto-injects JWT token and handles refresh
 export async function request(url: string, options: RequestInit = {}): Promise<Response> {
   const token = localStorage.getItem("token");
   const headers = new Headers(options.headers);
@@ -66,7 +66,7 @@ export async function request(url: string, options: RequestInit = {}): Promise<R
 
   const res = await fetch(url, fetchOptions);
 
-  // 🚨 Intercept 401 Unauthorized globally
+  // ðŸš¨ Intercept 401 Unauthorized globally
   if (res.status === 401 && !url.includes('/api/auth/refresh') && !url.includes('/api/auth/login')) {
     const refreshToken = localStorage.getItem("refreshToken");
 
@@ -386,6 +386,78 @@ export async function executeAgentAction(actionType: string, actionData: any): P
   return res.json();
 }
 
+export type SummaryModule = "finance" | "leads" | "projects" | "hr";
+
+export interface AiSummaryHealth {
+  enabled: boolean;
+  available: boolean;
+  configured: boolean;
+  provider: "xai" | "openai";
+  baseURL: string;
+  model: string;
+  issues: string[];
+  checkedAt: string;
+}
+
+export interface SummaryResponse {
+  summary: string;
+  meta?: {
+    requestId: string;
+    provider: string;
+    model: string;
+    rawPayloadBytes: number;
+    preparedPayloadBytes: number;
+  };
+}
+
+export class SummaryRequestError extends Error {
+  status?: number;
+  code?: string;
+  details?: string;
+  retryable: boolean;
+  requestId?: string;
+
+  constructor(message: string, options: { status?: number; code?: string; details?: string; retryable?: boolean; requestId?: string } = {}) {
+    super(message);
+    this.name = "SummaryRequestError";
+    this.status = options.status;
+    this.code = options.code;
+    this.details = options.details;
+    this.retryable = options.retryable ?? false;
+    this.requestId = options.requestId;
+  }
+}
+
+async function parseSummaryError(res: Response, fallbackMessage: string): Promise<SummaryRequestError> {
+  const error = await res.json().catch(() => ({}));
+  return new SummaryRequestError(error.details || error.error || fallbackMessage, {
+    status: res.status,
+    code: error.code,
+    details: error.details,
+    retryable: Boolean(error.retryable),
+    requestId: error.requestId,
+  });
+}
+
+export async function fetchAiSummaryHealth(): Promise<AiSummaryHealth> {
+  const res = await request("/api/agent/health");
+  if (!res.ok) {
+    throw await parseSummaryError(res, "Failed to fetch AI summary health");
+  }
+  return res.json();
+}
+
+export async function generateSummary(module: SummaryModule, data: any): Promise<SummaryResponse> {
+  const res = await request("/api/agent/summary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ module, data }),
+  });
+  if (!res.ok) {
+    throw await parseSummaryError(res, "Failed to generate summary");
+  }
+  return res.json();
+}
 // Financial Hub - Transactions
 export async function fetchTransactions(): Promise<Transaction[]> {
   const res = await request("/api/transactions");
@@ -783,10 +855,10 @@ export async function deleteAgencyRole(id: number): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete agency role");
 }
 
-// Service Catalog — see line ~1030 below
+// Service Catalog â€” see line ~1030 below
 
 // ===========================================
-// 📇 CONTACTS MODULE
+// ðŸ“‡ CONTACTS MODULE
 // ===========================================
 import type {
   Contact,
@@ -845,7 +917,7 @@ export async function deleteContact(id: number): Promise<void> {
 }
 
 // ===========================================
-// 🧾 BILLING PROFILES MODULE
+// ðŸ§¾ BILLING PROFILES MODULE
 // ===========================================
 
 export async function fetchBillingProfilesByClient(clientId: number): Promise<BillingProfile[]> {
@@ -888,7 +960,7 @@ export async function deleteBillingProfile(id: number): Promise<void> {
 }
 
 // ===========================================
-// 🌐 DIGITAL ASSETS MODULE (D&H)
+// ðŸŒ DIGITAL ASSETS MODULE (D&H)
 // ===========================================
 
 export async function fetchDigitalAssetsByClient(clientId: number): Promise<DigitalAsset[]> {
@@ -945,7 +1017,7 @@ export async function deleteDigitalAsset(id: number): Promise<void> {
 }
 
 // ===========================================
-// 📁 CLIENT DOCUMENTS MODULE
+// ðŸ“ CLIENT DOCUMENTS MODULE
 // ===========================================
 
 export async function fetchClientDocuments(clientId: number): Promise<ClientDocument[]> {
@@ -978,7 +1050,7 @@ export async function deleteClientDocument(id: number): Promise<void> {
 }
 
 // ===========================================
-// 💰 INSTALLMENTS MODULE
+// ðŸ’° INSTALLMENTS MODULE
 // ===========================================
 
 export async function fetchInstallmentsByProject(projectId: number): Promise<Installment[]> {
@@ -1029,7 +1101,7 @@ export async function deleteInstallment(id: number): Promise<void> {
 }
 
 // ===========================================
-// 🛠️ SERVICE CATALOG MODULE
+// ðŸ› ï¸ SERVICE CATALOG MODULE
 // ===========================================
 
 import type {
@@ -1082,7 +1154,7 @@ export async function deleteService(id: number): Promise<void> {
 }
 
 // ===========================================
-// 🔗 PROJECT SERVICES (Service Assignment)
+// ðŸ”— PROJECT SERVICES (Service Assignment)
 // ===========================================
 
 export interface ProjectServiceWithDetails extends ProjectService {
@@ -1123,7 +1195,7 @@ export async function updateProjectService(projectId: number, serviceId: number,
 }
 
 // ===========================================
-// 🎯 LEADS MODULE (CRM Kanban)
+// ðŸŽ¯ LEADS MODULE (CRM Kanban)
 // ===========================================
 import type {
   Lead,
@@ -1203,7 +1275,7 @@ export async function convertLeadToClient(leadId: number): Promise<{ lead: Lead;
 }
 
 // ===========================================
-// 📋 POES MODULE (Standard Operating Procedures)
+// ðŸ“‹ POES MODULE (Standard Operating Procedures)
 // ===========================================
 
 export async function fetchPoes(): Promise<Poe[]> {
@@ -1252,7 +1324,7 @@ export async function deletePoe(id: number): Promise<void> {
 }
 
 // ===========================================
-// 👥 PROJECT TEAM (New Controller)
+// ðŸ‘¥ PROJECT TEAM (New Controller)
 // ===========================================
 
 export async function fetchProjectTeam(projectId: number): Promise<any[]> {
@@ -1279,7 +1351,7 @@ export async function removeProjectTeamMember(assignmentId: number): Promise<voi
 }
 
 // ===========================================
-// 📋 AUDIT LOGS
+// ðŸ“‹ AUDIT LOGS
 // ===========================================
 
 export interface AuditLogEntry {
@@ -1306,3 +1378,4 @@ export async function fetchAuditLogs(options?: { limit?: number; userId?: string
   if (!res.ok) throw new Error("Failed to fetch audit logs");
   return res.json();
 }
+

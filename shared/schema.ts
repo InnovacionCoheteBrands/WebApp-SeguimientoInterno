@@ -588,7 +588,7 @@ export const insertTeamSchema = createInsertSchema(team, {
   weeklyCapacity: z.coerce.number().int().min(0).max(168).default(40),
   // Integer coercion - handle null correctly BEFORE coercion
   roleCatalogId: z.preprocess(
-    (val) => (val === null || val === "" ? undefined : Number(val)),
+    (val) => (val === null || val === "" || val === undefined ? undefined : Number(val)),
     z.number().int().positive().optional()
   ),
 }).omit({

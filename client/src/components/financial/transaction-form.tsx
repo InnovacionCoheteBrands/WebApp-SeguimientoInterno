@@ -39,8 +39,13 @@ import {
     type InsertTransaction,
     type Transaction
 } from "@shared/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTransaction, updateTransaction } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createTransaction, updateTransaction, request } from "@/lib/api";
+
+interface Supplier {
+    id: number;
+    name: string;
+}
 
 interface TransactionFormProps {
     open: boolean;
@@ -136,6 +141,12 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
             // setValue("category", ""); // Optional: keep/clear category
         }
     }, [type, initialData, setValue]);
+
+    const { data: suppliers = [] } = useQuery<Supplier[]>({
+        queryKey: ["/api/suppliers"],
+        queryFn: () => request("/api/suppliers").then(r => r.json()),
+        enabled: type === "Gasto",
+    });
 
     const createMutation = useMutation({
         mutationFn: createTransaction,
@@ -343,7 +354,20 @@ export function TransactionForm({ open, onOpenChange, initialData, defaultType =
                                             <FormItem>
                                                 <FormLabel className="text-muted-foreground">Proveedor</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Ej. AWS, Totalplay" {...field} value={field.value || ""} className="bg-background border-border" />
+                                                    <div className="flex gap-2">
+                                                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                            <SelectTrigger className="bg-background border-border flex-1">
+                                                                <SelectValue placeholder="Seleccionar Proveedor" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {suppliers.map(sup => (
+                                                                    <SelectItem key={sup.id} value={sup.name}>
+                                                                        {sup.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

@@ -180,73 +180,83 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
 
     return (
         <>
-            <div className="rounded-[2rem] border border-border bg-card">
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold">Calendario de Pagos</h3>
-                        {isLoading && <span className="text-xs text-muted-foreground">Cargando...</span>}
+            <div className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-50" />
+                <div className="flex items-center justify-between p-6 border-b border-white/10">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-2xl bg-primary/10 border border-white/10 text-primary">
+                            <Clock className="size-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-display uppercase tracking-tight text-zinc-100">Plan de Recaudación</h3>
+                            <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest opacity-60">Scheduled Fiscal Milestones</p>
+                        </div>
+                        {isLoading && <span className="text-[10px] font-mono text-primary animate-pulse ml-2 uppercase">Syncing...</span>}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                         {installments.length === 0 && (
                             <Button
                                 onClick={() => generateMutation.mutate()}
                                 disabled={generateMutation.isPending}
                                 variant="outline"
                                 size="sm"
-                                className="h-8 border-dashed border-primary/50 text-primary hover:bg-primary/5"
+                                className="h-9 rounded-full border-dashed border-primary/30 text-primary hover:bg-primary/10 transition-all font-mono text-[10px] uppercase tracking-widest px-4"
                             >
-                                <Wand2 className="size-3 mr-2" />
-                                Generar Automático
+                                <Wand2 className="size-3.5 mr-2" />
+                                Smart Generate
                             </Button>
                         )}
-                        <Button onClick={() => handleOpenDialog()} variant="ghost" size="sm" className="h-8">
-                            <Plus className="size-4 mr-2" />
-                            Agregar
+                        <Button onClick={() => handleOpenDialog()} variant="ghost" size="sm" className="h-9 w-9 rounded-full hover:bg-white/5 border border-white/5 group-hover:border-white/20 transition-all">
+                            <Plus className="size-4 text-zinc-400" />
                         </Button>
                     </div>
                 </div>
 
                 {installments.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground text-sm">
-                        No hay parcialidades generadas
+                    <div className="p-12 text-center">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground opacity-40 italic">
+                            No active payment structures detected.
+                        </p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-border">
+                    <div className="divide-y divide-white/5 bg-zinc-950/20">
                         {installments
                             .sort((a, b) => a.installmentNumber - b.installmentNumber)
                             .map((installment) => (
-                                <div key={installment.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center justify-center size-8 bg-muted rounded-full font-mono text-sm font-medium">
-                                            {installment.installmentNumber}
+                                <div key={installment.id} className="flex items-center justify-between p-6 hover:bg-white/5 transition-all duration-300">
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex items-center justify-center size-10 bg-zinc-900 border border-white/5 rounded-2xl font-mono text-[11px] font-bold text-zinc-400 shadow-inner">
+                                            {installment.installmentNumber.toString().padStart(2, '0')}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium">
-                                                {installment.resolvedConcept || installment.conceptTemplate || "Sin concepto"}
+                                            <p className="text-xs font-bold text-zinc-100 italic tracking-tight">
+                                                {installment.resolvedConcept || installment.conceptTemplate || "Unidentified Milestone"}
                                             </p>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                                <Calendar className="size-3" />
-                                                {format(new Date(installment.dueDate), "dd/MM/yyyy")}
+                                            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1.5 opacity-60">
+                                                <Calendar className="size-3 opacity-50" />
+                                                {format(new Date(installment.dueDate), "dd . MM . yyyy")}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4">
-                                        <span className="font-mono text-sm font-medium">
-                                            ${Number(installment.amount).toLocaleString()}
+                                    <div className="flex items-center gap-8">
+                                        <span className="font-mono text-sm font-bold text-zinc-100 italic tabular-nums">
+                                            $ {Number(installment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </span>
 
-                                        {getStatusBadge(installment.status, installment.dueDate.toString())}
+                                        <div className="min-w-[100px] flex justify-end">
+                                            {getStatusBadge(installment.status, installment.dueDate.toString())}
+                                        </div>
 
-                                        <div className="flex items-center">
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(installment)} className="h-8 w-8">
-                                                <Pencil className="size-3.5" />
+                                        <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(installment)} className="h-8 w-8 rounded-full hover:bg-white/10">
+                                                <Pencil className="size-3.5 text-zinc-400" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => setDeleteInstallmentId(installment.id)}
-                                                className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                                className="h-8 w-8 rounded-full hover:bg-red-500/10 text-muted-foreground hover:text-red-400"
                                             >
                                                 <Trash2 className="size-3.5" />
                                             </Button>
@@ -255,10 +265,10 @@ export function InstallmentsTable({ projectId }: InstallmentsTableProps) {
                                 </div>
                             ))}
 
-                        <div className="p-4 bg-muted/30 flex justify-between items-center font-medium text-sm">
-                            <span>Total</span>
-                            <span>
-                                ${installments.reduce((sum, i) => sum + Number(i.amount), 0).toLocaleString()}
+                        <div className="p-6 bg-white/5 flex justify-between items-center">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground opacity-60">Total Recaudación Anticipada</span>
+                            <span className="font-mono text-lg font-bold text-primary italic tabular-nums">
+                                $ {installments.reduce((sum, i) => sum + Number(i.amount), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                             </span>
                         </div>
                     </div>

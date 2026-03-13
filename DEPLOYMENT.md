@@ -1,17 +1,17 @@
-# Cohete Brands - Guía de Deployment en VPS
+﻿# Cohete Brands - GuÃ­a de Deployment en VPS
 
-Esta guía proporciona instrucciones completas para desplegar la plataforma Cohete Brands Marketing Operations en un VPS (Virtual Private Server) estándar.
+Esta guÃ­a proporciona instrucciones completas para desplegar la plataforma Cohete Brands Marketing Operations en un VPS (Virtual Private Server) estÃ¡ndar.
 
 ## Tabla de Contenidos
 
 1. [Requisitos del Sistema](#requisitos-del-sistema)
-2. [Preparación del VPS](#preparación-del-vps)
-3. [Instalación de Dependencias](#instalación-de-dependencias)
-4. [Configuración de la Base de Datos](#configuración-de-la-base-de-datos)
-5. [Configuración de la Aplicación](#configuración-de-la-aplicación)
+2. [PreparaciÃ³n del VPS](#preparaciÃ³n-del-vps)
+3. [InstalaciÃ³n de Dependencias](#instalaciÃ³n-de-dependencias)
+4. [ConfiguraciÃ³n de la Base de Datos](#configuraciÃ³n-de-la-base-de-datos)
+5. [ConfiguraciÃ³n de la AplicaciÃ³n](#configuraciÃ³n-de-la-aplicaciÃ³n)
 6. [Build y Deployment](#build-y-deployment)
-7. [Gestión de Procesos con PM2](#gestión-de-procesos-con-pm2)
-8. [Configuración de Nginx](#configuración-de-nginx)
+7. [GestiÃ³n de Procesos con PM2](#gestiÃ³n-de-procesos-con-pm2)
+8. [ConfiguraciÃ³n de Nginx](#configuraciÃ³n-de-nginx)
 9. [SSL/HTTPS con Let's Encrypt](#sslhttps-con-lets-encrypt)
 10. [Deployment con Docker (Opcional)](#deployment-con-docker-opcional)
 11. [Monitoreo y Logs](#monitoreo-y-logs)
@@ -22,7 +22,7 @@ Esta guía proporciona instrucciones completas para desplegar la plataforma Cohe
 
 ## Requisitos del Sistema
 
-### Hardware Mínimo
+### Hardware MÃ­nimo
 - **CPU**: 2 cores
 - **RAM**: 2 GB (4 GB recomendado)
 - **Almacenamiento**: 20 GB SSD
@@ -38,7 +38,7 @@ Esta guía proporciona instrucciones completas para desplegar la plataforma Cohe
 
 ---
 
-## Preparación del VPS
+## PreparaciÃ³n del VPS
 
 ### 1. Conectarse al VPS
 
@@ -76,7 +76,7 @@ su - cohete
 
 ---
 
-## Instalación de Dependencias
+## InstalaciÃ³n de Dependencias
 
 ### 1. Instalar Node.js v20
 
@@ -85,7 +85,7 @@ su - cohete
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Verificar instalación
+# Verificar instalaciÃ³n
 node --version  # Debe mostrar v20.x.x
 npm --version
 ```
@@ -113,16 +113,16 @@ git --version
 
 ---
 
-## Configuración de la Base de Datos
+## ConfiguraciÃ³n de la Base de Datos
 
-### Opción A: Usar Supabase (Recomendado)
+### OpciÃ³n A: Usar Supabase (Recomendado)
 
-La aplicación ya está configurada para usar Supabase. Solo necesitas:
+La aplicaciÃ³n ya estÃ¡ configurada para usar Supabase. Solo necesitas:
 
 1. Mantener tu DATABASE_URL de Supabase en el archivo `.env`
-2. No requiere instalación local de PostgreSQL
+2. No requiere instalaciÃ³n local de PostgreSQL
 
-### Opción B: PostgreSQL Local
+### OpciÃ³n B: PostgreSQL Local
 
 Si prefieres instalar PostgreSQL localmente:
 
@@ -144,7 +144,7 @@ GRANT ALL PRIVILEGES ON DATABASE cohete_brands TO cohete;
 
 ---
 
-## Configuración de la Aplicación
+## ConfiguraciÃ³n de la AplicaciÃ³n
 
 ### 1. Clonar el Repositorio
 
@@ -157,7 +157,8 @@ cd cohete-brands
 ### 2. Instalar Dependencias
 
 ```bash
-npm ci --omit=dev
+# Instalar todas las dependencias necesarias para el build
+npm ci
 ```
 
 ### 3. Configurar Variables de Entorno
@@ -170,7 +171,7 @@ cp .env.example .env
 nano .env
 ```
 
-**Ejemplo de `.env` para producción**:
+**Ejemplo de `.env` para producciÃ³n**:
 
 ```env
 # Database Configuration
@@ -207,10 +208,14 @@ GOOGLE_CLIENT_SECRET=""
 npm run db:push
 ```
 
-### 5. Build de la Aplicación
+### 5. Build de la AplicaciÃ³n
 
 ```bash
+# Build de produccion
 npm run build
+
+# Opcional: remover devDependencies despues del build
+npm prune --omit=dev
 ```
 
 ---
@@ -223,18 +228,18 @@ npm run build
 # Build
 npm run build
 
-# Test en modo producción
+# Test en modo producciÃ³n
 npm run start
 
-# La aplicación debería estar corriendo en http://localhost:5000
+# La aplicaciÃ³n deberÃ­a estar corriendo en http://localhost:5000
 # Presiona Ctrl+C para detener
 ```
 
 ---
 
-## Gestión de Procesos con PM2
+## GestiÃ³n de Procesos con PM2
 
-PM2 mantiene tu aplicación corriendo, reinicia automáticamente en caso de crashes, y gestiona logs.
+PM2 mantiene tu aplicaciÃ³n corriendo, reinicia automÃ¡ticamente en caso de crashes, y gestiona logs.
 
 ### 1. Crear Directorio de Logs
 
@@ -249,7 +254,7 @@ cd ~/cohete-brands
 npm run pm2:start
 ```
 
-### 3. Comandos Útiles de PM2
+### 3. Comandos Ãštiles de PM2
 
 ```bash
 # Ver estado
@@ -258,16 +263,16 @@ pm2 status
 # Ver logs en tiempo real
 pm2 logs cohete-brands
 
-# Reiniciar aplicación
+# Reiniciar aplicaciÃ³n
 pm2 restart cohete-brands
 
-# Detener aplicación
+# Detener aplicaciÃ³n
 pm2 stop cohete-brands
 
-# Ver métricas
+# Ver mÃ©tricas
 pm2 monit
 
-# Guardar configuración para auto-inicio
+# Guardar configuraciÃ³n para auto-inicio
 pm2 save
 
 # Configurar auto-inicio al reiniciar el servidor
@@ -275,26 +280,26 @@ pm2 startup
 # Ejecutar el comando que PM2 te muestra
 ```
 
-### 4. Verificar que la Aplicación Está Corriendo
+### 4. Verificar que la AplicaciÃ³n EstÃ¡ Corriendo
 
 ```bash
 curl http://localhost:5000
-# Debería devolver el HTML de tu aplicación
+# DeberÃ­a devolver el HTML de tu aplicaciÃ³n
 ```
 
 ---
 
-## Configuración de Nginx
+## ConfiguraciÃ³n de Nginx
 
-Nginx actúa como reverse proxy, maneja SSL, y mejora el rendimiento.
+Nginx actÃºa como reverse proxy, maneja SSL, y mejora el rendimiento.
 
-### 1. Crear Configuración de Nginx
+### 1. Crear ConfiguraciÃ³n de Nginx
 
 ```bash
 sudo nano /etc/nginx/sites-available/cohete-brands
 ```
 
-**Copiar la configuración de `nginx.conf.example`** (archivo incluido en el proyecto).
+**Copiar la configuraciÃ³n de `nginx.conf.example`** (archivo incluido en el proyecto).
 
 ### 2. Actualizar Valores
 
@@ -313,7 +318,7 @@ sudo ln -s /etc/nginx/sites-available/cohete-brands /etc/nginx/sites-enabled/
 # Remover el sitio default
 sudo rm /etc/nginx/sites-enabled/default
 
-# Verificar configuración
+# Verificar configuraciÃ³n
 sudo nginx -t
 
 # Reiniciar Nginx
@@ -322,7 +327,7 @@ sudo systemctl restart nginx
 
 ### 4. Verificar Acceso HTTP
 
-Visita `http://tu-dominio.com` en tu navegador. Deberías ver la aplicación.
+Visita `http://tu-dominio.com` en tu navegador. DeberÃ­as ver la aplicaciÃ³n.
 
 ---
 
@@ -342,21 +347,21 @@ sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
 
 Sigue las instrucciones:
 - Proporciona tu email
-- Acepta los términos
+- Acepta los tÃ©rminos
 - Elige si deseas compartir tu email con EFF
-- Certbot automáticamente configurará Nginx para HTTPS
+- Certbot automÃ¡ticamente configurarÃ¡ Nginx para HTTPS
 
-### 3. Verificar Auto-Renovación
+### 3. Verificar Auto-RenovaciÃ³n
 
 ```bash
 sudo certbot renew --dry-run
 ```
 
-Los certificados se renuevan automáticamente antes de expirar.
+Los certificados se renuevan automÃ¡ticamente antes de expirar.
 
 ### 4. Verificar HTTPS
 
-Visita `https://tu-dominio.com` - deberías ver el candado verde de seguridad.
+Visita `https://tu-dominio.com` - deberÃ­as ver el candado verde de seguridad.
 
 ---
 
@@ -415,7 +420,7 @@ proxy_pass http://localhost:5000;  # Puerto mapeado en docker-compose.yml
 
 ## Monitoreo y Logs
 
-### Logs de la Aplicación (PM2)
+### Logs de la AplicaciÃ³n (PM2)
 
 ```bash
 # Ver logs en tiempo real
@@ -455,27 +460,30 @@ df -h
 
 ## Mantenimiento
 
-### Actualizar la Aplicación
+### Actualizar la AplicaciÃ³n
 
 ```bash
 cd ~/cohete-brands
 
-# Detener aplicación
+# Detener aplicaciÃ³n
 pm2 stop cohete-brands
 
-# Pull últimos cambios
+# Pull Ãºltimos cambios
 git pull origin main
 
 # Reinstalar dependencias si hay cambios en package.json
-npm ci --omit=dev
+npm ci
 
 # Rebuild
 npm run build
 
+# Opcional: podar dependencias de desarrollo si haces build en el VPS
+npm prune --omit=dev
+
 # Push cambios de schema si es necesario
 npm run db:push
 
-# Reiniciar aplicación
+# Reiniciar aplicaciÃ³n
 pm2 restart cohete-brands
 ```
 
@@ -493,20 +501,20 @@ pg_dump -U cohete cohete_brands > backup_$(date +%Y%m%d).sql
 psql -U cohete cohete_brands < backup_20241124.sql
 ```
 
-### Rotación de Logs
+### RotaciÃ³n de Logs
 
-PM2 incluye rotación de logs por defecto. Para Nginx:
+PM2 incluye rotaciÃ³n de logs por defecto. Para Nginx:
 
 ```bash
 sudo nano /etc/logrotate.d/nginx
-# Ya debería estar configurado automáticamente
+# Ya deberÃ­a estar configurado automÃ¡ticamente
 ```
 
 ---
 
 ## Troubleshooting
 
-### La aplicación no inicia
+### La aplicaciÃ³n no inicia
 
 ```bash
 # Verificar logs
@@ -518,39 +526,39 @@ cat .env
 # Verificar puerto en uso
 sudo lsof -i :5000
 
-# Verificar conexión a base de datos
+# Verificar conexiÃ³n a base de datos
 npm run db:push
 ```
 
 ### Error 502 Bad Gateway en Nginx
 
 ```bash
-# Verificar que la aplicación esté corriendo
+# Verificar que la aplicaciÃ³n estÃ© corriendo
 pm2 status
 
 # Verificar logs de Nginx
 sudo tail -f /var/log/nginx/cohete-brands-error.log
 
-# Verificar configuración de Nginx
+# Verificar configuraciÃ³n de Nginx
 sudo nginx -t
 
 # Reiniciar Nginx
 sudo systemctl restart nginx
 ```
 
-### Conexión a Base de Datos Falla
+### ConexiÃ³n a Base de Datos Falla
 
 ```bash
 # Verificar DATABASE_URL en .env
 cat .env | grep DATABASE_URL
 
-# Test de conexión
+# Test de conexiÃ³n
 psql "$DATABASE_URL"
 
 # Verificar firewall de Supabase (permitir IP del VPS)
 ```
 
-### Aplicación Lenta o Crashea
+### AplicaciÃ³n Lenta o Crashea
 
 ```bash
 # Verificar memoria disponible
@@ -559,7 +567,7 @@ free -h
 # Verificar uso de CPU
 top
 
-# Aumentar límite de memoria de PM2 (en ecosystem.config.cjs)
+# Aumentar lÃ­mite de memoria de PM2 (en ecosystem.config.cjs)
 max_memory_restart: '1G'  # Cambiar de 500M a 1G
 
 # Reiniciar
@@ -575,10 +583,10 @@ sudo certbot certificates
 # Renovar manualmente
 sudo certbot renew
 
-# Verificar configuración de Nginx
+# Verificar configuraciÃ³n de Nginx
 sudo nginx -t
 
-# Verificar que los puertos 80 y 443 estén abiertos
+# Verificar que los puertos 80 y 443 estÃ©n abiertos
 sudo ufw status
 ```
 
@@ -596,9 +604,9 @@ sudo ufw status
 
 ## Soporte
 
-Para problemas específicos de la aplicación, consulta:
-- Logs de la aplicación: `pm2 logs cohete-brands`
+Para problemas especÃ­ficos de la aplicaciÃ³n, consulta:
+- Logs de la aplicaciÃ³n: `pm2 logs cohete-brands`
 - Logs de Nginx: `/var/log/nginx/cohete-brands-error.log`
 - Variables de entorno: `.env`
 
-**¡Tu aplicación ahora está lista para producción en VPS!** 🚀
+**Â¡Tu aplicaciÃ³n ahora estÃ¡ lista para producciÃ³n en VPS!** ðŸš€

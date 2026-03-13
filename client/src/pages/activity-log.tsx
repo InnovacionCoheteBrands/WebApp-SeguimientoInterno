@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 /* ── Action → visual config ── */
 const ACTION_CONFIG: Record<string, { icon: typeof LogIn; color: string; label: string }> = {
@@ -49,6 +50,7 @@ const ENTITY_LABELS: Record<string, string> = {
     SERVICE: "Servicios",
     SUPPLIER: "Proveedores",
     USER: "Usuarios",
+    AGENCY_ROLE: "Roles de Agencia",
     POE: "POES",
 };
 
@@ -92,12 +94,14 @@ export default function ActivityLog() {
             {/* ── Header ── */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
-                        <Activity className="size-8 text-primary" />
+                    <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3 text-zinc-100">
+                        <div className="p-2 rounded-full bg-primary/10 border border-white/10">
+                            <Activity className="size-6 text-primary" />
+                        </div>
                         Registro de Actividad
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Monitorea todas las acciones realizadas por los usuarios del sistema.
+                    <p className="text-muted-foreground mt-2 text-sm opacity-60 font-mono uppercase tracking-wider">
+                        Audit Intelligence & System Monitoring
                     </p>
                 </div>
                 <Badge variant="outline" className="border-primary/20 text-primary text-xs font-mono">
@@ -107,23 +111,23 @@ export default function ActivityLog() {
             </div>
 
             {/* ── Search Bar ── */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-50" />
                 <Input
                     placeholder="Buscar por usuario, módulo o acción..."
-                    className="pl-10 bg-card/50 border-white/10"
+                    className="pl-12 bg-zinc-950/40 backdrop-blur-md border-white/15 focus:border-white/30 rounded-full h-12 transition-all font-mono text-xs"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
             {/* ── Filters ── */}
-            <div className="flex items-center gap-2 flex-wrap">
-                <Filter className="size-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 flex-wrap bg-white/5 p-3 rounded-3xl border border-white/5">
+                <Filter className="size-4 text-muted-foreground mr-2 opacity-50" />
                 <Button
                     size="sm"
                     variant={!entityFilter ? "default" : "outline"}
-                    className="rounded-full text-xs h-7"
+                    className={`rounded-full text-[10px] font-mono h-8 px-4 uppercase tracking-wider transition-all duration-300 ${!entityFilter ? 'bg-primary text-primary-foreground' : 'border-white/10 text-muted-foreground hover:bg-white/10'}`}
                     onClick={() => setEntityFilter(undefined)}
                 >
                     Todos
@@ -133,7 +137,7 @@ export default function ActivityLog() {
                         key={type}
                         size="sm"
                         variant={entityFilter === type ? "default" : "outline"}
-                        className="rounded-full text-xs h-7"
+                        className={`rounded-full text-[10px] font-mono h-8 px-4 uppercase tracking-wider transition-all duration-300 ${entityFilter === type ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(212,175,55,0.2)]' : 'border-white/10 text-muted-foreground hover:bg-white/10'}`}
                         onClick={() => setEntityFilter(entityFilter === type ? undefined : type)}
                     >
                         {ENTITY_LABELS[type]}
@@ -142,12 +146,12 @@ export default function ActivityLog() {
             </div>
 
             {/* ── Activity Table ── */}
-            <Card className="border-white/5 bg-card/50 backdrop-blur-xl">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                        <span>Últimos Movimientos</span>
-                        <span className="text-xs font-mono text-muted-foreground">
-                            {filteredLogs.length} de {logs.length} registros
+            <Card className="bg-zinc-950/40 backdrop-blur-xl border-white/15 ring-1 ring-inset ring-white/10 rounded-[2.5rem] overflow-hidden group">
+                <CardHeader className="p-8 pb-4">
+                    <CardTitle className="text-xl font-display flex items-center justify-between text-zinc-100">
+                        <span className="uppercase tracking-tight">Últimos Movimientos</span>
+                        <span className="text-[10px] font-mono text-muted-foreground opacity-60 uppercase tracking-widest">
+                            {filteredLogs.length} OF {logs.length} RECORDS
                         </span>
                     </CardTitle>
                 </CardHeader>
@@ -167,11 +171,12 @@ export default function ActivityLog() {
                     ) : (
                         <div className="overflow-x-auto">
                             {/* Header row */}
-                            <div className="grid grid-cols-[1fr_150px_150px_180px] gap-4 px-6 py-3 border-b border-white/5 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                <span>Acción</span>
-                                <span>Usuario</span>
-                                <span>Módulo</span>
-                                <span>Fecha y Horario</span>
+                            <div className="grid grid-cols-[1fr_80px_150px_150px_180px] gap-4 px-8 py-4 bg-white/5 border-b border-white/5 text-[9px] font-mono font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                                <span>Acción Detectada</span>
+                                <span className="text-center">Auth</span>
+                                <span>Identity</span>
+                                <span>Functional Area</span>
+                                <span>Precision Timestamp</span>
                             </div>
 
                             {/* Data rows */}
@@ -182,40 +187,49 @@ export default function ActivityLog() {
                                     return (
                                         <div
                                             key={log.id}
-                                            className="grid grid-cols-[1fr_150px_150px_180px] gap-4 px-6 py-3 hover:bg-white/5 transition-colors group items-center"
+                                            className="grid grid-cols-[1fr_80px_150px_150px_180px] gap-4 px-8 py-4 hover:bg-white/5 transition-colors group items-center border-b border-white/5 last:border-0"
                                         >
                                             {/* Acción */}
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${config.color}`}>
-                                                    <ActionIcon className="size-3.5" />
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <div className={`size-10 rounded-full flex items-center justify-center shrink-0 border border-white/5 ${config.color.replace('bg-', 'bg-opacity-20 bg-')}`}>
+                                                    <ActionIcon className="size-4" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-medium truncate">{log.details}</p>
-                                                    <Badge variant="outline" className={`text-[10px] h-4 px-1.5 mt-0.5 border-transparent ${config.color}`}>
+                                                    <p className="text-sm font-medium truncate text-zinc-100">{log.details}</p>
+                                                    <Badge variant="outline" className={`text-[9px] h-4 px-2 mt-1 border-transparent rounded-full font-mono uppercase tracking-wider ${config.color}`}>
                                                         {config.label}
                                                     </Badge>
                                                 </div>
                                             </div>
 
+                                            {/* Perfil */}
+                                            <div className="flex justify-center">
+                                                <Avatar className="h-9 w-9 border border-white/15 ring-2 ring-white/5 transition-transform group-hover:scale-110">
+                                                    <AvatarFallback className="bg-zinc-800 text-zinc-400 text-[10px] uppercase font-bold font-mono">
+                                                        {log.username ? log.username.substring(0, 2) : "US"}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            </div>
+
                                             {/* Usuario */}
-                                            <div className="flex items-center gap-1.5 text-sm">
-                                                <User className="size-3.5 text-muted-foreground" />
-                                                <span className="font-medium">{log.username}</span>
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <User className="size-3.5 text-muted-foreground opacity-40" />
+                                                <span className="font-medium text-zinc-300">{log.username}</span>
                                             </div>
 
                                             {/* Módulo */}
                                             <div>
-                                                <Badge variant="outline" className="text-[11px] h-5 px-2 border-white/10">
+                                                <Badge variant="outline" className="text-[9px] font-mono h-5 px-2 border-white/10 bg-white/5 text-zinc-400 rounded-full uppercase tracking-wider">
                                                     {ENTITY_LABELS[log.entityType] || log.entityType}
                                                 </Badge>
                                             </div>
 
                                             {/* Fecha */}
-                                            <div className="text-xs text-muted-foreground">
-                                                <span>{formatTimestamp(log.timestamp)}</span>
+                                            <div className="text-[10px] text-muted-foreground font-mono">
+                                                <span className="text-zinc-400">{formatTimestamp(log.timestamp)}</span>
                                                 {log.ipAddress && (
-                                                    <span className="block text-[10px] font-mono opacity-0 group-hover:opacity-60 transition-opacity mt-0.5">
-                                                        IP: {log.ipAddress}
+                                                    <span className="block text-[8px] opacity-0 group-hover:opacity-40 transition-opacity mt-1">
+                                                        SRC: {log.ipAddress}
                                                     </span>
                                                 )}
                                             </div>

@@ -1,9 +1,9 @@
-module.exports = {
+﻿module.exports = {
   apps: [{
     name: 'cohete-brands',
     script: './dist/index.js',
-    instances: 'max',
-    exec_mode: 'cluster',
+    instances: 1,
+    exec_mode: 'fork',
     env: {
       NODE_ENV: 'production',
       PORT: 5000,
@@ -24,7 +24,6 @@ module.exports = {
       'client',
       '.git'
     ],
-    // Environment-specific configurations
     env_production: {
       NODE_ENV: 'production'
     },
