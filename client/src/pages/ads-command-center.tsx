@@ -1,89 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
+import {
+    fetchAdsOverview,
+    fetchBottomAdsCreatives,
+    fetchTopAdsCreatives,
+    requestAdsCreativeReview,
+    type AdsOverview,
+    type AdCreative,
+} from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, DollarSign, BarChart3, AlertTriangle, CheckCircle, Target, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
-interface AdsOverview {
-    blendedROAS: {
-        roas: number;
-        totalSpend: number;
-        totalRevenue: number;
-    };
-    spendPacing: {
-        monthlyBudget: number;
-        currentSpend: number;
-        percentSpent: number;
-        percentElapsed: number;
-        status: "healthy" | "warning" | "critical";
-        daysRemaining: number;
-    };
-    platformBreakdown: Array<{
-        platformId: number;
-        platformName: string;
-        displayName: string;
-        totalSpend: number;
-        totalRevenue: number;
-        roas: number;
-        activeCreatives: number;
-        isActive: boolean;
-    }>;
-    lastUpdated: string;
-}
-
-interface AdCreative {
-    id: number;
-    platformId: number;
-    platformAdId: string;
-    creativeType: string;
-    imageUrl: string | null;
-    videoUrl: string | null;
-    thumbnailUrl: string | null;
-    headline: string | null;
-    primaryText: string | null;
-    ctaText: string | null;
-    status: string;
-    metrics: {
-        impressions: number;
-        clicks: number;
-        conversions: number;
-        spend: string;
-        revenue: string;
-        ctr: string;
-        cpa: string;
-        roas: string;
-    };
-}
-
 export default function AdsCommandCenter() {
     const { data: overview, isLoading: overviewLoading } = useQuery<AdsOverview>({
         queryKey: ["ads-overview"],
-        queryFn: async () => {
-            const res = await fetch("/api/ads/overview");
-            if (!res.ok) throw new Error("Failed to fetch ads overview");
-            return res.json();
-        },
+        queryFn: fetchAdsOverview,
         refetchInterval: 30000,
     });
 
     const { data: topCreatives, isLoading: topLoading } = useQuery<AdCreative[]>({
         queryKey: ["ads-top-creatives"],
-        queryFn: async () => {
-            const res = await fetch("/api/ads/creatives/top?limit=3");
-            if (!res.ok) throw new Error("Failed to fetch top creatives");
-            return res.json();
-        },
+        queryFn: () => fetchTopAdsCreatives(3),
         refetchInterval: 60000,
     });
 
     const { data: bottomCreatives, isLoading: bottomLoading } = useQuery<AdCreative[]>({
         queryKey: ["ads-bottom-creatives"],
-        queryFn: async () => {
-            const res = await fetch("/api/ads/creatives/bottom?limit=3");
-            if (!res.ok) throw new Error("Failed to fetch bottom creatives");
-            return res.json();
-        },
+        queryFn: () => fetchBottomAdsCreatives(3),
         refetchInterval: 60000,
     });
 
@@ -379,14 +324,10 @@ export default function AdsCommandCenter() {
                                                 </div>
                                                 <button
                                                     onClick={async () => {
-                                                        await fetch("/api/ads/request-review", {
-                                                            method: "POST",
-                                                            headers: { "Content-Type": "application/json" },
-                                                            body: JSON.stringify({
-                                                                creativeId: creative.id,
-                                                                reason: "Executive review requested",
-                                                                requestedBy: "Executive Dashboard",
-                                                            }),
+                                                        await requestAdsCreativeReview({
+                                                            creativeId: creative.id,
+                                                            reason: "Executive review requested",
+                                                            requestedBy: "Executive Dashboard",
                                                         });
                                                     }}
                                                     className="w-full px-2 py-1 text-xs bg-red-500/10 text-red-500 border border-red-500/20 rounded-sm hover:bg-red-500/20 transition-colors font-mono uppercase"

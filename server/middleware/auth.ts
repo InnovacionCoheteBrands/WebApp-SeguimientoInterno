@@ -23,7 +23,7 @@ declare global {
  * Get JWT secret from environment.
  * Must be at least 32 characters for security.
  */
-function getJwtSecret(): string {
+export function getJwtSecret(): string {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
         throw new Error('JWT_SECRET environment variable is required');

@@ -153,6 +153,7 @@ export interface IStorage {
   getRefreshToken(tokenHash: string): Promise<RefreshToken | undefined>;
   revokeRefreshToken(tokenHash: string): Promise<void>;
   revokeAllUserRefreshTokens(userId: string): Promise<void>;
+  revokeLegacyRefreshTokens(): Promise<number>;
 
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
@@ -573,6 +574,23 @@ export class DBStorage implements IStorage {
     } catch (error) {
       console.error(`❌ [revokeAllUserRefreshTokens] Error:`, error);
       throw new Error("Error al revocar todos los refresh tokens del usuario");
+    }
+  }
+
+  async revokeLegacyRefreshTokens(): Promise<number> {
+    try {
+      const revokedTokens = await db.update(refreshTokens)
+        .set({ revoked: true })
+        .where(and(
+          eq(refreshTokens.revoked, false),
+          sql`length(${refreshTokens.tokenHash}) <> 64`
+        ))
+        .returning({ id: refreshTokens.id });
+
+      return revokedTokens.length;
+    } catch (error) {
+      console.error(`❌ [revokeLegacyRefreshTokens] Error:`, error);
+      throw new Error("Error al revocar refresh tokens legacy");
     }
   }
 

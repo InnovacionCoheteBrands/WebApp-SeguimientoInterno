@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+    connectAdsApiKey,
+    disconnectAdsConnection,
+    fetchAccountMappings,
+    fetchClientKpis,
+    fetchPlatformConnections,
+    saveClientKpis,
+    type AccountMapping,
+    type ClientKpi,
+    type PlatformConnection,
+} from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,34 +56,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface PlatformConnection {
-    id: number;
-    platformId: number;
-    platformName: string;
-    displayName: string;
-    connectionType: "oauth" | "api_key";
-    isActive: boolean;
-    lastSyncAt: string | null;
-    createdAt: string;
-    apiKeyName?: string;
-}
-
-interface AccountMapping {
-    id: number;
-    platformAccountId: string;
-    platformAccountName: string;
-    internalClientName: string;
-    isActive: boolean;
-}
-
-interface ClientKPI {
-    id: number;
-    clientName: string;
-    targetROAS: string | null;
-    targetCPA: string | null;
-    monthlyBudgetCap: string | null;
-}
-
 export default function AdsSettings() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -94,31 +77,19 @@ export default function AdsSettings() {
     // Fetch platform connections
     const { data: connections = [] } = useQuery<PlatformConnection[]>({
         queryKey: ["platform-connections"],
-        queryFn: async () => {
-            const res = await fetch("/api/ads/integrations/connections");
-            if (!res.ok) return [];
-            return res.json();
-        },
+        queryFn: fetchPlatformConnections,
     });
 
     // Fetch account mappings
     const { data: mappings = [] } = useQuery<AccountMapping[]>({
         queryKey: ["account-mappings"],
-        queryFn: async () => {
-            const res = await fetch("/api/ads/integrations/mappings");
-            if (!res.ok) return [];
-            return res.json();
-        },
+        queryFn: fetchAccountMappings,
     });
 
     // Fetch client KPIs
-    const { data: clientKPIs = [] } = useQuery<ClientKPI[]>({
+    const { data: clientKPIs = [] } = useQuery<ClientKpi[]>({
         queryKey: ["client-kpis"],
-        queryFn: async () => {
-            const res = await fetch("/api/ads/integrations/kpis");
-            if (!res.ok) return [];
-            return res.json();
-        },
+        queryFn: fetchClientKpis,
     });
 
     const handleOAuthConnect = async (platform: string) => {
@@ -128,13 +99,9 @@ export default function AdsSettings() {
 
     const handleApiKeyConnect = async () => {
         try {
-            await fetch("/api/ads/integrations/api-key", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    platform: selectedPlatform,
-                    ...apiKeyForm,
-                }),
+            await connectAdsApiKey({
+                platform: selectedPlatform,
+                ...apiKeyForm,
             });
             queryClient.invalidateQueries({ queryKey: ["platform-connections"] });
             toast({ title: "API Key conectada exitosamente" });
@@ -147,9 +114,7 @@ export default function AdsSettings() {
 
     const handleDisconnect = async (connectionId: number) => {
         try {
-            await fetch(`/api/ads/integrations/connections/${connectionId}`, {
-                method: "DELETE",
-            });
+            await disconnectAdsConnection(connectionId);
             queryClient.invalidateQueries({ queryKey: ["platform-connections"] });
             toast({ title: "Plataforma desconectada exitosamente" });
         } catch (error) {
@@ -164,11 +129,7 @@ export default function AdsSettings() {
         }
 
         try {
-            await fetch(`/api/ads/integrations/kpis/${selectedClient}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(kpiForm),
-            });
+            await saveClientKpis(selectedClient, kpiForm);
             queryClient.invalidateQueries({ queryKey: ["client-kpis"] });
             toast({ title: "KPIs actualizados exitosamente" });
         } catch (error) {

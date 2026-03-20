@@ -270,7 +270,7 @@ REGLAS ESTRICTAS:
             logger.warn({ err: error, requestId }, "AI Summary validation error");
             return res.status(error.status).json({
                 error: "Invalid summary request",
-                details: error.message,
+                message: error.message,
                 code: error.code,
                 retryable: error.retryable,
                 requestId,

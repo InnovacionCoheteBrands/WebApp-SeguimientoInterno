@@ -56,10 +56,7 @@ router.post("/transactions", async (req, res) => {
             logger.error({ err: error.stack }, "   Error stack:");
         }
         logger.error({ err: error }, "   Full error:");
-        res.status(500).json({
-            error: "Failed to create transaction",
-            details: error instanceof Error ? error.message : "Unknown error"
-        });
+        res.status(500).json({ error: "Failed to create transaction" });
     }
 });
 
@@ -109,11 +106,7 @@ router.get("/finance/summary", async (req, res) => {
         res.json(summary);
     } catch (error) {
         logger.error({ err: error }, "Failed to fetch financial summary:");
-        res.status(500).json({
-            error: "Failed to fetch financial summary",
-            details: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined
-        });
+        res.status(500).json({ error: "Failed to fetch financial summary" });
     }
 });
 
@@ -262,7 +255,7 @@ router.post("/finance/obligations/:id/pay", async (req, res) => {
         res.status(201).json(transaction);
     } catch (error) {
         logger.error({ err: error }, "Failed to mark obligation as paid:");
-        res.status(500).json({ error: error instanceof Error ? error.message : "Failed to mark obligation as paid" });
+        res.status(500).json({ error: "Failed to mark obligation as paid" });
     }
 });
 

@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { globalErrorHandler } from "./middleware/error-handler";
+import { storage } from "./storage";
 import { logAiConfigStatus } from "./utils/ai";
 import { logger } from "./utils/logger";
 
@@ -93,6 +94,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  const revokedLegacyTokens = await storage.revokeLegacyRefreshTokens();
+  if (revokedLegacyTokens > 0) {
+    logger.warn(
+      { revokedLegacyTokens },
+      "Revoked legacy plaintext refresh tokens during startup",
+    );
+  }
+
   const server = await registerRoutes(app);
 
   app.use(globalErrorHandler);

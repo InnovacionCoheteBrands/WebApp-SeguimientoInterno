@@ -13,7 +13,7 @@ router.get("/team", async (req, res) => {
         res.json(allTeam);
     } catch (error) {
         logger.error({ err: error }, "Failed to fetch team:");
-        res.status(500).json({ error: "Failed to fetch team", details: error instanceof Error ? error.message : String(error) });
+        res.status(500).json({ error: "Failed to fetch team" });
     }
 });
 
@@ -37,11 +37,7 @@ router.post("/team", async (req, res) => {
             logger.error({ err: error.stack }, "   Error stack:");
         }
         logger.error({ err: error }, "   Full error:");
-        res.status(500).json({
-            error: "Failed to create team member",
-            details: error instanceof Error ? error.message : "Unknown error",
-            stack: error instanceof Error ? error.stack : undefined
-        });
+        res.status(500).json({ error: "Failed to create team member" });
     }
 });
 

@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { storage } from '../storage';
 import { logger } from '../utils/logger';
 import { hashPassword, verifyPassword } from '../utils/crypto';
-import { generateToken, requireAuth } from '../middleware/auth';
+import { generateToken, getJwtSecret, requireAuth } from '../middleware/auth';
 import passport from 'passport';
 import crypto from 'crypto';
 
@@ -35,20 +35,31 @@ const refreshRequestSchema = z.object({
     refreshToken: z.string().min(1, 'Refresh token is required')
 });
 
+/**
+ * SEC-001: Deterministic HMAC-SHA-256 hash for refresh token storage.
+ * The raw token is returned to the client; only the hash is persisted in DB.
+ * On lookup, the same HMAC is computed from the client-supplied token.
+ */
+function hashRefreshToken(rawToken: string): string {
+    return crypto.createHmac('sha256', getJwtSecret()).update(rawToken).digest('hex');
+}
+
 const generateRefreshToken = async (userId: string) => {
-    const token = crypto.randomBytes(40).toString('hex');
+    const rawToken = crypto.randomBytes(40).toString('hex');
+    const tokenHash = hashRefreshToken(rawToken);
+
     // 7 days expiration
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     await storage.createRefreshToken({
         userId,
-        tokenHash: token,
+        tokenHash,
         expiresAt,
         revoked: false
     });
 
-    return token;
+    return rawToken;
 };
 
 /**
@@ -198,8 +209,9 @@ router.post('/refresh', async (req, res) => {
     try {
         const { refreshToken } = refreshRequestSchema.parse(req.body);
 
-        // Find token
-        const storedToken = await storage.getRefreshToken(refreshToken);
+        // SEC-001: Hash the client-supplied token before DB lookup
+        const tokenHash = hashRefreshToken(refreshToken);
+        const storedToken = await storage.getRefreshToken(tokenHash);
         if (!storedToken) {
             return res.status(401).json({ error: 'InvalidToken', message: 'Invalid refresh token.' });
         }
@@ -220,8 +232,8 @@ router.post('/refresh', async (req, res) => {
             return res.status(401).json({ error: 'UserNotFound', message: 'User not found.' });
         }
 
-        // Revoke the old refresh token (rotate it)
-        await storage.revokeRefreshToken(refreshToken);
+        // Revoke the old refresh token by its hash (rotate it)
+        await storage.revokeRefreshToken(tokenHash);
 
         // Generate new tokens
         const newToken = generateToken({

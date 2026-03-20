@@ -254,7 +254,7 @@ router.post("/deliverables/:id/link-attachment", async (req, res) => {
         res.json(deliverable);
     } catch (error: any) {
         logger.error({ err: error }, "Failed to link attachment:");
-        res.status(500).json({ error: error.message || "Failed to link attachment" });
+        res.status(500).json({ error: "Failed to link attachment" });
     }
 });
 
@@ -287,7 +287,7 @@ router.post("/deliverables/:id/upload-and-link", async (req, res) => {
         res.json({ deliverable, attachment });
     } catch (error: any) {
         logger.error({ err: error }, "Failed to upload and link:");
-        res.status(500).json({ error: error.message || "Failed to upload and link attachment" });
+        res.status(500).json({ error: "Failed to upload and link attachment" });
     }
 });
 

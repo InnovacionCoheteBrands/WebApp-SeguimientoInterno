@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reporte de Auditoria Tecnica - DesignSystemMissionControl</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #12161c;
+      --panel-2: #171c23;
+      --text: #ecf1f7;
+      --muted: #a8b3c2;
+      --line: #26303d;
+      --gold: #d5b15b;
+      --green: #38b26d;
+      --amber: #d99a2b;
+      --red: #dc5f5f;
+      --blue: #5fa8ff;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+      font-size: 11.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 34px 38px 42px;
+    }
+
+    .hero {
+      background:
+        linear-gradient(135deg, rgba(213, 177, 91, 0.12), rgba(95, 168, 255, 0.08)),
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(213, 177, 91, 0.28);
+      border-radius: 20px;
+      padding: 28px 30px;
+      margin-bottom: 26px;
+    }
+
+    .eyebrow {
+      color: var(--gold);
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 10px 0;
+      line-height: 1.15;
+      font-weight: 700;
+    }
+
+    h1 { font-size: 25pt; }
+    h2 {
+      font-size: 16pt;
+      margin-top: 28px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 {
+      font-size: 12.5pt;
+      margin-top: 18px;
+      color: var(--gold);
+    }
+
+    p { margin: 0 0 10px 0; color: var(--text); }
+    .muted { color: var(--muted); }
+    .lead {
+      font-size: 12.5pt;
+      color: #f6f8fb;
+      max-width: 90%;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .metric .k {
+      color: var(--muted);
+      font-size: 8.7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .metric .v {
+      font-size: 20pt;
+      font-weight: 800;
+      color: var(--gold);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    ul, ol {
+      margin: 8px 0 12px 22px;
+      padding: 0;
+    }
+
+    li { margin: 0 0 6px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: var(--panel-2);
+      color: var(--gold);
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .sev-critical { color: var(--red); font-weight: 800; }
+    .sev-high { color: #ff8c6b; font-weight: 800; }
+    .sev-medium { color: var(--amber); font-weight: 800; }
+    .sev-low { color: var(--blue); font-weight: 800; }
+    .ok { color: var(--green); font-weight: 700; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      margin-right: 6px;
+    }
+
+    .note {
+      background: rgba(95, 168, 255, 0.08);
+      border-left: 4px solid var(--blue);
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .warn {
+      background: rgba(217, 154, 43, 0.08);
+      border-left: 4px solid var(--amber);
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .danger {
+      background: rgba(220, 95, 95, 0.08);
+      border-left: 4px solid var(--red);
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin: 12px 0 16px;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 9.3pt;
+      color: #f6deb2;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 9.2pt;
+    }
+
+    .page-break { page-break-before: always; }
+
+    @media print {
+      .page { padding: 18mm 14mm; max-width: none; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">Technical Audit Report</div>
+      <h1>DesignSystemMissionControl</h1>
+      <p class="lead">
+        Auditoria tecnica integral orientada a determinar el porcentaje real de finalizacion, la calidad de produccion
+        y la brecha restante para alcanzar un estado de release confiable.
+      </p>
+      <div class="meta">
+        <div class="metric">
+          <div class="k">Fecha</div>
+          <div class="v" style="font-size:16pt;">2026-03-19</div>
+        </div>
+        <div class="metric">
+          <div class="k">Resultado</div>
+          <div class="v">73%</div>
+        </div>
+        <div class="metric">
+          <div class="k">Estado</div>
+          <div class="v" style="font-size:16pt;">Beta avanzada</div>
+        </div>
+        <div class="metric">
+          <div class="k">Apto para prod</div>
+          <div class="v" style="font-size:16pt; color:#ff8c6b;">No aun</div>
+        </div>
+      </div>
+    </section>
+
+    <h2>1. Resumen Ejecutivo</h2>
+    <p>
+      El proyecto presenta una base tecnica seria: arquitectura separada frontend/backend, esquema compartido con Drizzle
+      y Zod, multiples modulos funcionales, build de produccion exitosa y una cobertura visual amplia del scope operativo.
+      Sin embargo, el porcentaje visible de interfaz sobrestima el grado real de terminacion.
+    </p>
+    <p>
+      El sistema esta mas cerca de un entorno de <strong>staging operativo</strong> que de una plataforma endurecida para
+      produccion. La mayor parte de los CRUD nucleares existe, pero persisten inconsistencias de autenticacion, modulos
+      parcialmente simulados, deuda tecnica documentada en el propio codigo y decisiones de seguridad que todavia no son
+      aceptables para un despliegue productivo estricto.
+    </p>
+
+    <div class="grid-4">
+      <div class="card">
+        <div class="badge">Funcionalidad</div>
+        <p><strong>71%</strong></p>
+        <p class="muted">Amplia superficie implementada, pero con flujos incompletos o engañosos.</p>
+      </div>
+      <div class="card">
+        <div class="badge">Practicidad UX</div>
+        <p><strong>78%</strong></p>
+        <p class="muted">Buena jerarquia visual; manejo de errores y acciones rapidas todavia irregular.</p>
+      </div>
+      <div class="card">
+        <div class="badge">Limpieza</div>
+        <p><strong>74%</strong></p>
+        <p class="muted">Buen uso de shared schema y UI reuse, con varias excepciones y atajos temporales.</p>
+      </div>
+      <div class="card">
+        <div class="badge">Seguridad</div>
+        <p><strong>61%</strong></p>
+        <p class="muted">Base razonable, pero aun con huecos que bloquean el sello de produccion.</p>
+      </div>
+    </div>
+
+    <h2>2. Alcance y Metodologia</h2>
+    <p>La auditoria se realizo mediante inspeccion cruzada del proyecto local, con enfasis en cuatro ejes:</p>
+    <ol>
+      <li>Correspondencia entre rutas del backend en <code>server/routes.ts</code>, controladores en <code>server/controllers/</code> y rutas del frontend definidas en <code>client/src/App.tsx</code>.</li>
+      <li>Revision de paginas y componentes clave para identificar dead ends, placeholders, estados de carga y rutas engañosas.</li>
+      <li>Analisis de arquitectura compartida, schema reuse, deuda tecnica documentada y patrones redundantes.</li>
+      <li>Revision de seguridad operacional: autenticacion, exposicion de datos, sanitizacion y endurecimiento de respuestas API.</li>
+    </ol>
+
+    <div class="note">
+      <strong>Verificacion tecnica realizada:</strong> <code>npm run build</code> completo con exito, lo que confirma
+      compilacion y bundling productivo. La suite <code>npm test</code> no pudo ejecutarse de forma concluyente en este
+      entorno porque Vitest fallo al arrancar con <code>spawn EPERM</code> al cargar <code>vitest.config.ts</code>.
+      Por lo tanto, no se obtuvo una lectura util del estado real de los tests automatizados.
+    </div>
+
+    <h2>3. Porcentaje de Finalizacion Real</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Submodulo</th>
+          <th>Estimacion</th>
+          <th>Justificacion</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CRM / Leads</td>
+          <td><strong>85%</strong></td>
+          <td>CRUD consistente, metricas y conversion de leads presentes. Buen grado de integracion con frontend.</td>
+        </tr>
+        <tr>
+          <td>Clientes</td>
+          <td><strong>85%</strong></td>
+          <td>Listado, detalle y tabs asociados implementados. Debilidad: el detalle consume toda la coleccion para resolver un registro.</td>
+        </tr>
+        <tr>
+          <td>Proyectos</td>
+          <td><strong>82%</strong></td>
+          <td>Lista, detalle, control, entregables, adjuntos y calculo financiero existen. Persisten atajos temporales en upload.</td>
+        </tr>
+        <tr>
+          <td>Finanzas</td>
+          <td><strong>76%</strong></td>
+          <td>Transacciones y resumen presentes, pero el calendario de pagos no es un ledger real sino una derivacion heuristica desde proyectos.</td>
+        </tr>
+        <tr>
+          <td>Equipo / Personal</td>
+          <td><strong>84%</strong></td>
+          <td>Modulo bien conectado con roles, asignaciones y formularios; hay exposicion excesiva de detalles internos en errores.</td>
+        </tr>
+        <tr>
+          <td>Servicios / Proveedores / POES / Usuarios / Actividad</td>
+          <td><strong>84%</strong></td>
+          <td>CRUD y vistas operativas maduras en terminos relativos.</td>
+        </tr>
+        <tr>
+          <td>Ads</td>
+          <td><strong>45%</strong></td>
+          <td>UI existente, pero accesibilidad y autenticacion inconsistentes; OAuth no implementado y flujos clave siguen simulados.</td>
+        </tr>
+        <tr>
+          <td>Settings</td>
+          <td><strong>40%</strong></td>
+          <td>Funciona como singleton sobre un usuario admin por defecto, no como configuracion multiusuario endurecida.</td>
+        </tr>
+        <tr>
+          <td>Profile</td>
+          <td><strong>35%</strong></td>
+          <td>Avatar funcional; el resto del perfil esta explicitamente pendiente de implementacion.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. Diagnostico por Pilar</h2>
+
+    <h3>4.1 Funcionalidad</h3>
+    <p>
+      La arquitectura de enrutado del backend esta organizada como un ensamblado de routers. En
+      <code>server/routes.ts</code> se montan routers para auth, campaigns, clients, team, resources, financial,
+      projects, ads, settings, contacts, billing profiles, digital assets, installments, services, suppliers, leads,
+      poes, users, project team y audit logs.
+    </p>
+    <p>
+      En el frontend, <code>client/src/App.tsx</code> define un arbol de paginas renderizables amplio: dashboard,
+      clientes, detalle de cliente, proyectos, detalle de proyecto, recursos, equipo, KPIs, finanzas, perfil,
+      settings, CRM, POES, calendario de pagos, control de proyectos, usuarios, proveedores, servicios y actividad.
+    </p>
+    <p>
+      El problema no es ausencia de archivos sino diferencias entre superficie visible y flujo productivo real. Algunos
+      ejemplos relevantes:
+    </p>
+    <ul>
+      <li><strong>Ads no esta realmente expuesto como modulo principal:</strong> <code>/ads</code> y <code>/ads/command-center</code> redirigen a <code>/crm</code>, aunque existe una pagina <code>ads-command-center</code> y un acceso a <code>/ads/settings</code>.</li>
+      <li><strong>Quick Create contiene un dead end:</strong> “Nueva Nota” abre un modal cuyo contenido es solo “Modulo de notas en desarrollo”.</li>
+      <li><strong>Perfil incompleto:</strong> el propio archivo indica que los cambios distintos al avatar estan pendientes de implementacion.</li>
+      <li><strong>Command Palette incompleta:</strong> lista campañas activas, pero el <code>onSelect</code> solo cierra el dialogo y no navega ni ejecuta una accion.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Evidencia</th>
+          <th>Lectura</th>
+          <th>Impacto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>client/src/App.tsx:99-100</code></td>
+          <td><code>/ads</code> y <code>/ads/command-center</code> redirigen a CRM</td>
+          <td>Modulo Ads visible pero no accesible como destino principal</td>
+        </tr>
+        <tr>
+          <td><code>client/src/components/quick-create-menu.tsx:115-119</code></td>
+          <td>Placeholder en “Nueva Nota”</td>
+          <td>Dead end funcional</td>
+        </tr>
+        <tr>
+          <td><code>client/src/pages/profile.tsx:186-193</code></td>
+          <td>Perfil no implementado fuera del avatar</td>
+          <td>Superficie funcional inflada</td>
+        </tr>
+        <tr>
+          <td><code>client/src/components/app-layout.tsx:298-305</code></td>
+          <td>Command palette sin accion real</td>
+          <td>UX aparenta potencia, pero no entrega utilidad operativa completa</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 Practicidad y UX</h3>
+    <p>
+      La capa visual esta bien trabajada y coherente con la estetica “Ethereal Stealth”. La jerarquia de informacion
+      de <code>dashboard</code>, <code>control-proyectos</code> y <code>client-detail</code> es superior al promedio:
+      buena densidad, tarjetas claras, paneles de control y layout reutilizable.
+    </p>
+    <p>
+      Tambien existe una base de estados de carga razonable: <code>LoadingFallback</code> global, spinners locales y
+      algunos empty states. No obstante, el manejo de error esta menos maduro:
+    </p>
+    <ul>
+      <li>El <code>ErrorBoundary</code> global muestra error y <code>componentStack</code> completos al usuario final.</li>
+      <li>No todas las paginas tienen fallbacks dedicados o mensajes de recuperacion consistentes.</li>
+      <li>Varios flujos hacen <code>fetch</code> directo y, cuando fallan por auth, el comportamiento puede sentirse erratico.</li>
+    </ul>
+
+    <div class="warn">
+      <strong>Observacion UX-pragmatica:</strong> la app luce mas terminada de lo que realmente esta. Este tipo de
+      desalineacion es peligrosa porque genera falsa confianza operativa: el usuario puede asumir que un modulo esta listo
+      por la calidad visual, aunque por debajo todavia dependa de placeholders o integraciones parciales.
+    </div>
+
+    <h3>4.3 Limpieza y Arquitectura</h3>
+    <p>
+      Hay una decision acertada en el uso de <code>shared/schema.ts</code> como fuente de tipos y validaciones,
+      complementado por una libreria UI reutilizable en <code>client/src/components/ui/</code>. Esto reduce drift de
+      contratos y facilita coherencia entre formularios y controladores.
+    </p>
+    <p>
+      El deterioro aparece en los bordes:
+    </p>
+    <ul>
+      <li>Coexisten un wrapper autenticado robusto en <code>client/src/lib/api.ts</code> y multiples llamadas <code>fetch</code> crudas que lo evitan.</li>
+      <li><code>client/src/pages/client-detail.tsx</code> resuelve un cliente puntual descargando todos los clientes y filtrando en memoria.</li>
+      <li><code>client/src/pages/project-detail.tsx</code> usa un data URL como “for now” para archivos, en lugar de un flujo de storage productivo.</li>
+      <li>Hay deuda tecnica explicitamente documentada en torno a <code>webhookUrl</code> y al controlador de settings.</li>
+      <li>La ruta <code>/proyectos-test</code> sigue expuesta en el router productivo.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Elemento</th>
+          <th>Estado</th>
+          <th>Comentario arquitectonico</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Schema compartido</td>
+          <td class="ok">Bueno</td>
+          <td>Reutilizacion consistente de tipos y Zod en varios modulos.</td>
+        </tr>
+        <tr>
+          <td>UI reusable</td>
+          <td class="ok">Bueno</td>
+          <td>La carpeta <code>components/ui</code> soporta una base visual consistente.</td>
+        </tr>
+        <tr>
+          <td>Disciplina de acceso API</td>
+          <td class="sev-medium">Inconsistente</td>
+          <td>Existen dos patrones de acceso: uno seguro y otro ad hoc.</td>
+        </tr>
+        <tr>
+          <td>Deuda tecnica documentada</td>
+          <td class="sev-medium">Visible</td>
+          <td>El propio codigo reconoce features no implementadas o provisionales.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4.4 Seguridad y Hardening</h3>
+    <p>
+      El sistema ya tiene piezas correctas: <code>requireAuth</code> exige Bearer token valido, el secreto JWT se
+      valida por longitud minima y los schemas usan transformaciones para filtrar entrada. Sin embargo, todavia hay
+      varios riesgos incompatibles con un entorno de produccion serio.
+    </p>
+
+    <div class="danger">
+      <strong>Conclusion de seguridad:</strong> el proyecto no esta listo para considerarse “hardened”. La seguridad
+      actual es suficiente para una beta privada, pero insuficiente para una exposicion amplia o para manejar datos
+      operativos sensibles con garantias altas.
+    </div>
+
+    <ul>
+      <li><strong>Auth inconsistente en frontend:</strong> varias pantallas protegidas no usan el wrapper que inyecta JWT.</li>
+      <li><strong>Settings singleton inseguro:</strong> el controlador manipula el usuario <code>admin</code> por defecto y expone <code>apiKey</code>, <code>username</code> y <code>role</code>.</li>
+      <li><strong>Refresh tokens en texto claro:</strong> el campo se llama <code>tokenHash</code>, pero el valor se guarda y consulta sin hash real.</li>
+      <li><strong>Exposicion excesiva de errores:</strong> algunos endpoints devuelven <code>details</code> y <code>stack</code> al cliente.</li>
+      <li><strong>Saneamiento parcial:</strong> <code>sanitizeString</code> ayuda, pero no reemplaza sanitizacion contextual de salida ni una politica uniforme de render seguro.</li>
+    </ul>
+  </div>
+
+  <div class="page page-break">
+    <h2>5. Critical Red Flags</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Severidad</th>
+          <th>Hallazgo</th>
+          <th>Justificacion</th>
+          <th>Evidencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="sev-critical">Critica</td>
+          <td>Rutas protegidas fallables por auth inconsistente</td>
+          <td>
+            El backend exige <code>Authorization: Bearer</code>, pero paginas como Ads y Settings hacen <code>fetch</code>
+            directo sin pasar por el wrapper autenticado. En uso real esto puede traducirse en 401 silenciosos o UX rota.
+          </td>
+          <td>
+            <code>client/src/lib/api.ts:52-67</code><br />
+            <code>client/src/pages/ads-settings.tsx:95-118,131-171</code><br />
+            <code>client/src/pages/ads-command-center.tsx:60-85</code><br />
+            <code>client/src/pages/settings.tsx:64-83,108-112</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="sev-critical">Critica</td>
+          <td>Configuracion global montada sobre usuario admin por defecto</td>
+          <td>
+            El controlador de settings no usa el usuario autenticado; opera sobre un singleton <code>admin</code>,
+            creando incluso credenciales por defecto si no existen. Esto rompe aislamiento multiusuario y es una mala
+            practica operativa y de seguridad.
+          </td>
+          <td>
+            <code>server/controllers/settings.ts:21-36</code><br />
+            <code>server/controllers/settings.ts:39-60</code><br />
+            <code>server/controllers/settings.ts:67-109</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="sev-critical">Critica</td>
+          <td>Refresh tokens almacenados en texto claro</td>
+          <td>
+            El nombre <code>tokenHash</code> induce una proteccion inexistente. El token generado se guarda tal cual y se
+            consulta por igualdad exacta. Si la base se expone, el refresh token queda reutilizable.
+          </td>
+          <td>
+            <code>server/controllers/auth.ts:38-49</code><br />
+            <code>server/storage.ts:552-560</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="sev-high">Alta</td>
+          <td>Ads no esta terminado aunque la UI lo sugiera</td>
+          <td>
+            OAuth devuelve <code>501</code>, request review sigue mockeado, y la navegacion principal a Ads redirige a
+            CRM. Es el principal caso de completion inflation del proyecto.
+          </td>
+          <td>
+            <code>client/src/App.tsx:99-101</code><br />
+            <code>client/src/pages/ads-command-center.tsx:136-139</code><br />
+            <code>server/controllers/ads.ts:156-163</code><br />
+            <code>server/controllers/ads.ts:333-352</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="sev-high">Alta</td>
+          <td>Exposicion de stack traces y detalles internos</td>
+          <td>
+            Algunos endpoints devuelven <code>stack</code> y mensajes internos al cliente. El <code>ErrorBoundary</code>
+            global tambien expone <code>componentStack</code>. Esto amplia superficie de fuga tecnica.
+          </td>
+          <td>
+            <code>server/controllers/financial.ts:112-116</code><br />
+            <code>server/controllers/team.ts:40-43</code><br />
+            <code>client/src/components/error-boundary.tsx</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="sev-medium">Media</td>
+          <td>Dead ends visibles al usuario</td>
+          <td>
+            Hay acciones que parecen listas pero no entregan resultado operativo: “Nueva Nota”, palette sin accion y
+            perfil parcialmente deshabilitado.
+          </td>
+          <td>
+            <code>client/src/components/quick-create-menu.tsx:115-119</code><br />
+            <code>client/src/components/app-layout.tsx:298-305</code><br />
+            <code>client/src/pages/profile.tsx:186-193</code>
+          </td>
+        </tr>
+        <tr>
+          <td class="sev-medium">Media</td>
+          <td>Calendario financiero derivado y no contable</td>
+          <td>
+            La pagina <code>payment-calendar</code> calcula pagos a partir de campos del proyecto en memoria, aunque el
+            backend ya expone endpoints de parcialidades. El modulo sirve como visualizacion, no como fuente contable.
+          </td>
+          <td>
+            <code>client/src/pages/payment-calendar.tsx:49-98</code><br />
+            <code>server/controllers/installments.ts:9-39</code>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. Evidencia de Correspondencia Ruta-Controlador-Pagina</h2>
+    <p>
+      La cobertura base existe. El problema dominante no es “ruta sin archivo”, sino “ruta accesible con integracion
+      parcial o política de acceso defectuosa”.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Frontend</th>
+          <th>Backend</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Clientes</td>
+          <td><code>/clientes</code>, <code>/clientes/:id</code></td>
+          <td><code>server/controllers/clients.ts</code> + tabs auxiliares</td>
+          <td class="ok">Implementado con reservas</td>
+        </tr>
+        <tr>
+          <td>Proyectos</td>
+          <td><code>/proyectos</code>, <code>/proyectos/:id</code>, <code>/control-proyectos</code></td>
+          <td><code>server/controllers/projects.ts</code>, <code>installments.ts</code>, <code>project-team.ts</code></td>
+          <td class="ok">Implementado</td>
+        </tr>
+        <tr>
+          <td>Finanzas</td>
+          <td><code>/finanzas</code>, <code>/calendario-pagos</code></td>
+          <td><code>server/controllers/financial.ts</code>, <code>installments.ts</code></td>
+          <td class="sev-medium">Parcialmente confiable</td>
+        </tr>
+        <tr>
+          <td>Equipo</td>
+          <td><code>/equipo</code></td>
+          <td><code>server/controllers/team.ts</code>, <code>agency.ts</code></td>
+          <td class="ok">Implementado</td>
+        </tr>
+        <tr>
+          <td>CRM</td>
+          <td><code>/crm</code></td>
+          <td><code>server/controllers/leads.ts</code></td>
+          <td class="ok">Implementado</td>
+        </tr>
+        <tr>
+          <td>Ads</td>
+          <td><code>/ads/settings</code>, UI para command center no principal</td>
+          <td><code>server/controllers/ads.ts</code></td>
+          <td class="sev-high">Incompleto</td>
+        </tr>
+        <tr>
+          <td>Profile</td>
+          <td><code>/profile</code></td>
+          <td><code>/api/auth/me</code>, <code>/api/users/me/avatar</code></td>
+          <td class="sev-medium">Parcial</td>
+        </tr>
+        <tr>
+          <td>Settings</td>
+          <td><code>/settings</code></td>
+          <td><code>server/controllers/settings.ts</code></td>
+          <td class="sev-high">Funciona, pero con diseño inseguro</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>7. Hallazgos Detallados por Dominio</h2>
+
+    <h3>7.1 CRM y Clientes</h3>
+    <p>
+      Es uno de los dominios mejor resueltos del proyecto. El backend de clientes en
+      <code>server/controllers/clients.ts</code> tiene CRUD completo y el detalle de cliente agrega tabs para
+      contactos, facturacion, assets y documentos. La debilidad principal es la eficiencia y pureza del acceso:
+      <code>client-detail.tsx</code> resuelve un cliente individual descargando toda la lista y filtrando en memoria.
+    </p>
+
+    <h3>7.2 Proyectos</h3>
+    <p>
+      El dominio de proyectos es amplio y relativamente maduro. Existen lista, detalle, entregables, adjuntos, equipo,
+      servicios, rentabilidad y parcialidades. La principal desviacion de produccion es el flujo de archivo “for now”
+      basado en data URLs, que no deberia permanecer en una release endurecida.
+    </p>
+
+    <h3>7.3 Finanzas</h3>
+    <p>
+      El backend financiero esta razonablemente bien modelado para transacciones y resumen. La desviacion esta en la
+      experiencia del calendario: en vez de usar el dominio de parcialidades como fuente primaria, la UI genera nodos de
+      cobro desde proyectos y estados derivados. El modulo es util como visual operativo, pero no deberia considerarse
+      libro mayor.
+    </p>
+
+    <h3>7.4 Ads</h3>
+    <p>
+      Es el area mas incompleta del sistema. La UI y la cantidad de endpoints pueden inducir a pensar que el modulo esta
+      avanzado, pero el analisis demuestra lo contrario: autenticacion inconsistente en frontend, OAuth no implementado,
+      review requests mockeados y accesibilidad principal ausente por redirects.
+    </p>
+
+    <h3>7.5 Settings y Profile</h3>
+    <p>
+      Estos dos dominios concentran deuda silenciosa. Settings aparenta ser una configuracion madura, pero en realidad
+      opera sobre un admin singleton por defecto. Profile luce completo, aunque solo el avatar tiene backend real
+      integrado; el resto del formulario esta reconocido como pendiente.
+    </p>
+
+    <h2>8. Mapa de Pendientes para Llegar al 100%</h2>
+    <ol>
+      <li>Forzar que todo acceso autenticado use <code>request/apiRequest</code> y eliminar <code>fetch</code> crudo en pantallas protegidas.</li>
+      <li>Reescribir <code>server/controllers/settings.ts</code> para trabajar con el usuario autenticado, con controles por rol y sin usuario admin singleton.</li>
+      <li>Hashear refresh tokens en reposo y rotarlos correctamente.</li>
+      <li>Eliminar <code>stack</code> y <code>details</code> sensibles de respuestas productivas.</li>
+      <li>Completar Ads de verdad: OAuth, review notification real y navegacion principal sin redirects engañosos.</li>
+      <li>Terminar Profile o retirar los controles no operativos hasta implementarlos.</li>
+      <li>Vincular <code>payment-calendar</code> al dominio real de parcialidades o a un ledger financiero persistido.</li>
+      <li>Eliminar o aislar <code>/proyectos-test</code> del router de produccion.</li>
+      <li>Dar salida funcional a command palette y acciones rapidas placeholders.</li>
+      <li>Ejecutar y estabilizar pruebas automatizadas reales, incluyendo E2E autenticadas.</li>
+    </ol>
+
+    <h2>9. Veredicto Final</h2>
+    <p>
+      <strong>DesignSystemMissionControl no esta “casi terminado” en terminos de produccion, aunque visualmente lo parezca.</strong>
+      La lectura mas honesta es esta: la plataforma ya tiene suficiente cuerpo para ser demostrable, operable en entornos
+      controlados y acelerable hacia release, pero todavia no alcanza el umbral de fiabilidad, seguridad y consistencia
+      que justifica llamarla 100% lista.
+    </p>
+    <p>
+      El porcentaje real de finalizacion estimado en esta auditoria es <strong>73%</strong>. La distancia restante no es
+      tanto de volumen de pantallas, sino de cierre tecnico en autenticacion, Ads, Settings, pruebas y hardening.
+    </p>
+
+    <div class="footer">
+      Reporte generado localmente a partir de inspeccion del workspace del proyecto. Fuente principal:
+      <code>DesignSystemMissionControl</code>. Fecha de emision: 2026-03-19.
+    </div>
+  </div>
+</body>
+</html>

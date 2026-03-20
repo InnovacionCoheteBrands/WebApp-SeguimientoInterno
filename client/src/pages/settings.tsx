@@ -19,13 +19,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/components/theme-provider";
 import { useLanguage } from "@/components/language-provider";
 import { useSystemSettings } from "@/hooks/use-system-settings";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import type { NormalizedSystemSettings, ThemeSetting, LanguageSetting } from "@/lib/system-settings";
 import { DEFAULT_SYSTEM_SETTINGS, normalizeSystemSettings } from "@/lib/system-settings";
+import { regenerateSystemApiKey, saveSystemSettings } from "@/lib/api";
 
 type Settings = NormalizedSystemSettings;
 
@@ -62,27 +63,17 @@ const Settings = memo(function Settings() {
 
   // Mutation for saving settings
   const saveMutation = useMutation({
-    mutationFn: async (newSettings: Settings) => {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          settings: {
-            theme: newSettings.theme,
-            language: newSettings.language,
-            timezone: newSettings.timezone,
-            campaignAlerts: newSettings.campaignAlerts,
-            analyticsAlerts: newSettings.analyticsAlerts,
-            systemAlerts: newSettings.systemAlerts,
-            emailNotifications: newSettings.emailNotifications,
-            refreshRate: newSettings.refreshRate,
-            chartAnimations: newSettings.chartAnimations,
-          },
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to save settings");
-      return res.json();
-    },
+    mutationFn: async (newSettings: Settings) => saveSystemSettings({
+      theme: newSettings.theme,
+      language: newSettings.language,
+      timezone: newSettings.timezone,
+      campaignAlerts: newSettings.campaignAlerts,
+      analyticsAlerts: newSettings.analyticsAlerts,
+      systemAlerts: newSettings.systemAlerts,
+      emailNotifications: newSettings.emailNotifications,
+      refreshRate: newSettings.refreshRate,
+      chartAnimations: newSettings.chartAnimations,
+    }),
     onSuccess: (data) => {
       const normalized = normalizeSystemSettings(data);
       queryClient.setQueryData(["/api/settings"], normalized);
@@ -106,11 +97,7 @@ const Settings = memo(function Settings() {
 
   // Mutation for regenerating API Key
   const regenerateKeyMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/settings/api-key", { method: "POST" });
-      if (!res.ok) throw new Error("Failed to regenerate key");
-      return res.json();
-    },
+    mutationFn: regenerateSystemApiKey,
     onSuccess: (data) => {
       setLocalSettings(prev => ({ ...prev, apiKey: data.apiKey }));
       setHasChanges(true); // User might want to verify before navigating away, or we could auto-save. 

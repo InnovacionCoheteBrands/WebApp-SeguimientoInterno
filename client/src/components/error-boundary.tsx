@@ -11,6 +11,8 @@ interface State {
     errorInfo: ErrorInfo | null;
 }
 
+const isDev = import.meta.env.DEV;
+
 export class ErrorBoundary extends Component<Props, State> {
     public state: State = {
         hasError: false,
@@ -35,13 +37,23 @@ export class ErrorBoundary extends Component<Props, State> {
 
             return (
                 <div className="p-10 bg-red-900 text-white min-h-screen">
-                    <h1 className="text-3xl font-bold mb-4">Something went wrong</h1>
-                    <div className="bg-black/50 p-4 rounded mb-4 font-mono text-sm whitespace-pre-wrap">
-                        {this.state.error?.toString()}
-                    </div>
-                    <div className="bg-black/30 p-4 rounded font-mono text-xs whitespace-pre-wrap">
-                        {this.state.errorInfo?.componentStack}
-                    </div>
+                    <h1 className="text-3xl font-bold mb-4">
+                        {isDev ? "Something went wrong" : "Ha ocurrido un error inesperado"}
+                    </h1>
+                    {isDev ? (
+                        <>
+                            <div className="bg-black/50 p-4 rounded mb-4 font-mono text-sm whitespace-pre-wrap">
+                                {this.state.error?.toString()}
+                            </div>
+                            <div className="bg-black/30 p-4 rounded font-mono text-xs whitespace-pre-wrap">
+                                {this.state.errorInfo?.componentStack}
+                            </div>
+                        </>
+                    ) : (
+                        <p className="text-lg text-white/80">
+                            Por favor, recargue la página o contacte al soporte técnico.
+                        </p>
+                    )}
                 </div>
             );
         }

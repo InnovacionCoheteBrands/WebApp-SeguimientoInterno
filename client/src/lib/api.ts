@@ -31,6 +31,7 @@
   InsertAgencyRole,
   UpdateAgencyRole,
 } from "@shared/schema";
+import type { SystemSettingsResponse, SystemSettingsValues } from "./system-settings";
 
 export type { AgencyRole };
 
@@ -331,10 +332,199 @@ export async function fetchAnalytics(): Promise<Analytics> {
 // =========================
 // System Settings (Settings)
 // =========================
-export async function fetchSystemSettings(): Promise<unknown> {
+export async function fetchSystemSettings(): Promise<SystemSettingsResponse> {
   const res = await request("/api/settings");
   if (!res.ok) throw new Error("Failed to fetch settings");
   return res.json();
+}
+
+export async function saveSystemSettings(settings: SystemSettingsValues): Promise<SystemSettingsResponse> {
+  const res = await request("/api/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settings }),
+  });
+  if (!res.ok) throw new Error("Failed to save settings");
+  return res.json();
+}
+
+export async function regenerateSystemApiKey(): Promise<{ apiKey: string }> {
+  const res = await request("/api/settings/api-key", { method: "POST" });
+  if (!res.ok) throw new Error("Failed to regenerate key");
+  return res.json();
+}
+
+export interface AdsOverview {
+  blendedROAS: {
+    roas: number;
+    totalSpend: number;
+    totalRevenue: number;
+  };
+  spendPacing: {
+    monthlyBudget: number;
+    currentSpend: number;
+    percentSpent: number;
+    percentElapsed: number;
+    status: "healthy" | "warning" | "critical";
+    daysRemaining: number;
+  };
+  platformBreakdown: Array<{
+    platformId: number;
+    platformName: string;
+    displayName: string;
+    totalSpend: number;
+    totalRevenue: number;
+    roas: number;
+    activeCreatives: number;
+    isActive: boolean;
+  }>;
+  lastUpdated: string;
+}
+
+export interface AdCreative {
+  id: number;
+  platformId: number;
+  platformAdId: string;
+  creativeType: string;
+  imageUrl: string | null;
+  videoUrl: string | null;
+  thumbnailUrl: string | null;
+  headline: string | null;
+  primaryText: string | null;
+  ctaText: string | null;
+  status: string;
+  metrics: {
+    impressions: number;
+    clicks: number;
+    conversions: number;
+    spend: string;
+    revenue: string;
+    ctr: string;
+    cpa: string;
+    roas: string;
+  };
+}
+
+export interface PlatformConnection {
+  id: number;
+  platformId: number;
+  platformName: string;
+  displayName: string;
+  connectionType: "oauth" | "api_key";
+  isActive: boolean;
+  lastSyncAt: string | null;
+  createdAt: string;
+  apiKeyName?: string;
+}
+
+export interface AccountMapping {
+  id: number;
+  platformAccountId: string;
+  platformAccountName: string;
+  internalClientName: string;
+  isActive: boolean;
+}
+
+export interface ClientKpi {
+  id: number;
+  clientName: string;
+  targetROAS: string | null;
+  targetCPA: string | null;
+  monthlyBudgetCap: string | null;
+}
+
+async function parseApiJson<T>(res: Response, fallbackMessage: string): Promise<T> {
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || error.error || fallbackMessage);
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return undefined as T;
+  }
+
+  return res.json();
+}
+
+export async function fetchAdsOverview(): Promise<AdsOverview> {
+  const res = await request("/api/ads/overview");
+  return parseApiJson<AdsOverview>(res, "Failed to fetch ads overview");
+}
+
+export async function fetchTopAdsCreatives(limit = 3): Promise<AdCreative[]> {
+  const res = await request(`/api/ads/creatives/top?limit=${limit}`);
+  return parseApiJson<AdCreative[]>(res, "Failed to fetch top creatives");
+}
+
+export async function fetchBottomAdsCreatives(limit = 3): Promise<AdCreative[]> {
+  const res = await request(`/api/ads/creatives/bottom?limit=${limit}`);
+  return parseApiJson<AdCreative[]>(res, "Failed to fetch bottom creatives");
+}
+
+export async function requestAdsCreativeReview(payload: {
+  creativeId: number;
+  reason: string;
+  requestedBy: string;
+}): Promise<void> {
+  const res = await request("/api/ads/request-review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  await parseApiJson(res, "Failed to request review");
+}
+
+export async function fetchPlatformConnections(): Promise<PlatformConnection[]> {
+  const res = await request("/api/ads/integrations/connections");
+  return parseApiJson<PlatformConnection[]>(res, "Failed to fetch platform connections");
+}
+
+export async function fetchAccountMappings(): Promise<AccountMapping[]> {
+  const res = await request("/api/ads/integrations/mappings");
+  return parseApiJson<AccountMapping[]>(res, "Failed to fetch account mappings");
+}
+
+export async function fetchClientKpis(): Promise<ClientKpi[]> {
+  const res = await request("/api/ads/integrations/kpis");
+  return parseApiJson<ClientKpi[]>(res, "Failed to fetch client KPIs");
+}
+
+export async function connectAdsApiKey(payload: {
+  platform: string;
+  apiKey: string;
+  apiSecret: string;
+  apiKeyName: string;
+}): Promise<void> {
+  const res = await request("/api/ads/integrations/api-key", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  await parseApiJson(res, "Failed to connect API key");
+}
+
+export async function disconnectAdsConnection(connectionId: number): Promise<void> {
+  const res = await request(`/api/ads/integrations/connections/${connectionId}`, {
+    method: "DELETE",
+  });
+  await parseApiJson(res, "Failed to disconnect platform connection");
+}
+
+export async function saveClientKpis(
+  clientId: string,
+  payload: { targetROAS: string; targetCPA: string; monthlyBudgetCap: string }
+): Promise<void> {
+  const res = await request(`/api/ads/integrations/kpis/${clientId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  await parseApiJson(res, "Failed to save client KPIs");
 }
 
 export interface ChatMessage {
@@ -430,10 +620,10 @@ export class SummaryRequestError extends Error {
 
 async function parseSummaryError(res: Response, fallbackMessage: string): Promise<SummaryRequestError> {
   const error = await res.json().catch(() => ({}));
-  return new SummaryRequestError(error.details || error.error || fallbackMessage, {
+  return new SummaryRequestError(error.details || error.message || error.error || fallbackMessage, {
     status: res.status,
     code: error.code,
-    details: error.details,
+    details: error.details || error.message,
     retryable: Boolean(error.retryable),
     requestId: error.requestId,
   });
