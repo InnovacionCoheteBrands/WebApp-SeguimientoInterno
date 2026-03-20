@@ -32,3 +32,6 @@ pm2-*.log
 
 # Text logs
 *.txt
+
+# Browser cache/artifacts
+.chrome-headless/
