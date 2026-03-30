@@ -428,7 +428,10 @@ const FleetTracking = memo(function FleetTracking() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="monthlyBudget">Presupuesto Mensual ($)</Label>
+                <Label htmlFor="monthlyBudget">
+                  Presupuesto Mensual
+                  <span className="ml-1.5 text-[10px] font-mono font-normal text-muted-foreground uppercase tracking-wider">(Subtotal, antes de IVA)</span>
+                </Label>
                 <Input
                   id="monthlyBudget"
                   type="number"
@@ -438,6 +441,23 @@ const FleetTracking = memo(function FleetTracking() {
                   className="h-11"
                   data-testid="input-budget"
                 />
+                {/* IVA auto-calculation breakdown */}
+                {parseFloat(formData.monthlyBudget as string) > 0 && (
+                  <div className="grid grid-cols-2 gap-2 p-2.5 bg-muted/40 border border-border rounded-sm text-xs font-mono">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase text-muted-foreground">IVA (16%)</span>
+                      <span className="text-foreground font-medium">
+                        ${(parseFloat(formData.monthlyBudget as string) * 0.16).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase text-muted-foreground">Total c/IVA</span>
+                      <span className="text-primary font-bold">
+                        ${(parseFloat(formData.monthlyBudget as string) * 1.16).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

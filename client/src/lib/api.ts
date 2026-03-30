@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Campaign,
   InsertCampaign,
   UpdateCampaign,
@@ -554,8 +554,11 @@ export async function sendAgentMessage(messages: ChatMessage[]): Promise<AgentRe
     body: JSON.stringify({ messages }),
   });
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.details || "Failed to send message to agent");
+    let errorBody: any;
+    try { errorBody = await res.json(); } catch {
+      throw new Error(`Agent error (status ${res.status})`);
+    }
+    throw new Error(errorBody.details || "Failed to send message to agent");
   }
   return res.json();
 }
@@ -570,8 +573,11 @@ export async function executeAgentAction(actionType: string, actionData: any): P
     }),
   });
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.details || "Failed to execute action");
+    let errorBody: any;
+    try { errorBody = await res.json(); } catch {
+      throw new Error(`Action error (status ${res.status})`);
+    }
+    throw new Error(errorBody.details || "Failed to execute action");
   }
   return res.json();
 }

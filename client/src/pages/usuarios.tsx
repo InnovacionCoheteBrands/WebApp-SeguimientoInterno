@@ -8,6 +8,7 @@ import {
     ShieldCheck,
     ShieldAlert,
     Plus,
+    UserPlus,
 } from "lucide-react";
 import {
     Table,
@@ -66,6 +67,10 @@ export default function Usuarios() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+    const [newUsername, setNewUsername] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [newRole, setNewRole] = useState<string>("user");
 
     const { data: users = [], isLoading } = useQuery<Omit<User, "password">[]>({
         queryKey: ["/api/users"],
@@ -84,6 +89,25 @@ export default function Usuarios() {
         },
         onError: (error) => {
             toast({ title: "Error", description: "No se pudo actualizar el usuario.", variant: "destructive" });
+        },
+    });
+
+    const createMutation = useMutation({
+        mutationFn: async (data: { username: string; password: string }) => {
+            const res = await apiRequest("POST", "/api/auth/register", data);
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+            toast({ title: "Usuario creado", description: `El usuario "${data.user?.username || newUsername}" fue registrado exitosamente.` });
+            setIsInviteDialogOpen(false);
+            setNewUsername("");
+            setNewPassword("");
+            setNewRole("user");
+        },
+        onError: (error: any) => {
+            const message = error.message?.includes("409") ? "El nombre de usuario ya existe." : (error.message || "No se pudo crear el usuario.");
+            toast({ title: "Error", description: message, variant: "destructive" });
         },
     });
 
@@ -138,7 +162,10 @@ export default function Usuarios() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="max-w-[300px] bg-white/5 border-white/15 focus:border-white/30 font-mono text-xs transition-all h-10 rounded-full"
                     />
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-10 px-6 font-mono text-xs uppercase tracking-wider">
+                    <Button
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-10 px-6 font-mono text-xs uppercase tracking-wider"
+                        onClick={() => setIsInviteDialogOpen(true)}
+                    >
                         <Plus className="mr-2 h-4 w-4" /> Invitar Usuario
                     </Button>
                 </div>
@@ -286,6 +313,76 @@ export default function Usuarios() {
                             disabled={updateMutation.isPending}
                         >
                             Guardar Cambios
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Invite User Dialog */}
+            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                <DialogContent className="bg-card border-border sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Invitar Usuario</DialogTitle>
+                        <DialogDescription>
+                            Crea una nueva cuenta de acceso a la plataforma.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-username" className="text-muted-foreground uppercase text-[10px] font-mono">Nombre de Usuario</Label>
+                            <Input
+                                id="new-username"
+                                placeholder="ej: juan_perez"
+                                value={newUsername}
+                                onChange={(e) => setNewUsername(e.target.value)}
+                                className="bg-background border-border font-mono text-xs"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-password" className="text-muted-foreground uppercase text-[10px] font-mono">Contraseña</Label>
+                            <Input
+                                id="new-password"
+                                type="password"
+                                placeholder="Mínimo 8 caracteres"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="bg-background border-border font-mono text-xs"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-role" className="text-muted-foreground uppercase text-[10px] font-mono">Rol</Label>
+                            <Select value={newRole} onValueChange={setNewRole}>
+                                <SelectTrigger id="new-role" className="bg-background border-border">
+                                    <SelectValue placeholder="Seleccionar rol" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user">Colaborador (User)</SelectItem>
+                                    <SelectItem value="admin">Administrador (Admin)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} className="border-border bg-transparent hover:bg-muted font-mono text-xs">
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (newUsername.length < 3) {
+                                    toast({ title: "Error", description: "El nombre de usuario debe tener al menos 3 caracteres.", variant: "destructive" });
+                                    return;
+                                }
+                                if (newPassword.length < 8) {
+                                    toast({ title: "Error", description: "La contraseña debe tener al menos 8 caracteres.", variant: "destructive" });
+                                    return;
+                                }
+                                createMutation.mutate({ username: newUsername, password: newPassword });
+                            }}
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-xs uppercase"
+                            disabled={createMutation.isPending || !newUsername || !newPassword}
+                        >
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            {createMutation.isPending ? "Creando..." : "Crear Usuario"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

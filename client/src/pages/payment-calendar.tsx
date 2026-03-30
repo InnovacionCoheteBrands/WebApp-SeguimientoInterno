@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
     ArrowLeft,
@@ -28,7 +28,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { fetchProjects, type Project } from "@/lib/api";
+import { fetchProjects, updateProject, type Project } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
 
 // Installment type for payment schedule
 interface CalendarPayment {
@@ -47,6 +48,23 @@ export default function PaymentCalendar() {
     const { toast } = useToast();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedPayment, setSelectedPayment] = useState<CalendarPayment | null>(null);
+
+    const markAsPaidMutation = useMutation({
+        mutationFn: async (payment: CalendarPayment) => {
+            if (payment.type === "project") {
+                return updateProject(payment.projectId, { progress: 100 });
+            }
+            throw new Error("El mantenimiento mensual se gestiona desde el módulo de Finanzas.");
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["projects"] });
+            toast({ title: "Pago registrado", description: "El proyecto fue marcado como completado/pagado." });
+            setSelectedPayment(null);
+        },
+        onError: (error: any) => {
+            toast({ title: "Aviso", description: error.message || "No se pudo registrar el pago.", variant: "destructive" });
+        },
+    });
 
     // Fetch projects to build payment calendar
     const { data: projects = [], isLoading } = useQuery({
@@ -449,10 +467,11 @@ export default function PaymentCalendar() {
                       ? "bg-white/5 text-zinc-500 border border-white/10" 
                       : "bg-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.2)]"
                   }`}
-                  disabled={selectedPayment.status === "paid"}
+                  disabled={selectedPayment.status === "paid" || markAsPaidMutation.isPending}
+                  onClick={() => selectedPayment && markAsPaidMutation.mutate(selectedPayment)}
                 >
                   <Check className="size-4 mr-2" />
-                  {selectedPayment.status === "paid" ? "Transaction Confirmed" : "Finalize Settlement"}
+                  {markAsPaidMutation.isPending ? "Procesando..." : selectedPayment.status === "paid" ? "Transaction Confirmed" : "Finalize Settlement"}
                 </Button>
                 <Button
                   variant="outline"

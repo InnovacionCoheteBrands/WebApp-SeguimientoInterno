@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSystemSettings } from "./use-system-settings";
 
 interface WebSocketMessage {
@@ -13,8 +13,10 @@ export function useWebSocket(url: string) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateTimeRef = useRef<Record<string, number>>({});
   const { data: settings } = useSystemSettings();
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
-  const connect = () => {
+  const connect = useCallback(function connectWs() {
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}${url}`;
@@ -31,8 +33,8 @@ export function useWebSocket(url: string) {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
           
-          // Apply refreshRate throttling for telemetry and metrics updates
-          const refreshRateMs = (settings?.refreshRate ? parseInt(settings.refreshRate) : 5) * 1000;
+          const currentSettings = settingsRef.current;
+          const refreshRateMs = (currentSettings?.refreshRate ? parseInt(currentSettings.refreshRate) : 5) * 1000;
           const now = Date.now();
           const messageType = message.type;
           
@@ -68,7 +70,7 @@ export function useWebSocket(url: string) {
     } catch (error) {
       console.error("[websocket] Connection error:", error);
     }
-  };
+  }, [url]);
 
   useEffect(() => {
     connect();
@@ -81,7 +83,7 @@ export function useWebSocket(url: string) {
         wsRef.current.close();
       }
     };
-  }, [url]);
+  }, [url, connect]);
 
   return { isConnected, lastMessage };
 }

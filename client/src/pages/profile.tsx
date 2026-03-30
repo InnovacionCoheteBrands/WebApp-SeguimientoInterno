@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { request } from "@/lib/api";
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -58,9 +59,7 @@ const ProfilePage = memo(function ProfilePage() {
   const { data: user, isLoading } = useQuery<Profile>({
     queryKey: ['me'],
     queryFn: async () => {
-      const res = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await request('/api/auth/me');
       if (!res.ok) throw new Error('Failed to fetch profile');
       return res.json();
     },
@@ -81,9 +80,8 @@ const ProfilePage = memo(function ProfilePage() {
       const formData = new FormData();
       formData.append('avatar', blob, 'avatar.jpg');
 
-      const res = await fetch('/api/users/me/avatar', {
+      const res = await request('/api/users/me/avatar', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }, // Don't set Content-Type for FormData
         body: formData
       });
 
