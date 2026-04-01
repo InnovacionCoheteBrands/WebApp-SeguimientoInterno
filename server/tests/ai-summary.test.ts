@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { afterEach, describe, expect, it } from 'vitest';
 import { getAiRuntimeConfig } from '../utils/ai';
 import { prepareSummaryPayload } from '../utils/ai-summary';

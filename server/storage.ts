@@ -157,7 +157,7 @@ export interface IStorage {
 
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
-  getAuditLogs(options?: { limit?: number; userId?: string; entityType?: string }): Promise<AuditLog[]>;
+  getAuditLogs(options?: { limit?: number; userId?: string; entityType?: string; action?: string }): Promise<AuditLog[]>;
 
   getCampaigns(): Promise<Campaign[]>;
   getCampaignById(id: number): Promise<Campaign | undefined>;
@@ -3615,7 +3615,7 @@ export class DBStorage implements IStorage {
     return entry;
   }
 
-  async getAuditLogs(options?: { limit?: number; userId?: string; entityType?: string }): Promise<AuditLog[]> {
+  async getAuditLogs(options?: { limit?: number; userId?: string; entityType?: string; action?: string }): Promise<AuditLog[]> {
     const limit = options?.limit || 100;
     const conditions = [];
 
@@ -3624,6 +3624,9 @@ export class DBStorage implements IStorage {
     }
     if (options?.entityType) {
       conditions.push(eq(auditLogs.entityType, options.entityType));
+    }
+    if (options?.action) {
+      conditions.push(eq(auditLogs.action, options.action));
     }
 
     if (conditions.length > 0) {

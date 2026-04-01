@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, X, Bot, User, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { MessageSquare, Send, X, Bot, User, CheckCircle2, XCircle, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { sendAgentMessage, executeAgentAction, type ChatMessage, type ProposedAction } from "@/lib/api";
+import { sendAgentMessage, executeAgentAction, rejectAgentAction, type ChatMessage, type ProposedAction } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -15,6 +15,12 @@ interface MessageWithActions extends ChatMessage {
   proposedActions?: ProposedAction[];
   timestamp: Date;
 }
+
+const RISK_CONFIG = {
+  low: { label: "Bajo", variant: "secondary" as const },
+  medium: { label: "Medio", variant: "default" as const },
+  high: { label: "Alto", variant: "destructive" as const },
+};
 
 export function AgentChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,6 +36,14 @@ export function AgentChat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const invalidateAllQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+    queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    queryClient.invalidateQueries({ queryKey: ["team"] });
+    queryClient.invalidateQueries({ queryKey: ["clients"] });
+    queryClient.invalidateQueries({ queryKey: ["resources"] });
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -62,11 +76,10 @@ export function AgentChat() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to send message to agent",
+        description: error.message || "No se pudo enviar el mensaje al agente",
         variant: "destructive",
       });
     } finally {
@@ -85,9 +98,8 @@ export function AgentChat() {
         throw new Error("Action not found");
       }
 
-      const response = await executeAgentAction(action.actionType, action.actionData);
+      const response = await executeAgentAction(action.toolName, action.toolArgs);
 
-      // Mark action as handled ONLY after successful execution
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId && m.proposedActions
@@ -109,29 +121,27 @@ export function AgentChat() {
       };
 
       setMessages((prev) => [...prev, executionMessage]);
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      invalidateAllQueries();
 
       toast({
-        title: "Action Executed",
-        description: "The action has been completed successfully",
+        title: "Acción ejecutada",
+        description: response.content,
       });
     } catch (error: any) {
       toast({
-        title: "Execution Failed",
-        description: error.message || "Failed to execute action. You can try again.",
+        title: "Error de ejecución",
+        description: error.message || "No se pudo ejecutar la acción. Puedes intentarlo de nuevo.",
         variant: "destructive",
       });
-      // Don't mark as handled on failure - user can retry
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRejectAction = (messageId: string, actionIndex: number) => {
-    // Mark action as handled after rejection
+    const message = messages.find(m => m.id === messageId);
+    const action = message?.proposedActions?.[actionIndex];
+
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId && m.proposedActions
@@ -145,10 +155,14 @@ export function AgentChat() {
       )
     );
 
+    if (action) {
+      rejectAgentAction(action.toolName, action.toolArgs, action.description).catch(() => {});
+    }
+
     const rejectionMessage: MessageWithActions = {
       id: Date.now().toString(),
       role: "user",
-      content: "Action rejected by user",
+      content: "Acción rechazada por el usuario.",
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, rejectionMessage]);
@@ -163,7 +177,6 @@ export function AgentChat() {
 
   return (
     <>
-      {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 z-50"
@@ -173,7 +186,6 @@ export function AgentChat() {
         <MessageSquare className="h-6 w-6" />
       </Button>
 
-      {/* Chat Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-5xl h-[600px] flex flex-col p-0 gap-0">
           <DialogHeader className="px-6 py-4 border-b border-border">
@@ -184,7 +196,7 @@ export function AgentChat() {
                 </div>
                 <div>
                   <DialogTitle className="text-lg font-semibold">Asistente Cohete Brands</DialogTitle>
-                  <p className="text-xs text-muted-foreground">Your intelligent assistant</p>
+                  <p className="text-xs text-muted-foreground">Asistente inteligente de operaciones</p>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
@@ -193,17 +205,16 @@ export function AgentChat() {
             </div>
           </DialogHeader>
 
-          {/* Messages Area */}
           <ScrollArea ref={scrollRef} className="flex-1 px-6 py-4">
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-center py-12">
                   <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-sm text-muted-foreground">
-                    ¡Pregúntame sobre tus campañas, clientes, equipo o análisis!
+                    Pregúntame sobre tus campañas, clientes, equipo o análisis.
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    I can also help you create or update campaigns.
+                    También puedo crear, actualizar o eliminar registros con tu aprobación.
                   </p>
                 </div>
               )}
@@ -220,7 +231,7 @@ export function AgentChat() {
                     </div>
                   )}
 
-                  <div className={`flex flex-col gap-2 max-w-[80%]`}>
+                  <div className="flex flex-col gap-2 max-w-[80%]">
                     <div
                       className={`rounded-sm px-4 py-2 ${message.role === "user"
                         ? "bg-primary text-primary-foreground"
@@ -234,14 +245,25 @@ export function AgentChat() {
                       <div className="space-y-2">
                         {message.proposedActions.map((action, idx) => {
                           const actionKey = `${message.id}-${idx}`;
+                          const risk = RISK_CONFIG[action.riskLevel] || RISK_CONFIG.medium;
 
                           return (
-                            <Alert key={idx} className="border-primary/50 bg-primary/5">
+                            <Alert key={idx} className={`border-primary/50 ${action.handled ? "bg-muted/50 opacity-70" : "bg-primary/5"}`}>
                               <AlertDescription className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
-                                  <p className="font-medium text-sm mb-1">
-                                    {action.handled ? "Action Handled" : "Action Requires Approval"}
-                                  </p>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {action.handled ? (
+                                      <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ShieldAlert className="h-4 w-4 text-primary" />
+                                    )}
+                                    <p className="font-medium text-sm">
+                                      {action.handled ? "Acción procesada" : "Requiere aprobación"}
+                                    </p>
+                                    <Badge variant={risk.variant} className="text-[10px] px-1.5 py-0">
+                                      Riesgo {risk.label}
+                                    </Badge>
+                                  </div>
                                   <p className="text-xs text-muted-foreground">{action.description}</p>
                                 </div>
                                 {!action.handled && (
@@ -253,7 +275,7 @@ export function AgentChat() {
                                       data-testid={`button-approve-action-${actionKey}`}
                                     >
                                       <CheckCircle2 className="h-4 w-4 mr-1" />
-                                      Approve
+                                      Aprobar
                                     </Button>
                                     <Button
                                       size="sm"
@@ -263,7 +285,7 @@ export function AgentChat() {
                                       data-testid={`button-reject-action-${actionKey}`}
                                     >
                                       <XCircle className="h-4 w-4 mr-1" />
-                                      Reject
+                                      Rechazar
                                     </Button>
                                   </div>
                                 )}
@@ -300,7 +322,6 @@ export function AgentChat() {
             </div>
           </ScrollArea>
 
-          {/* Input Area */}
           <div className="px-6 py-4 border-t border-border">
             <div className="flex gap-2">
               <Input
@@ -322,7 +343,7 @@ export function AgentChat() {
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground mt-2 text-center">
-              Powered by GPT-5 • Actions require your approval
+              Powered by Grok (xAI) &bull; Las acciones requieren tu aprobación
             </p>
           </div>
         </DialogContent>

@@ -1,34 +1,51 @@
-﻿import { randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import { Router } from "express";
 import type { ChatCompletionToolMessageParam } from "openai/resources/chat/completions";
+import type { AgentToolContext } from "../agent-tools";
 import {
-    agentTools,
-    getCampaigns,
-    getAnalytics,
-    getTeam,
-    getClientStatus,
-    getResources,
-    getDatabaseStats,
-    directCreateCampaign,
-    directUpdateCampaign,
-    directDeleteCampaign,
-    createClient,
-    updateClient,
-    deleteClient,
-    createTeamMember,
-    updateTeamMember,
-    deleteTeamMember,
-    type AgentToolContext,
-} from "../agent-tools";
+    getRegisteredTool,
+    getLlmToolSchemas,
+    authorizeAgentAction,
+    safeParseToolArgs,
+    validateRequiredFields,
+} from "../agent-tool-registry";
 import { storage } from "../storage";
-import { createAiClient, getAiHealthStatus, mapAiError } from "../utils/ai";
+import { createAiClient, getAiHealthStatus, mapAiError, resolveAiModel } from "../utils/ai";
 import { logger } from "../utils/logger";
+import { logAction } from "../utils/audit-helper";
+import {
+    recordChatRequest,
+    recordToolCall,
+    recordToolProposed,
+    recordToolApproval,
+    recordToolRejection,
+    recordAuthDenied,
+    recordValidationError,
+    getAgentMetrics,
+} from "../utils/agent-metrics";
 import { prepareSummaryPayload, SummaryValidationError, summaryModuleSchema } from "../utils/ai-summary";
 
 const router = Router();
 
+// ---------------------------------------------------------------------------
+// Types — Canonical agent response contract
+// ---------------------------------------------------------------------------
+
+interface ProposedActionPayload {
+    id: string;
+    toolName: string;
+    toolArgs: Record<string, any>;
+    description: string;
+    riskLevel: "low" | "medium" | "high";
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/agent/chat — Conversational agent with tool calling
+// ---------------------------------------------------------------------------
+
 router.post("/agent/chat", async (req, res) => {
     const requestId = randomUUID();
+    recordChatRequest();
 
     try {
         const { messages } = req.body;
@@ -39,6 +56,7 @@ router.post("/agent/chat", async (req, res) => {
 
         const ctx: AgentToolContext = { storage };
         const { client: openai, config } = createAiClient();
+        const chatModel = resolveAiModel(config, "agent");
 
         const systemMessage = {
             role: "system" as const,
@@ -46,32 +64,39 @@ router.post("/agent/chat", async (req, res) => {
 
 Current date and time: ${new Date().toISOString()}
 
-You have access to the following QUERY FUNCTIONS:
+You have access to QUERY FUNCTIONS (executed automatically):
 - get_campaigns: View all marketing campaigns
 - get_analytics: View campaign analytics
 - get_team: View all team members
 - get_client_status: View client accounts
 - get_resources: View marketing resources
 - get_database_stats: View database statistics
+- get_leads: View all leads/prospects
+- get_leads_metrics: View leads funnel metrics
+- get_projects: View all projects with client and health info
+- get_transactions: View financial transactions
+- get_financial_summary: View income, expenses, and net profit
 
-You have access to the following DIRECT ACTION FUNCTIONS:
+You have access to ACTION FUNCTIONS (require user approval before execution):
 - create_campaign, update_campaign, delete_campaign
 - create_client, update_client, delete_client
 - create_team_member, update_team_member, delete_team_member
+- create_lead, update_lead, delete_lead
+- create_project, update_project, delete_project
 
 IMPORTANT GUIDELINES:
-1. Always be helpful, concise, and professional.
-2. When the user asks you to create, update, or delete a record, use your ACTION FUNCTIONS immediately without asking for extra confirmation.
-3. If an action function throws an error (e.g., missing ID), inform the user gracefully.
-4. Provide clear confirmations when actions succeed, including IDs or Names of modified entities.
+1. Always be helpful, concise, and professional. Respond in Spanish.
+2. When the user requests to create, update, or delete a record, call the appropriate function. The system will handle the approval flow.
+3. If a function returns an error, inform the user gracefully.
+4. When a function returns a "pending approval" status, explain to the user what action is pending and that they need to approve it.
 5. If the user asks for information, use the query functions to get real-time context.
 6. YOU CANNOT modify user accounts or passwords. YOU CANNOT execute arbitrary code. Stick to the defined tools.`,
         };
 
         const completion = await openai.chat.completions.create({
-            model: config.model,
+            model: chatModel,
             messages: [systemMessage, ...messages],
-            tools: agentTools,
+            tools: getLlmToolSchemas(),
             tool_choice: "auto",
             max_completion_tokens: 2048,
         });
@@ -81,89 +106,132 @@ IMPORTANT GUIDELINES:
             throw new Error("No response from AI");
         }
 
-        if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-            const toolResults: ChatCompletionToolMessageParam[] = [];
+        if (!responseMessage.tool_calls || responseMessage.tool_calls.length === 0) {
+            return res.json({
+                role: "assistant",
+                content: responseMessage.content || "",
+                requestId,
+            });
+        }
 
-            for (const toolCall of responseMessage.tool_calls) {
-                if (toolCall.type !== "function") continue;
+        const toolResults: ChatCompletionToolMessageParam[] = [];
+        const proposedActions: ProposedActionPayload[] = [];
 
-                const functionName = toolCall.function.name;
-                const functionArgs = JSON.parse(toolCall.function.arguments);
-                let result;
+        for (const toolCall of responseMessage.tool_calls) {
+            if (toolCall.type !== "function") continue;
 
-                switch (functionName) {
-                    case "get_campaigns":
-                        result = await getCampaigns(ctx);
-                        break;
-                    case "get_analytics":
-                        result = await getAnalytics(ctx);
-                        break;
-                    case "get_team":
-                        result = await getTeam(ctx);
-                        break;
-                    case "get_client_status":
-                        result = await getClientStatus(ctx);
-                        break;
-                    case "get_resources":
-                        result = await getResources(ctx);
-                        break;
-                    case "get_database_stats":
-                        result = await getDatabaseStats(ctx);
-                        break;
-                    case "create_campaign":
-                        result = await directCreateCampaign(ctx, functionArgs);
-                        break;
-                    case "update_campaign":
-                        result = await directUpdateCampaign(ctx, functionArgs.campaignId, functionArgs.updates);
-                        break;
-                    case "delete_campaign":
-                        result = await directDeleteCampaign(ctx, functionArgs.campaignId);
-                        break;
-                    case "create_client":
-                        result = await createClient(ctx, functionArgs);
-                        break;
-                    case "update_client":
-                        result = await updateClient(ctx, functionArgs.clientId, functionArgs.updates);
-                        break;
-                    case "delete_client":
-                        result = await deleteClient(ctx, functionArgs.clientId);
-                        break;
-                    case "create_team_member":
-                        result = await createTeamMember(ctx, functionArgs);
-                        break;
-                    case "update_team_member":
-                        result = await updateTeamMember(ctx, functionArgs.teamId, functionArgs.updates);
-                        break;
-                    case "delete_team_member":
-                        result = await deleteTeamMember(ctx, functionArgs.teamId);
-                        break;
-                    default:
-                        result = { error: `Unknown function: ${functionName}` };
-                }
+            const toolName = toolCall.function.name;
+            const tool = getRegisteredTool(toolName);
+
+            if (!tool) {
+                toolResults.push({
+                    tool_call_id: toolCall.id,
+                    role: "tool" as const,
+                    content: JSON.stringify({ error: `Unknown function: ${toolName}` }),
+                });
+                continue;
+            }
+
+            const parseResult = safeParseToolArgs(toolCall.function.arguments);
+            if (!parseResult.ok) {
+                toolResults.push({
+                    tool_call_id: toolCall.id,
+                    role: "tool" as const,
+                    content: JSON.stringify({ error: parseResult.error }),
+                });
+                logger.warn({ requestId, toolName, raw: toolCall.function.arguments }, "Model returned invalid JSON for tool arguments");
+                continue;
+            }
+            const args = parseResult.args;
+
+            const authResult = authorizeAgentAction(req.user, tool);
+            if (!authResult.allowed) {
+                recordAuthDenied(toolName);
+                toolResults.push({
+                    tool_call_id: toolCall.id,
+                    role: "tool" as const,
+                    content: JSON.stringify({ error: authResult.reason }),
+                });
+                logger.warn({ requestId, toolName, code: authResult.code, userId: req.user?.id }, "Agent tool authorization denied");
+                continue;
+            }
+
+            const validationResult = validateRequiredFields(toolName, args);
+            if (!validationResult.allowed) {
+                recordValidationError(toolName);
+                toolResults.push({
+                    tool_call_id: toolCall.id,
+                    role: "tool" as const,
+                    content: JSON.stringify({ error: validationResult.reason }),
+                });
+                continue;
+            }
+
+            const { policy } = tool;
+
+            if (policy.requiresApproval) {
+                recordToolProposed(toolName);
+                const actionId = randomUUID();
+                proposedActions.push({
+                    id: actionId,
+                    toolName,
+                    toolArgs: args,
+                    description: tool.describeAction(args),
+                    riskLevel: policy.riskLevel,
+                });
 
                 toolResults.push({
                     tool_call_id: toolCall.id,
                     role: "tool" as const,
-                    content: JSON.stringify(result),
+                    content: JSON.stringify({
+                        pending: true,
+                        message: `Action "${toolName}" requires user approval before execution. The user will see an approval prompt.`,
+                    }),
                 });
+            } else {
+                const toolStartMs = Date.now();
+                try {
+                    const result = await tool.execute(ctx, args);
+                    recordToolCall(toolName, true, Date.now() - toolStartMs);
+
+                    if (policy.kind === "read") {
+                        logAction(req, policy.auditAction, policy.entityType, null,
+                            `[Agente IA] ${tool.describeAction(args)}`,
+                            { requestId, toolName },
+                        );
+                    }
+
+                    toolResults.push({
+                        tool_call_id: toolCall.id,
+                        role: "tool" as const,
+                        content: JSON.stringify(result),
+                    });
+                } catch (err: any) {
+                    recordToolCall(toolName, false, Date.now() - toolStartMs);
+                    toolResults.push({
+                        tool_call_id: toolCall.id,
+                        role: "tool" as const,
+                        content: JSON.stringify({ error: err.message || "Tool execution failed" }),
+                    });
+                    logger.error({ err, requestId, toolName }, "Tool execution error in agent chat");
+                }
             }
-
-            const finalCompletion = await openai.chat.completions.create({
-                model: config.model,
-                messages: [systemMessage, ...messages, responseMessage, ...toolResults],
-                max_completion_tokens: 2048,
-            });
-
-            const finalMessage = finalCompletion.choices[0]?.message;
-
-            return res.json({
-                role: "assistant",
-                content: finalMessage?.content,
-                toolCalls: toolResults,
-            });
         }
 
-        res.json(responseMessage);
+        const finalCompletion = await openai.chat.completions.create({
+            model: chatModel,
+            messages: [systemMessage, ...messages, responseMessage, ...toolResults],
+            max_completion_tokens: 2048,
+        });
+
+        const finalMessage = finalCompletion.choices[0]?.message;
+
+        return res.json({
+            role: "assistant",
+            content: finalMessage?.content || "",
+            requestId,
+            proposedActions: proposedActions.length > 0 ? proposedActions : undefined,
+        });
     } catch (error) {
         const mapped = mapAiError(error, requestId);
         logger.error({ err: error, requestId, response: mapped.body }, "AI Agent Error:");
@@ -171,12 +239,145 @@ IMPORTANT GUIDELINES:
     }
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/agent/execute — Execute a previously proposed (approved) action
+// ---------------------------------------------------------------------------
+
+router.post("/agent/execute", async (req, res) => {
+    const requestId = randomUUID();
+
+    try {
+        const { toolName, toolArgs } = req.body;
+
+        if (!toolName || typeof toolName !== "string") {
+            return res.status(400).json({
+                error: "toolName is required",
+                code: "AGENT_MISSING_TOOL",
+                requestId,
+            });
+        }
+
+        const tool = getRegisteredTool(toolName);
+        if (!tool) {
+            return res.status(400).json({
+                error: `Unknown tool: ${toolName}`,
+                code: "AGENT_UNKNOWN_TOOL",
+                requestId,
+            });
+        }
+
+        const authResult = authorizeAgentAction(req.user, tool);
+        if (!authResult.allowed) {
+            return res.status(403).json({
+                error: "Forbidden",
+                details: authResult.reason,
+                code: authResult.code || "AGENT_ACTION_FORBIDDEN",
+                requestId,
+            });
+        }
+
+        const safeArgs = toolArgs && typeof toolArgs === "object" ? toolArgs : {};
+
+        const validationResult = validateRequiredFields(toolName, safeArgs);
+        if (!validationResult.allowed) {
+            return res.status(400).json({
+                error: "Validation failed",
+                details: validationResult.reason,
+                code: validationResult.code || "AGENT_VALIDATION_ERROR",
+                requestId,
+            });
+        }
+
+        const ctx: AgentToolContext = { storage };
+
+        const startMs = Date.now();
+        const result = await tool.execute(ctx, safeArgs);
+        const durationMs = Date.now() - startMs;
+
+        recordToolApproval(toolName, durationMs);
+
+        logAction(req, tool.policy.auditAction, tool.policy.entityType,
+            result?.data?.id?.toString() || null,
+            `[Agente IA — Aprobado] ${tool.describeAction(safeArgs)}`,
+            { requestId, toolName, toolArgs: safeArgs, durationMs },
+        );
+
+        logger.info({
+            requestId,
+            toolName,
+            durationMs,
+            userId: req.user?.id,
+        }, "Agent action executed after approval");
+
+        return res.json({
+            success: true,
+            content: result.message || "Acción ejecutada correctamente.",
+            data: result.data,
+            requestId,
+            toolName,
+        });
+    } catch (error: any) {
+        logger.error({ err: error, requestId }, "Agent execute error");
+        return res.status(500).json({
+            error: "Execution failed",
+            details: error.message || "Error al ejecutar la acción aprobada.",
+            code: "AGENT_EXECUTION_ERROR",
+            requestId,
+        });
+    }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/agent/reject — Audit log for rejected actions
+// ---------------------------------------------------------------------------
+
+router.post("/agent/reject", async (req, res) => {
+    try {
+        const { toolName, toolArgs, description } = req.body;
+
+        if (!toolName || typeof toolName !== "string") {
+            return res.status(400).json({ error: "toolName is required" });
+        }
+
+        const tool = getRegisteredTool(toolName);
+        const desc = description || tool?.describeAction(toolArgs || {}) || toolName;
+
+        recordToolRejection(toolName);
+
+        logAction(req, "REJECT", tool?.policy.entityType || "UNKNOWN", null,
+            `[Agente IA — Rechazado] ${desc}`,
+            { toolName, toolArgs: toolArgs || {} },
+        );
+
+        return res.json({ success: true });
+    } catch (error: any) {
+        logger.error({ err: error }, "Agent reject audit error");
+        return res.status(500).json({ error: "Failed to log rejection" });
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/agent/health — AI configuration health check
+// ---------------------------------------------------------------------------
+
 router.get("/agent/health", (_req, res) => {
     res.json({
         ...getAiHealthStatus(),
         checkedAt: new Date().toISOString(),
     });
 });
+
+// ---------------------------------------------------------------------------
+// GET /api/agent/metrics — Agent operational metrics
+// ---------------------------------------------------------------------------
+
+router.get("/agent/metrics", (_req, res) => {
+    res.json(getAgentMetrics());
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/agent/summary — AI-generated executive summaries
+// ---------------------------------------------------------------------------
 
 router.post("/agent/summary", async (req, res) => {
     const requestId = randomUUID();
@@ -206,6 +407,7 @@ router.post("/agent/summary", async (req, res) => {
         const module = parsedModule.data;
         const { preparedData, rawPayloadBytes, preparedPayloadBytes } = prepareSummaryPayload(module, req.body.data);
         const { client: openai, config } = createAiClient();
+        const summaryModel = resolveAiModel(config, "summary");
 
         const systemMessage = {
             role: "system" as const,
@@ -229,13 +431,13 @@ REGLAS ESTRICTAS:
             requestId,
             module,
             provider: config.provider,
-            model: config.model,
+            model: summaryModel,
             rawPayloadBytes,
             preparedPayloadBytes,
         }, "AI summary request started");
 
         const completion = await openai.chat.completions.create({
-            model: config.model,
+            model: summaryModel,
             messages: [systemMessage, userMessage],
             max_completion_tokens: 800,
             temperature: 0.3,
@@ -250,7 +452,7 @@ REGLAS ESTRICTAS:
             requestId,
             module,
             provider: config.provider,
-            model: config.model,
+            model: summaryModel,
             rawPayloadBytes,
             preparedPayloadBytes,
         }, "AI summary generated successfully");
@@ -260,7 +462,7 @@ REGLAS ESTRICTAS:
             meta: {
                 requestId,
                 provider: config.provider,
-                model: config.model,
+                model: summaryModel,
                 rawPayloadBytes,
                 preparedPayloadBytes,
             },

@@ -1,5 +1,5 @@
 import type { IStorage } from "./storage";
-import type { InsertCampaign, InsertClientAccount, InsertTeam } from "@shared/schema";
+import type { InsertCampaign, InsertClientAccount, InsertTeam, InsertLead, UpdateLead, InsertProject, UpdateProject } from "@shared/schema";
 
 export interface AgentToolContext {
   storage: IStorage;
@@ -196,6 +196,123 @@ export async function deleteTeamMember(ctx: AgentToolContext, teamId: number) {
     message: `Team member #${teamId} deleted successfully.`,
   };
 }
+
+// ==========================================
+// LEADS MODULE
+// ==========================================
+
+export async function getLeads(ctx: AgentToolContext) {
+  const allLeads = await ctx.storage.getLeads();
+  return {
+    success: true,
+    data: allLeads,
+    message: `Found ${allLeads.length} leads in the system`,
+  };
+}
+
+export async function getLeadsMetrics(ctx: AgentToolContext) {
+  const metrics = await ctx.storage.getLeadsMetrics();
+  return {
+    success: true,
+    data: metrics,
+    message: "Retrieved leads metrics successfully",
+  };
+}
+
+export async function directCreateLead(ctx: AgentToolContext, leadData: InsertLead) {
+  const newLead = await ctx.storage.createLead(leadData);
+  return {
+    success: true,
+    data: newLead,
+    message: `Lead "${leadData.name}" created successfully with ID ${newLead.id}.`,
+  };
+}
+
+export async function directUpdateLead(ctx: AgentToolContext, leadId: number, updates: UpdateLead) {
+  const updatedLead = await ctx.storage.updateLead(leadId, updates);
+  if (!updatedLead) throw new Error(`Lead ID ${leadId} not found.`);
+  return {
+    success: true,
+    data: updatedLead,
+    message: `Lead #${leadId} updated successfully.`,
+  };
+}
+
+export async function directDeleteLead(ctx: AgentToolContext, leadId: number) {
+  const success = await ctx.storage.deleteLead(leadId);
+  if (!success) throw new Error(`Lead ID ${leadId} not found or could not be deleted.`);
+  return {
+    success: true,
+    message: `Lead #${leadId} deleted successfully.`,
+  };
+}
+
+// ==========================================
+// PROJECTS MODULE
+// ==========================================
+
+export async function getProjects(ctx: AgentToolContext) {
+  const allProjects = await ctx.storage.getProjects();
+  return {
+    success: true,
+    data: allProjects,
+    message: `Found ${allProjects.length} projects in the system`,
+  };
+}
+
+export async function directCreateProject(ctx: AgentToolContext, projectData: InsertProject) {
+  const newProject = await ctx.storage.createProject(projectData);
+  return {
+    success: true,
+    data: newProject,
+    message: `Project "${projectData.name}" created successfully with ID ${newProject.id}.`,
+  };
+}
+
+export async function directUpdateProject(ctx: AgentToolContext, projectId: number, updates: UpdateProject) {
+  const updatedProject = await ctx.storage.updateProject(projectId, updates);
+  if (!updatedProject) throw new Error(`Project ID ${projectId} not found.`);
+  return {
+    success: true,
+    data: updatedProject,
+    message: `Project #${projectId} updated successfully.`,
+  };
+}
+
+export async function directDeleteProject(ctx: AgentToolContext, projectId: number) {
+  const success = await ctx.storage.deleteProject(projectId);
+  if (!success) throw new Error(`Project ID ${projectId} not found or could not be deleted.`);
+  return {
+    success: true,
+    message: `Project #${projectId} deleted successfully.`,
+  };
+}
+
+// ==========================================
+// FINANCIAL MODULE
+// ==========================================
+
+export async function getTransactions(ctx: AgentToolContext) {
+  const all = await ctx.storage.getTransactions();
+  return {
+    success: true,
+    data: all,
+    message: `Found ${all.length} transactions in the system`,
+  };
+}
+
+export async function getFinancialSummary(ctx: AgentToolContext) {
+  const summary = await ctx.storage.getFinancialSummary();
+  return {
+    success: true,
+    data: summary,
+    message: "Retrieved financial summary successfully",
+  };
+}
+
+// ==========================================
+// LEGACY SCHEMA ARRAY (superseded by agent-tool-registry.ts)
+// ==========================================
 
 export const agentTools = [
   {

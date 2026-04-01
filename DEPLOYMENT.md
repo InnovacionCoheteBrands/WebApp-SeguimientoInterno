@@ -1,4 +1,4 @@
-﻿# Cohete Brands - GuÃ­a de Deployment en VPS
+# Cohete Brands - GuÃ­a de Deployment en VPS
 
 Esta guÃ­a proporciona instrucciones completas para desplegar la plataforma Cohete Brands Marketing Operations en un VPS (Virtual Private Server) estÃ¡ndar.
 
@@ -193,9 +193,20 @@ JWT_SECRET="tu-jwt-secret-de-minimo-32-caracteres"
 # Cifrado de API keys (obligatorio en produccion)
 ENCRYPTION_KEY="tu-clave-hex-de-64-caracteres"
 
-# AI Integration (Opcional)
-AI_INTEGRATIONS_OPENAI_API_KEY="sk-..."
-AI_INTEGRATIONS_OPENAI_BASE_URL="https://api.openai.com/v1"
+# AI Integration (Opcional, xAI recomendado)
+AI_ENABLED=true
+AI_PROVIDER="xai"
+AI_BASE_URL="https://api.x.ai/v1"
+AI_MODEL_AGENT="grok-4-1-fast-reasoning"
+AI_MODEL_SUMMARY="grok-4-1-fast-non-reasoning"
+AI_API_KEY="xai-..."
+
+# Endpoints del Agente IA:
+#   POST /api/agent/chat     — Chat con herramientas (reads auto, writes propuestos)
+#   POST /api/agent/execute  — Ejecutar accion aprobada por el usuario
+#   POST /api/agent/reject   — Registrar rechazo en auditoria
+#   GET  /api/agent/health   — Estado de configuracion IA
+#   GET  /api/agent/metrics  — Metricas operativas del agente
 
 # Google OAuth (Opcional)
 GOOGLE_CLIENT_ID=""

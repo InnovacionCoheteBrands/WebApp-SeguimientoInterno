@@ -1,4 +1,4 @@
-﻿import OpenAI, {
+import OpenAI, {
     APIConnectionError,
     APIConnectionTimeoutError,
     APIError,
@@ -43,8 +43,12 @@ export interface AiHttpErrorPayload {
 
 const XAI_BASE_URL = "https://api.x.ai/v1";
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
-const XAI_DEFAULT_MODEL = "grok-4-1-fast-non-reasoning";
+const XAI_DEFAULT_MODEL = "grok-4-1-fast-reasoning";
 const OPENAI_DEFAULT_MODEL = "gpt-4o-mini";
+const XAI_DEFAULT_AGENT_MODEL = "grok-4-1-fast-reasoning";
+const XAI_DEFAULT_SUMMARY_MODEL = "grok-4-1-fast-non-reasoning";
+const OPENAI_DEFAULT_AGENT_MODEL = "gpt-4o-mini";
+const OPENAI_DEFAULT_SUMMARY_MODEL = "gpt-4o-mini";
 
 const PLACEHOLDER_KEY_PATTERNS = [
     "placeholder",
@@ -257,6 +261,27 @@ export function createAiClient(): { client: OpenAI; config: AiRuntimeConfig } {
         }),
         config,
     };
+}
+
+export function resolveAiModel(config: Pick<AiRuntimeConfig, "provider" | "model">, target: "agent" | "summary"): string {
+    const targetModel =
+        target === "agent"
+            ? process.env.AI_MODEL_AGENT || process.env.AI_INTEGRATIONS_AGENT_MODEL
+            : process.env.AI_MODEL_SUMMARY || process.env.AI_INTEGRATIONS_SUMMARY_MODEL;
+
+    if (targetModel?.trim()) {
+        return targetModel.trim();
+    }
+
+    if (config.provider === "xai") {
+        return target === "agent" ? XAI_DEFAULT_AGENT_MODEL : XAI_DEFAULT_SUMMARY_MODEL;
+    }
+
+    if (config.provider === "openai") {
+        return target === "agent" ? OPENAI_DEFAULT_AGENT_MODEL : OPENAI_DEFAULT_SUMMARY_MODEL;
+    }
+
+    return config.model;
 }
 
 function sanitizeErrorMessage(message: string | undefined): string {

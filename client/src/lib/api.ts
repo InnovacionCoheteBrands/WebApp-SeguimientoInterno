@@ -533,18 +533,27 @@ export interface ChatMessage {
 }
 
 export interface ProposedAction {
-  requiresApproval: true;
-  actionType: string;
-  actionData: any;
+  id: string;
+  toolName: string;
+  toolArgs: Record<string, any>;
   description: string;
+  riskLevel: "low" | "medium" | "high";
   handled?: boolean;
 }
 
 export interface AgentResponse {
   role: "assistant";
   content: string;
+  requestId: string;
   proposedActions?: ProposedAction[];
-  executedAction?: boolean;
+}
+
+export interface AgentExecuteResponse {
+  success: boolean;
+  content: string;
+  data?: any;
+  requestId: string;
+  toolName: string;
 }
 
 export async function sendAgentMessage(messages: ChatMessage[]): Promise<AgentResponse> {
@@ -563,14 +572,19 @@ export async function sendAgentMessage(messages: ChatMessage[]): Promise<AgentRe
   return res.json();
 }
 
-export async function executeAgentAction(actionType: string, actionData: any): Promise<AgentResponse> {
-  const res = await request("/api/agent/chat", {
+export async function rejectAgentAction(toolName: string, toolArgs: Record<string, any>, description: string): Promise<void> {
+  await request("/api/agent/reject", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [],
-      executeAction: { actionType, actionData }
-    }),
+    body: JSON.stringify({ toolName, toolArgs, description }),
+  });
+}
+
+export async function executeAgentAction(toolName: string, toolArgs: Record<string, any>): Promise<AgentExecuteResponse> {
+  const res = await request("/api/agent/execute", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ toolName, toolArgs }),
   });
   if (!res.ok) {
     let errorBody: any;
