@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertClientDocumentSchema } from "@shared/schema";
 import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.post("/client-documents", async (req, res) => {
     try {
         const validatedData = insertClientDocumentSchema.parse(req.body);
         const document = await storage.createClientDocument(validatedData);
+        logAction(req, "CREATE", "CLIENT_DOCUMENT", document.id.toString(), `Creó documento de cliente '${document.name}'`);
         res.status(201).json(document);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -59,6 +61,7 @@ router.delete("/client-documents/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Documento no encontrado" });
         }
+        logAction(req, "DELETE", "CLIENT_DOCUMENT", id.toString(), `Eliminó documento de cliente #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting client document:");

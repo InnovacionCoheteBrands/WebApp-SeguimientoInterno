@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertContactSchema, updateContactSchema } from "@shared/schema";
 import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.post("/contacts", async (req, res) => {
     try {
         const validatedData = insertContactSchema.parse(req.body);
         const contact = await storage.createContact(validatedData);
+        logAction(req, "CREATE", "CONTACT", contact.id.toString(), `Creó el contacto '${contact.firstName} ${contact.lastName}'`);
         res.status(201).json(contact);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -60,6 +62,7 @@ router.patch("/contacts/:id", async (req, res) => {
         if (!contact) {
             return res.status(404).json({ error: "Contacto no encontrado" });
         }
+        logAction(req, "UPDATE", "CONTACT", id.toString(), `Actualizó el contacto '${contact.firstName} ${contact.lastName}'`, validatedData as Record<string, any>);
         res.json(contact);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -78,6 +81,7 @@ router.delete("/contacts/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Contacto no encontrado" });
         }
+        logAction(req, "DELETE", "CONTACT", id.toString(), `Eliminó el contacto #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting contact:");

@@ -115,6 +115,21 @@ const optionalPositiveNumericString = () =>
     })
     .optional();
 
+/**
+ * Strictly positive number coercion used in financial write paths.
+ * Rejects invalid values and zero to avoid non-actionable financial records.
+ */
+const strictPositiveNumericString = () =>
+  z.union([z.string(), z.number()])
+    .refine((val) => {
+      const num = typeof val === "string" ? parseFloat(val) : val;
+      return Number.isFinite(num) && num > 0;
+    }, { message: "El valor debe ser mayor a 0" })
+    .transform((val) => {
+      const num = typeof val === "string" ? parseFloat(val) : val;
+      return num.toFixed(2);
+    });
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -785,8 +800,8 @@ export const insertTransactionSchema = createInsertSchema(transactions, {
   relatedClient: safeOptionalString(200),
   source: safeOptionalString(100),
 
-  // 🔢 Positive number coercion - amount must be >= 0
-  amount: positiveNumericString(),
+  // 🔢 Strictly positive amount to avoid zero-value financial records
+  amount: strictPositiveNumericString(),
   subtotal: optionalPositiveNumericString(),
   iva: optionalPositiveNumericString(),
 
@@ -853,8 +868,8 @@ export const insertRecurringTransactionSchema = createInsertSchema(recurringTran
   notes: safeOptionalString(1000),
   frequency: z.enum(["weekly", "biweekly", "monthly", "quarterly", "yearly"]),
 
-  // 🔢 Positive number coercion
-  amount: positiveNumericString(),
+  // 🔢 Strictly positive amount to avoid zero-value recurring records
+  amount: strictPositiveNumericString(),
   subtotal: optionalPositiveNumericString(),
   iva: optionalPositiveNumericString(),
 

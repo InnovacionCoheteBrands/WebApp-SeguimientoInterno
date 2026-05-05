@@ -2,76 +2,65 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { insertCampaignSchema, updateCampaignSchema } from "@shared/schema";
 import { broadcastCampaignUpdate } from "../websocket";
-import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
+import { AppError, asyncHandler } from "../middleware/error-handler";
 
 const router = Router();
 
-router.get("/campaigns", async (req, res) => {
-    try {
-        const campaigns = await storage.getCampaigns();
-        res.json(campaigns);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch campaigns" });
-    }
-});
+router.get("/campaigns", asyncHandler(async (_req, res) => {
+    const campaigns = await storage.getCampaigns();
+    res.json(campaigns);
+}));
 
-router.get("/campaigns/:id", async (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const campaign = await storage.getCampaignById(id);
-        if (!campaign) {
-            return res.status(404).json({ error: "Campaign not found" });
-        }
-        res.json(campaign);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch campaign" });
+router.get("/campaigns/:id", asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        throw new AppError("Campaign ID must be a positive integer.", 400, "INVALID_CAMPAIGN_ID");
     }
-});
 
-router.post("/campaigns", async (req, res) => {
-    try {
-        const validatedData = insertCampaignSchema.parse(req.body);
-        const campaign = await storage.createCampaign(validatedData);
-        await broadcastCampaignUpdate(campaign);
-        res.status(201).json(campaign);
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors });
-        }
-        res.status(500).json({ error: "Failed to create campaign" });
+    const campaign = await storage.getCampaignById(id);
+    if (!campaign) {
+        throw new AppError("Campaign not found.", 404, "CAMPAIGN_NOT_FOUND");
     }
-});
 
-router.patch("/campaigns/:id", async (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const validatedData = updateCampaignSchema.parse(req.body);
-        const campaign = await storage.updateCampaign(id, validatedData);
-        if (!campaign) {
-            return res.status(404).json({ error: "Campaign not found" });
-        }
-        await broadcastCampaignUpdate(campaign);
-        res.json(campaign);
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: error.errors });
-        }
-        res.status(500).json({ error: "Failed to update campaign" });
-    }
-});
+    res.json(campaign);
+}));
 
-router.delete("/campaigns/:id", async (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const deleted = await storage.deleteCampaign(id);
-        if (!deleted) {
-            return res.status(404).json({ error: "Campaign not found" });
-        }
-        await broadcastCampaignUpdate();
-        res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: "Failed to delete campaign" });
+router.post("/campaigns", asyncHandler(async (req, res) => {
+    const validatedData = insertCampaignSchema.parse(req.body);
+    const campaign = await storage.createCampaign(validatedData);
+    logAction(req, "CREATE", "CAMPAIGN", campaign.id.toString(), `Creó la campaña '${campaign.name}'`);
+    await broadcastCampaignUpdate(campaign);
+    res.status(201).json(campaign);
+}));
+
+router.patch("/campaigns/:id", asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        throw new AppError("Campaign ID must be a positive integer.", 400, "INVALID_CAMPAIGN_ID");
     }
-});
+    const validatedData = updateCampaignSchema.parse(req.body);
+    const campaign = await storage.updateCampaign(id, validatedData);
+    if (!campaign) {
+        throw new AppError("Campaign not found.", 404, "CAMPAIGN_NOT_FOUND");
+    }
+    logAction(req, "UPDATE", "CAMPAIGN", id.toString(), `Actualizó la campaña '${campaign.name}'`, validatedData as Record<string, any>);
+    await broadcastCampaignUpdate(campaign);
+    res.json(campaign);
+}));
+
+router.delete("/campaigns/:id", asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        throw new AppError("Campaign ID must be a positive integer.", 400, "INVALID_CAMPAIGN_ID");
+    }
+    const deleted = await storage.deleteCampaign(id);
+    if (!deleted) {
+        throw new AppError("Campaign not found.", 404, "CAMPAIGN_NOT_FOUND");
+    }
+    logAction(req, "DELETE", "CAMPAIGN", id.toString(), `Eliminó la campaña #${id}`);
+    await broadcastCampaignUpdate();
+    res.status(204).send();
+}));
 
 export default router;

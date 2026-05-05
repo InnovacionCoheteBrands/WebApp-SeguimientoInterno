@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { insertBillingProfileSchema, updateBillingProfileSchema } from "@shared/schema";
 import { z } from "zod";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.post("/billing-profiles", async (req, res) => {
     try {
         const validatedData = insertBillingProfileSchema.parse(req.body);
         const profile = await storage.createBillingProfile(validatedData);
+        logAction(req, "CREATE", "BILLING_PROFILE", profile.id.toString(), `Creó perfil de facturación '${profile.businessName}'`);
         res.status(201).json(profile);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -60,6 +62,7 @@ router.patch("/billing-profiles/:id", async (req, res) => {
         if (!profile) {
             return res.status(404).json({ error: "Perfil de facturaciÃƒÂ³n no encontrado" });
         }
+        logAction(req, "UPDATE", "BILLING_PROFILE", id.toString(), `Actualizó perfil de facturación '${profile.businessName}'`, validatedData as Record<string, any>);
         res.json(profile);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -78,6 +81,7 @@ router.delete("/billing-profiles/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Perfil de facturaciÃƒÂ³n no encontrado" });
         }
+        logAction(req, "DELETE", "BILLING_PROFILE", id.toString(), `Eliminó perfil de facturación #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting billing profile:");

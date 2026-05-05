@@ -222,6 +222,7 @@ export interface IStorage {
   getMonthlyAccountsPayable(year: number, month: number): Promise<RecurringTransaction[]>;
   getMonthlyAccountsReceivable(year: number, month: number): Promise<RecurringTransaction[]>;
   markObligationAsPaid(templateId: number, paidDate: Date): Promise<Transaction>;
+  unpayObligation(templateId: number): Promise<{ transactionDeleted: boolean; recurring: RecurringTransaction }>;
 
   // FIN-001: Delete transaction linked to recurring template for current month
   deleteTransactionByRecurringTemplateId(templateId: number): Promise<boolean>;
@@ -2321,40 +2322,51 @@ export class DBStorage implements IStorage {
   // Mark an obligation as paid (create actual transaction from template)
   async markObligationAsPaid(templateId: number, paidDate: Date): Promise<Transaction> {
     try {
-      const template = await this.getRecurringTransactionById(templateId);
-      if (!template) throw new Error("Recurring template not found");
+      return await db.transaction(async (tx) => {
+        const [template] = await tx
+          .select()
+          .from(recurringTransactions)
+          .where(eq(recurringTransactions.id, templateId))
+          .limit(1);
 
-      // Create actual transaction linked to template
-      const transaction = await this.createTransaction({
-        type: template.type as "Ingreso" | "Gasto",
-        category: template.category,
-        amount: template.amount,
-        date: paidDate,
-        isPaid: true,  // ✅ Mark as paid immediately
-        paidDate: paidDate,
-        clientId: template.clientId || undefined,
-        isRecurringInstance: true,  // ✅ Link to template
-        recurringTemplateId: templateId,
-        source: 'recurring_template',
-        sourceId: templateId,
-        status: 'Pagado',  // Legacy field
-        description: template.description || undefined,
-        relatedClient: null,  // Using clientId instead
+        if (!template) {
+          throw new Error("Recurring template not found");
+        }
+
+        const nextDate = this.calculateNextExecutionDate(
+          template.frequency,
+          template.dayOfMonth,
+          template.dayOfWeek
+        );
+
+        const [transaction] = await tx.insert(transactions).values({
+          type: template.type as "Ingreso" | "Gasto",
+          category: template.category,
+          amount: template.amount,
+          date: paidDate,
+          isPaid: true,
+          paidDate,
+          clientId: template.clientId || undefined,
+          isRecurringInstance: true,
+          recurringTemplateId: templateId,
+          source: "recurring_template",
+          sourceId: templateId,
+          status: "Pagado",
+          description: template.description || undefined,
+          relatedClient: null,
+        }).returning();
+
+        await tx
+          .update(recurringTransactions)
+          .set({
+            lastExecutionDate: paidDate,
+            nextExecutionDate: nextDate,
+            updatedAt: new Date(),
+          })
+          .where(eq(recurringTransactions.id, templateId));
+
+        return transaction;
       });
-
-      // Update template's execution dates
-      const nextDate = this.calculateNextExecutionDate(
-        template.frequency,
-        template.dayOfMonth,
-        template.dayOfWeek
-      );
-
-      await this.updateRecurringTransaction(templateId, {
-        lastExecutionDate: paidDate,
-        nextExecutionDate: nextDate,
-      });
-
-      return transaction;
     } catch (error) {
       // Re-throw "not found" errors as-is
       if (error instanceof Error && error.message === "Recurring template not found") {
@@ -2370,16 +2382,50 @@ export class DBStorage implements IStorage {
     }
   }
 
+  async unpayObligation(templateId: number): Promise<{ transactionDeleted: boolean; recurring: RecurringTransaction }> {
+    return await db.transaction(async (tx) => {
+      const [existingRecurring] = await tx
+        .select()
+        .from(recurringTransactions)
+        .where(eq(recurringTransactions.id, templateId))
+        .limit(1);
+
+      if (!existingRecurring) {
+        throw new Error("Recurring template not found");
+      }
+
+      const transactionDeleted = await this.deleteTransactionByRecurringTemplateId(templateId, tx);
+
+      const [recurring] = await tx
+        .update(recurringTransactions)
+        .set({
+          lastExecutionDate: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(recurringTransactions.id, templateId))
+        .returning();
+
+      if (!recurring) {
+        throw new Error("Recurring template not found");
+      }
+
+      return { transactionDeleted, recurring };
+    });
+  }
+
   // FIN-001: Delete transaction linked to recurring template for current month
   // Used by the "unpay" feature to properly revert a paid obligation
-  async deleteTransactionByRecurringTemplateId(templateId: number): Promise<boolean> {
+  async deleteTransactionByRecurringTemplateId(
+    templateId: number,
+    executor: Pick<typeof db, "delete"> = db
+  ): Promise<boolean> {
     try {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
       // Find and delete transactions linked to this template created this month
-      const deletedTransactions = await db.delete(transactions)
+      const deletedTransactions = await executor.delete(transactions)
         .where(
           and(
             eq(transactions.recurringTemplateId, templateId),
@@ -3641,50 +3687,74 @@ export class DBStorage implements IStorage {
   }
 
   async convertLeadToClient(leadId: number): Promise<{ lead: Lead; clientId: number }> {
-    const lead = await this.getLeadById(leadId);
-    if (!lead) throw new Error("Lead not found");
+    return await db.transaction(async (tx) => {
+      const [lead] = await tx.select().from(leads).where(eq(leads.id, leadId)).limit(1);
+      if (!lead) {
+        throw new Error("Lead not found");
+      }
 
-    if (lead.convertedToClientId) {
-      throw new Error("Este lead ya fue convertido a cliente");
-    }
+      if (lead.convertedToClientId) {
+        throw new Error("Este lead ya fue convertido a cliente");
+      }
 
-    // 1. Create client from lead data
-    let companyName = lead.company || lead.name;
-    const newClient = await this.createClientAccount({
-      companyName: companyName,
-      industry: lead.origin || "Por definir",
-      monthlyBudget: Number(lead.estimatedValue) || 0,
-      currentSpend: 0,
-      healthScore: 100,
-      status: "Active",
+      const companyName = lead.company?.trim() || lead.name.trim();
+      const estimatedValueNumber = Number(lead.estimatedValue ?? 0);
+      const normalizedEstimatedValue = Number.isFinite(estimatedValueNumber) ? estimatedValueNumber : 0;
+      const normalizedEstimatedValueText = normalizedEstimatedValue.toString();
+
+      const [newClient] = await tx.insert(clientAccounts).values({
+        companyName,
+        industry: lead.origin || "Por definir",
+        monthlyBudget: normalizedEstimatedValue,
+        currentSpend: 0,
+        healthScore: 100,
+        status: "Active",
+      }).returning();
+
+      const [firstNameRaw, ...lastNameParts] = lead.name.trim().split(/\s+/).filter(Boolean);
+      const firstName = firstNameRaw || "Contacto";
+      const lastName = lastNameParts.join(" ") || "Sin apellido";
+      const email = lead.email?.trim() || `lead-${lead.id}@placeholder.local`;
+
+      await tx.insert(contacts).values({
+        clientId: newClient.id,
+        firstName,
+        lastName,
+        email,
+        phone: lead.phone?.trim() || undefined,
+        position: lead.position?.trim() || undefined,
+        isPrimary: true,
+      });
+
+      await tx.insert(projects).values({
+        clientId: newClient.id,
+        name: `Onboarding: ${companyName}`,
+        serviceType: "Setup Inicial",
+        status: "Planning",
+        health: "green",
+        level: "Plata",
+        coverColor: "#3B82F6",
+        progress: 0,
+        budget: normalizedEstimatedValueText,
+        description: `Proyecto generado automáticamente tras cerrar el Lead #${leadId}. Notas del lead: ${lead.notes || "Sin notas"}`,
+        dealType: "Proyecto",
+        numberOfPayments: 1,
+        totalAmount: normalizedEstimatedValueText,
+      });
+
+      const [updatedLead] = await tx.update(leads).set({
+        status: "Ganado",
+        convertedToClientId: newClient.id,
+        convertedAt: new Date(),
+        updatedAt: new Date(),
+      }).where(eq(leads.id, leadId)).returning();
+
+      if (!updatedLead) {
+        throw new Error("No se pudo actualizar el lead convertido");
+      }
+
+      return { lead: updatedLead, clientId: newClient.id };
     });
-
-    // 2. 360 Bridge: Auto-create an initial "Onboarding" Project for Ops handoff
-    await this.createProject({
-      clientId: newClient.id,
-      name: `Onboarding: ${companyName}`,
-      serviceType: "Setup Inicial",
-      status: "Planning",
-      health: "green",
-      level: "Plata",
-      coverColor: "#3B82F6",
-      progress: 0,
-      budget: lead.estimatedValue ? lead.estimatedValue.toString() : "0",
-      description: `Proyecto generado automáticamente tras cerrar el Lead #${leadId}. Notas del lead: ${lead.notes || "Sin notas"}`,
-      dealType: "Proyecto", // Default for onboarding (instead of One-shot which is invalid)
-      numberOfPayments: 1,
-      totalAmount: lead.estimatedValue ? lead.estimatedValue.toString() : "0"
-    });
-
-    // 3. Update lead with conversion info
-    const [updatedLead] = await db.update(leads).set({
-      status: "Ganado",
-      convertedToClientId: newClient.id,
-      convertedAt: new Date(),
-      updatedAt: new Date()
-    }).where(eq(leads.id, leadId)).returning();
-
-    return { lead: updatedLead!, clientId: newClient.id };
   }
 
   async getLeadsMetrics(): Promise<{ total: number; byOrigin: Record<string, number>; conversionRate: number; avgValue: number }> {

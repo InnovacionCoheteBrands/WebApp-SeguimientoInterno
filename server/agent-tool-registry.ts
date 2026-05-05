@@ -1,4 +1,5 @@
 import type { AgentToolContext } from "./agent-tools";
+import { logger } from "./utils/logger";
 import {
     getCampaigns,
     getAnalytics,
@@ -104,7 +105,7 @@ const writePolicy = (
 ): ToolPolicy => ({
     kind: "write",
     riskLevel,
-    requiresApproval,
+    requiresApproval: riskLevel === "low" ? requiresApproval : true,
     allowedRoles,
     auditAction,
     entityType,
@@ -224,7 +225,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "CREATE", "CAMPAIGN"),
+    policy: writePolicy("medium", "CREATE", "CAMPAIGN", true),
     execute: (ctx, args) => directCreateCampaign(ctx, args as any),
     describeAction: (args) => `Crear campaña '${args.name || "sin nombre"}' para ${args.clientName || "cliente"}`,
 });
@@ -256,7 +257,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "UPDATE", "CAMPAIGN"),
+    policy: writePolicy("medium", "UPDATE", "CAMPAIGN", true),
     execute: (ctx, args) => directUpdateCampaign(ctx, args.campaignId, args.updates),
     describeAction: (args) => `Actualizar campaña #${args.campaignId}`,
 });
@@ -276,7 +277,7 @@ register({
             },
         },
     },
-    policy: writePolicy("high", "DELETE", "CAMPAIGN"),
+    policy: writePolicy("high", "DELETE", "CAMPAIGN", true),
     execute: (ctx, args) => directDeleteCampaign(ctx, args.campaignId),
     describeAction: (args) => `Eliminar campaña #${args.campaignId}`,
 });
@@ -302,7 +303,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "CREATE", "CLIENT"),
+    policy: writePolicy("medium", "CREATE", "CLIENT", true),
     execute: (ctx, args) => createClient(ctx, args as any),
     describeAction: (args) => `Crear cliente '${args.companyName || "sin nombre"}'`,
 });
@@ -332,7 +333,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "UPDATE", "CLIENT"),
+    policy: writePolicy("medium", "UPDATE", "CLIENT", true),
     execute: (ctx, args) => updateClient(ctx, args.clientId, args.updates),
     describeAction: (args) => `Actualizar cliente #${args.clientId}`,
 });
@@ -352,7 +353,7 @@ register({
             },
         },
     },
-    policy: writePolicy("high", "DELETE", "CLIENT"),
+    policy: writePolicy("high", "DELETE", "CLIENT", true),
     execute: (ctx, args) => deleteClient(ctx, args.clientId),
     describeAction: (args) => `Eliminar cliente #${args.clientId}`,
 });
@@ -381,7 +382,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "CREATE", "TEAM"),
+    policy: writePolicy("medium", "CREATE", "TEAM", true),
     execute: (ctx, args) => createTeamMember(ctx, args as any),
     describeAction: (args) =>
         `Crear miembro de equipo '${[args.firstName, args.lastName].filter(Boolean).join(" ") || args.name || "sin nombre"}'`,
@@ -409,7 +410,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "UPDATE", "TEAM"),
+    policy: writePolicy("medium", "UPDATE", "TEAM", true),
     execute: (ctx, args) => updateTeamMember(ctx, args.teamId, args.updates),
     describeAction: (args) => `Actualizar miembro de equipo #${args.teamId}`,
 });
@@ -429,7 +430,7 @@ register({
             },
         },
     },
-    policy: writePolicy("high", "DELETE", "TEAM"),
+    policy: writePolicy("high", "DELETE", "TEAM", true),
     execute: (ctx, args) => deleteTeamMember(ctx, args.teamId),
     describeAction: (args) => `Eliminar miembro de equipo #${args.teamId}`,
 });
@@ -493,7 +494,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "CREATE", "LEAD"),
+    policy: writePolicy("medium", "CREATE", "LEAD", true),
     execute: (ctx, args) => directCreateLead(ctx, args as any),
     describeAction: (args) => `Crear lead '${args.name || "sin nombre"}'`,
 });
@@ -522,7 +523,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "UPDATE", "LEAD"),
+    policy: writePolicy("medium", "UPDATE", "LEAD", true),
     execute: (ctx, args) => directUpdateLead(ctx, args.leadId, args.updates),
     describeAction: (args) => `Actualizar lead #${args.leadId}`,
 });
@@ -542,7 +543,7 @@ register({
             },
         },
     },
-    policy: writePolicy("high", "DELETE", "LEAD"),
+    policy: writePolicy("high", "DELETE", "LEAD", true),
     execute: (ctx, args) => directDeleteLead(ctx, args.leadId),
     describeAction: (args) => `Eliminar lead #${args.leadId}`,
 });
@@ -590,7 +591,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "CREATE", "PROJECT"),
+    policy: writePolicy("medium", "CREATE", "PROJECT", true),
     execute: (ctx, args) => directCreateProject(ctx, args as any),
     describeAction: (args) => `Crear proyecto '${args.name || "sin nombre"}'`,
 });
@@ -619,7 +620,7 @@ register({
             },
         },
     },
-    policy: writePolicy("medium", "UPDATE", "PROJECT"),
+    policy: writePolicy("medium", "UPDATE", "PROJECT", true),
     execute: (ctx, args) => directUpdateProject(ctx, args.projectId, args.updates),
     describeAction: (args) => `Actualizar proyecto #${args.projectId}`,
 });
@@ -639,7 +640,7 @@ register({
             },
         },
     },
-    policy: writePolicy("high", "DELETE", "PROJECT"),
+    policy: writePolicy("high", "DELETE", "PROJECT", true),
     execute: (ctx, args) => directDeleteProject(ctx, args.projectId),
     describeAction: (args) => `Eliminar proyecto #${args.projectId}`,
 });
@@ -691,12 +692,26 @@ export function authorizeAgentAction(
     tool: RegisteredTool,
 ): AuthorizationResult {
     if (!user) {
+        logger.warn(
+            { toolName: tool.schema.function.name, reason: "AUTH_REQUIRED" },
+            "Agent authorization denied",
+        );
         return { allowed: false, reason: "Se requiere autenticación.", code: "AUTH_REQUIRED" };
     }
 
     const { policy } = tool;
 
     if (policy.allowedRoles.length > 0 && !policy.allowedRoles.includes(user.role)) {
+        logger.warn(
+            {
+                toolName: tool.schema.function.name,
+                userId: user.id,
+                role: user.role,
+                allowedRoles: policy.allowedRoles,
+                reason: "ROLE_DENIED",
+            },
+            "Agent authorization denied",
+        );
         return {
             allowed: false,
             reason: `El rol '${user.role}' no tiene permiso para ejecutar '${tool.schema.function.name}'.`,
@@ -704,6 +719,16 @@ export function authorizeAgentAction(
         };
     }
 
+    logger.info(
+        {
+            toolName: tool.schema.function.name,
+            userId: user.id,
+            role: user.role,
+            requiresApproval: policy.requiresApproval,
+            riskLevel: policy.riskLevel,
+        },
+        "Agent authorization granted",
+    );
     return { allowed: true };
 }
 

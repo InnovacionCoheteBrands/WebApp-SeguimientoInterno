@@ -1,12 +1,28 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "http";
+import type { IncomingMessage } from "http";
+import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { calculateSystemMetrics } from "./metrics";
 import type { Campaign } from "@shared/schema";
+import { getJwtSecret } from "./middleware/auth";
+import { logger } from "./utils/logger";
 
 let wss: WebSocketServer | null = null;
 let telemetryInterval: NodeJS.Timeout | null = null;
 let metricsInterval: NodeJS.Timeout | null = null;
+
+interface JwtPayload {
+  id: string;
+  username: string;
+  role: string;
+}
+
+interface AuthResult {
+  ok: boolean;
+  user?: JwtPayload;
+  reason?: string;
+}
 
 const DB_CONNECTION_ERROR_CODES = new Set([
   "ENOTFOUND",
@@ -30,6 +46,77 @@ const DB_CONNECTION_ERROR_TOKENS = [
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function extractTokenFromRequest(request: IncomingMessage): string | null {
+  const authHeader = request.headers.authorization;
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    return authHeader.slice("Bearer ".length).trim();
+  }
+
+  const wsProtocolHeader = request.headers["sec-websocket-protocol"];
+  if (typeof wsProtocolHeader === "string" && wsProtocolHeader.trim().length > 0) {
+    const protocols = wsProtocolHeader.split(",").map((part) => part.trim()).filter(Boolean);
+    const bearerIndex = protocols.findIndex((value) => value.toLowerCase() === "bearer");
+    if (bearerIndex >= 0 && protocols[bearerIndex + 1]) {
+      return protocols[bearerIndex + 1];
+    }
+
+    if (protocols[0].startsWith("token.")) {
+      return protocols[0].slice("token.".length);
+    }
+  }
+
+  const url = request.url ?? "";
+  if (url.length > 0) {
+    const parsed = new URL(url, "http://localhost");
+    const tokenInQuery = parsed.searchParams.get("token") ?? parsed.searchParams.get("access_token");
+    if (tokenInQuery) {
+      return tokenInQuery;
+    }
+  }
+
+  const cookieHeader = request.headers.cookie;
+  if (typeof cookieHeader === "string" && cookieHeader.length > 0) {
+    const tokenCookie = cookieHeader
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith("token=") || item.startsWith("auth_token="));
+    if (tokenCookie) {
+      const [, value = ""] = tokenCookie.split("=");
+      if (value) {
+        return decodeURIComponent(value);
+      }
+    }
+  }
+
+  return null;
+}
+
+function authenticateWebSocketRequest(request: IncomingMessage): AuthResult {
+  const token = extractTokenFromRequest(request);
+  if (!token) {
+    return { ok: false, reason: "Missing token" };
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    if (!isRecord(decoded)) {
+      return { ok: false, reason: "Invalid JWT payload" };
+    }
+
+    const id = decoded.id;
+    const username = decoded.username;
+    const role = decoded.role;
+    if (typeof id !== "string" || typeof username !== "string" || typeof role !== "string") {
+      return { ok: false, reason: "Incomplete JWT claims" };
+    }
+
+    return { ok: true, user: { id, username, role } };
+  } catch (error) {
+    logger.warn({ err: error }, "[websocket] JWT verification failed");
+    return { ok: false, reason: "Invalid token" };
+  }
 }
 
 function collectErrorMetadata(error: unknown): { codes: Set<string>; message: string } {
@@ -98,22 +185,49 @@ function isDbWebSocketError(error: unknown): boolean {
 export function setupWebSocket(server: Server) {
   wss = new WebSocketServer({ server, path: "/ws" });
 
-  wss.on("connection", (ws: WebSocket) => {
+  wss.on("connection", (ws: WebSocket, request: IncomingMessage) => {
+    const auth = authenticateWebSocketRequest(request);
+    if (!auth.ok) {
+      logger.warn(
+        {
+          reason: auth.reason,
+          remoteAddress: request.socket.remoteAddress,
+          userAgent: request.headers["user-agent"],
+        },
+        "[websocket] Connection rejected",
+      );
+      ws.close(1008, "Unauthorized");
+      return;
+    }
 
+    logger.info(
+      {
+        userId: auth.user?.id,
+        username: auth.user?.username,
+        role: auth.user?.role,
+      },
+      "[websocket] Authenticated connection established",
+    );
 
     ws.on("close", () => {
-
+      logger.info(
+        {
+          userId: auth.user?.id,
+          username: auth.user?.username,
+        },
+        "[websocket] Connection closed",
+      );
     });
 
     ws.on("error", (error) => {
-      console.error("[websocket] Error:", error);
+      logger.error({ err: error }, "[websocket] Error");
     });
   });
 
   startTelemetrySimulator();
   startMetricsSimulator();
 
-  console.log("[websocket] WebSocket server initialized on /ws");
+  logger.info("[websocket] WebSocket server initialized on /ws");
 }
 
 function startMetricsSimulator() {
@@ -150,7 +264,7 @@ function startMetricsSimulator() {
     } catch (error) {
       // Only log errors that aren't related to DB WebSocket connection issues
       if (!isDbWebSocketError(error)) {
-        console.error("[websocket] Error generating metrics:", error);
+        logger.error({ err: error }, "[websocket] Error generating metrics");
       }
     }
   }, 10000);
@@ -198,7 +312,7 @@ function startTelemetrySimulator() {
     } catch (error) {
       // Only log errors that aren't related to DB WebSocket connection issues
       if (!isDbWebSocketError(error)) {
-        console.error("[websocket] Error generating telemetry:", error);
+        logger.error({ err: error }, "[websocket] Error generating telemetry");
       }
     }
   }, 5000);
@@ -223,6 +337,17 @@ export async function broadcastCampaignUpdate(campaign?: Campaign | Campaign[]) 
       client.send(message);
     }
   });
+}
+
+export function getWebSocketHealthStatus(): { status: "up" | "down"; clients: number } {
+  if (!wss) {
+    return { status: "down", clients: 0 };
+  }
+
+  return {
+    status: "up",
+    clients: wss.clients.size,
+  };
 }
 
 interface MetricsData {

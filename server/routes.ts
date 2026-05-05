@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { createServer } from "http";
 import path from "path";
 import fs from "fs";
-import { setupWebSocket } from "./websocket";
+import { getWebSocketHealthStatus, setupWebSocket } from "./websocket";
 import authRouter from "./controllers/auth";
 import campaignsRouter from "./controllers/campaigns";
 import clientsRouter from "./controllers/clients";
@@ -31,6 +31,7 @@ import { requireAuth } from "./middleware/auth";
 import { asyncHandler } from "./middleware/error-handler";
 import { setupGoogleAuth } from "./auth-google";
 import { checkDatabaseConnection } from "../db";
+import { getAiHealthStatus } from "./utils/ai";
 
 /**
  * Monta rutas HTTP y WebSocket en orden fijo:
@@ -48,9 +49,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/health", asyncHandler(async (_req, res) => {
     const isDatabaseConnected = await checkDatabaseConnection();
-    res.status(isDatabaseConnected ? 200 : 503).json({
-      status: isDatabaseConnected ? "ok" : "degraded",
+    const aiHealth = getAiHealthStatus();
+    const websocket = getWebSocketHealthStatus();
+    const googleConfigured = Boolean(
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.BASE_URL
+    );
+    const isHealthy = isDatabaseConnected && aiHealth.available && websocket.status === "up";
+
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? "ok" : "degraded",
       database: isDatabaseConnected ? "up" : "down",
+      ai: aiHealth,
+      websocket,
+      googleOAuth: googleConfigured ? "configured" : "missing_configuration",
     });
   }));
 

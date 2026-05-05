@@ -5,6 +5,7 @@
  */
 
 import { Router } from 'express';
+import rateLimit from "express-rate-limit";
 import { z } from 'zod';
 import { storage } from '../storage';
 import { logger } from '../utils/logger';
@@ -33,6 +34,17 @@ const registerSchema = z.object({
 
 const refreshRequestSchema = z.object({
     refreshToken: z.string().min(1, 'Refresh token is required')
+});
+
+const registerLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: "TooManyRequests",
+        message: "Too many registration attempts. Please try again later.",
+    },
 });
 
 /**
@@ -150,7 +162,7 @@ router.post('/login', async (req, res) => {
  * POST /api/auth/register
  * Create new user account
  */
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
     try {
         const { username, password } = registerSchema.parse(req.body);
 

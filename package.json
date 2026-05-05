@@ -19,7 +19,8 @@
     "pm2:restart": "pm2 restart ecosystem.config.cjs",
     "pm2:logs": "pm2 logs",
     "test": "vitest run",
-    "predeploy:audit": "tsx scripts/audit-check.ts"
+    "predeploy:audit": "tsx scripts/audit-check.ts",
+    "verify": "tsx scripts/verify-integrity.ts"
   },
   "notes": "removed framer motion dependency",
   "dependencies": {

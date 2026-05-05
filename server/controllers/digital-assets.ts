@@ -5,6 +5,7 @@ import { logger } from "../utils/logger";
 import { insertDigitalAssetSchema, updateDigitalAssetSchema } from "@shared/schema";
 import { z } from "zod";
 import { upload, uploadDir } from "../middleware/upload";
+import { logAction } from "../utils/audit-helper";
 
 const router = Router();
 
@@ -79,6 +80,7 @@ router.post("/digital-assets", upload.array('files', 5), async (req, res) => {
 
         const validatedData = insertDigitalAssetSchema.parse(payload);
         const asset = await storage.createDigitalAsset(validatedData);
+        logAction(req, "CREATE", "DIGITAL_ASSET", asset.id.toString(), `Creó activo digital '${asset.name}'`);
         res.status(201).json(asset);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -133,6 +135,7 @@ router.patch("/digital-assets/:id", upload.array('files', 5), async (req, res) =
         if (!asset) {
             return res.status(404).json({ error: "Activo digital no encontrado" });
         }
+        logAction(req, "UPDATE", "DIGITAL_ASSET", id.toString(), `Actualizó activo digital '${asset.name}'`, validatedData as Record<string, any>);
         res.json(asset);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -152,6 +155,7 @@ router.delete("/digital-assets/:id", async (req, res) => {
         if (!deleted) {
             return res.status(404).json({ error: "Activo digital no encontrado" });
         }
+        logAction(req, "DELETE", "DIGITAL_ASSET", id.toString(), `Eliminó activo digital #${id}`);
         res.status(204).send();
     } catch (error) {
         logger.error({ err: error }, "Error deleting digital asset:");
