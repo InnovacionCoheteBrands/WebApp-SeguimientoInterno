@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import {
     ArrowLeft, Calendar, Clock, DollarSign, Users, Target, CheckCircle2,
-    Circle, AlertCircle, TrendingUp, TrendingDown, Code, Search, Megaphone, Briefcase,
+    Circle, AlertCircle, TrendingUp, TrendingDown, Code, Search, Briefcase,
     Paperclip, FileCheck, Upload, AlertTriangle, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,6 @@ const HEALTH_STYLES = {
 const SERVICE_ICONS = {
     SEO: Search,
     Web: Code,
-    Ads: Megaphone,
     General: Briefcase,
 };
 
@@ -578,9 +577,7 @@ export default function ProjectDetail() {
                                         <div>
                                             <CardTitle className="text-sm font-display uppercase tracking-tight text-zinc-100">
                                                 {project.serviceType === "SEO" ? "Estrategia de Keywords" :
-                                                    project.serviceType === "Web" ? "Tech Stack" :
-                                                        project.serviceType === "Ads" ? "Configuración de Ads" :
-                                                            "Detalles del Servicio"}
+                                                    project.serviceType === "Web" ? "Tech Stack" : "Detalles del Servicio"}
                                             </CardTitle>
                                             <CardDescription className="font-mono text-[9px] uppercase tracking-widest opacity-60">
                                                 Technical Specifications
@@ -646,28 +643,6 @@ export default function ProjectDetail() {
                                             )}
                                         </>
                                     )}
-                                    {project.serviceType === "Ads" && (
-                                        <>
-                                            {serviceFields.platforms && (
-                                                <div>
-                                                    <div className="text-[9px] font-mono uppercase text-muted-foreground mb-3 tracking-widest opacity-50">Plataformas</div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {(serviceFields.platforms as string[]).map((platform: string, i: number) => (
-                                                            <Badge key={i} variant="secondary" className="rounded-full bg-white/5 border border-white/10 text-zinc-400 font-mono text-[10px] px-3">
-                                                                {platform}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {serviceFields.monthlyBudget && (
-                                                <div className="mt-4">
-                                                    <div className="text-xs font-mono uppercase text-muted-foreground mb-1">Presupuesto Mensual Pauta</div>
-                                                    <div className="text-lg font-display font-bold">{formatCurrency(serviceFields.monthlyBudget)}</div>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
                                     {/* Fallback for General or custom fields */}
                                     {project.serviceType === "General" && (
                                         <div className="space-y-2">
@@ -710,3 +685,4 @@ export default function ProjectDetail() {
         </div>
     );
 }
+

@@ -20,8 +20,6 @@ const ProyectosTest = lazy(() => import("@/pages/proyectos-test"));
 const Resources = lazy(() => import("@/pages/data-center"));
 const Team = lazy(() => import("@/pages/personnel"));
 const KPIs = lazy(() => import("@/pages/analytics"));
-const AdsCommandCenter = lazy(() => import("@/pages/ads-command-center"));
-const AdsSettings = lazy(() => import("@/pages/ads-settings"));
 const DigitalAssets = lazy(() => import("@/pages/digital-assets-page"));
 const Finanzas = lazy(() => import("@/pages/finanzas"));
 const Profile = lazy(() => import("@/pages/profile"));
@@ -96,9 +94,6 @@ function Router() {
               <Route path="/recursos" component={Resources} />
               <Route path="/equipo" component={Team} />
               <Route path="/kpis" component={KPIs} />
-              <Route path="/ads" component={() => <Redirect to="/crm" />} />
-              <Route path="/ads/command-center" component={() => <Redirect to="/crm" />} />
-              <Route path="/ads/settings" component={AdsSettings} />
               <Route path="/digital-assets" component={DigitalAssets} />
               <Route path="/finanzas" component={Finanzas} />
               <Route path="/profile" component={Profile} />

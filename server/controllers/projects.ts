@@ -7,7 +7,9 @@ import {
     insertProjectDeliverableSchema,
     updateProjectDeliverableSchema,
     insertProjectAttachmentSchema,
-    insertProjectServiceSchema
+    insertProjectServiceSchema,
+    updateProjectServiceLineSchema,
+    updateProjectServicePriceSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { desc } from "drizzle-orm";
@@ -350,7 +352,10 @@ router.delete("/projects/:id/services/:serviceId", async (req, res) => {
     try {
         const projectId = parseInt(req.params.id);
         const serviceId = parseInt(req.params.serviceId);
-        await storage.removeProjectService(projectId, serviceId);
+        const deleted = await storage.removeProjectService(projectId, serviceId);
+        if (!deleted) {
+            return res.status(404).json({ error: "Service assignment not found" });
+        }
         logAction(req, "REMOVE_SERVICE", "PROJECT", projectId.toString(), `Eliminó servicio #${serviceId} del proyecto`);
         res.status(204).send();
     } catch (error) {
@@ -363,13 +368,21 @@ router.patch("/projects/:id/services/:serviceId", async (req, res) => {
     try {
         const projectId = parseInt(req.params.id);
         const serviceId = parseInt(req.params.serviceId);
-        const { customPrice, notes } = req.body;
-        const updated = await storage.updateProjectServicePrice(projectId, serviceId, customPrice, notes);
+        const validatedData = updateProjectServicePriceSchema.parse(req.body);
+        const updated = await storage.updateProjectServicePrice(
+            projectId,
+            serviceId,
+            validatedData.customPrice,
+            validatedData.notes ?? undefined,
+        );
         if (!updated) {
             return res.status(404).json({ error: "Service assignment not found" });
         }
         res.json(updated);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors });
+        }
         logger.error({ err: error }, "Failed to update project service:");
         res.status(500).json({ error: "Failed to update project service" });
     }
@@ -396,13 +409,14 @@ router.patch("/projects/:id/services/:serviceId/line", async (req, res) => {
     try {
         const projectId = parseInt(req.params.id);
         const serviceId = parseInt(req.params.serviceId);
-        const { quantity, customCost, sellPrice, customPrice, notes } = req.body;
-        const updated = await storage.updateProjectServiceLine(projectId, serviceId, {
-            quantity, customCost, sellPrice, customPrice, notes
-        });
+        const validatedData = updateProjectServiceLineSchema.parse(req.body);
+        const updated = await storage.updateProjectServiceLine(projectId, serviceId, validatedData);
         if (!updated) return res.status(404).json({ error: "Service line not found" });
         res.json(updated);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: error.errors });
+        }
         logger.error({ err: error }, "Failed to update project service line:");
         res.status(500).json({ error: "Failed to update project service line" });
     }

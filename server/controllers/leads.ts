@@ -98,7 +98,10 @@ router.patch("/:id", async (req: Request, res: Response) => {
 router.delete("/:id", async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
-        await storage.deleteLead(id);
+        const deleted = await storage.deleteLead(id);
+        if (!deleted) {
+            return res.status(404).json({ error: "Lead not found" });
+        }
         logAction(req, "DELETE", "LEAD", id.toString(), `Eliminó al prospecto #${id}`);
         res.status(204).send();
     } catch (error) {

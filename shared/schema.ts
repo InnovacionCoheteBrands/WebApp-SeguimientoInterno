@@ -4,6 +4,8 @@ import { pgTable, text, varchar, serial, integer, timestamp, numeric, boolean, j
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Contrato compartido Drizzle + Zod. Las tablas del modulo Ads legacy fueron retiradas; ver migrations/0007_remove_ads_module.sql.
+
 // ===========================================
 // 🛡️ SECURITY UTILITIES
 // ===========================================
@@ -692,237 +694,6 @@ export type AgencyRole = typeof agencyRoleCatalog.$inferSelect;
 export type InsertAgencyRole = z.infer<typeof insertAgencyRoleSchema>;
 export type UpdateAgencyRole = z.infer<typeof updateAgencyRoleSchema>;
 
-// Ads Command Center Tables
-export const adPlatforms = pgTable("ad_platforms", {
-  id: serial("id").primaryKey(),
-  platformName: text("platform_name").notNull().unique(), // Meta, Google, LinkedIn, TikTok
-  displayName: text("display_name").notNull(),
-  apiCredentials: text("api_credentials"), // Encrypted JSON credentials
-  webhookUrl: text("webhook_url"),
-  isActive: text("is_active").notNull().default("true"),
-  lastSyncAt: timestamp("last_sync_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertAdPlatformSchema = createInsertSchema(adPlatforms, {
-  // 🛡️ XSS Protection for text fields
-  platformName: safeString(100),
-  displayName: safeString(100),
-  apiCredentials: safeOptionalString(2000), // Encrypted JSON
-  webhookUrl: safeOptionalString(500),
-  isActive: safeString(10),
-}).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type AdPlatform = typeof adPlatforms.$inferSelect;
-export type InsertAdPlatform = z.infer<typeof insertAdPlatformSchema>;
-
-export const adCreatives = pgTable("ad_creatives", {
-  id: serial("id").primaryKey(),
-  platformId: integer("platform_id").notNull().references(() => adPlatforms.id, { onDelete: "cascade" }),
-  platformAdId: text("platform_ad_id").notNull(), // External ad ID from platform
-  campaignId: integer("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
-  creativeType: text("creative_type").notNull(), // image, video, carousel
-  imageUrl: text("image_url"),
-  videoUrl: text("video_url"),
-  thumbnailUrl: text("thumbnail_url"),
-  headline: text("headline"),
-  primaryText: text("primary_text"),
-  ctaText: text("cta_text"),
-  status: text("status").notNull().default("active"), // active, paused, archived
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertAdCreativeSchema = createInsertSchema(adCreatives, {
-  // 🛡️ XSS Protection for text fields
-  platformAdId: safeString(200),
-  creativeType: safeString(50),
-  imageUrl: safeOptionalString(1000),
-  videoUrl: safeOptionalString(1000),
-  thumbnailUrl: safeOptionalString(1000),
-  headline: safeOptionalString(200),
-  primaryText: safeOptionalString(1000),
-  ctaText: safeOptionalString(100),
-  status: safeString(50),
-
-  // 🔗 Integer coercion for FKs
-  platformId: z.coerce.number().int().positive("Se requiere una plataforma válida"),
-  campaignId: z.coerce.number().int().positive().optional().nullable(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateAdCreativeSchema = insertAdCreativeSchema.partial();
-
-export type AdCreative = typeof adCreatives.$inferSelect;
-export type InsertAdCreative = z.infer<typeof insertAdCreativeSchema>;
-export type UpdateAdCreative = z.infer<typeof updateAdCreativeSchema>;
-
-export const adMetrics = pgTable("ad_metrics", {
-  id: serial("id").primaryKey(),
-  creativeId: integer("creative_id").notNull().references(() => adCreatives.id, { onDelete: "cascade" }),
-  platformId: integer("platform_id").notNull().references(() => adPlatforms.id, { onDelete: "cascade" }),
-  impressions: integer("impressions").notNull().default(0),
-  clicks: integer("clicks").notNull().default(0),
-  conversions: integer("conversions").notNull().default(0),
-  spend: numeric("spend", { precision: 12, scale: 2 }).notNull().default("0"),
-  revenue: numeric("revenue", { precision: 12, scale: 2 }).notNull().default("0"),
-  ctr: numeric("ctr", { precision: 5, scale: 2 }), // Click-through rate
-  cpa: numeric("cpa", { precision: 12, scale: 2 }), // Cost per acquisition
-  roas: numeric("roas", { precision: 5, scale: 2 }), // Return on ad spend
-  metricDate: timestamp("metric_date").notNull().defaultNow(),
-  syncedAt: timestamp("synced_at").defaultNow().notNull(),
-});
-
-export const insertAdMetricSchema = createInsertSchema(adMetrics, {
-  // 🔗 Integer coercion for FKs
-  creativeId: z.coerce.number().int().positive("Se requiere un creativo válido"),
-  platformId: z.coerce.number().int().positive("Se requiere una plataforma válida"),
-
-  // 🔢 Positive number validation for metrics
-  impressions: z.coerce.number().int().min(0).default(0),
-  clicks: z.coerce.number().int().min(0).default(0),
-  conversions: z.coerce.number().int().min(0).default(0),
-  spend: positiveNumericString(),
-  revenue: positiveNumericString(),
-  ctr: optionalPositiveNumericString(),
-  cpa: optionalPositiveNumericString(),
-  roas: optionalPositiveNumericString(),
-
-  // 📅 Date coercion
-  metricDate: z.coerce.date(),
-}).omit({
-  id: true,
-  syncedAt: true,
-});
-
-export type AdMetric = typeof adMetrics.$inferSelect;
-export type InsertAdMetric = z.infer<typeof insertAdMetricSchema>;
-
-// Platform Connections (OAuth or API Key)
-export const platformConnections = pgTable("platform_connections", {
-  id: serial("id").primaryKey(),
-  platformId: integer("platform_id").notNull().references(() => adPlatforms.id, { onDelete: "cascade" }),
-  connectionType: text("connection_type").notNull().default("oauth"), // "oauth" or "api_key"
-  userId: text("user_id"), // Future: link to user who authorized
-
-  // For both OAuth and API Key
-  accessToken: text("access_token").notNull(), // OAuth token or API Key (encrypted)
-
-  // OAuth-specific fields (optional for API Key)
-  refreshToken: text("refresh_token"), // For OAuth token refresh
-  tokenExpiresAt: timestamp("token_expires_at"), // When OAuth token expires
-  scope: text("scope"), // OAuth scopes granted
-
-  // API Key-specific fields (optional for OAuth)
-  apiKeyName: text("api_key_name"), // Descriptive name for the API key
-  apiSecret: text("api_secret"), // For platforms that use key+secret (encrypted)
-
-  // Common fields
-  isActive: boolean("is_active").notNull().default(true),
-  lastSyncAt: timestamp("last_sync_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertPlatformConnectionSchema = createInsertSchema(platformConnections, {
-  // 🛡️ XSS Protection for text fields
-  connectionType: safeString(50),
-  userId: safeOptionalString(100),
-  accessToken: safeString(2000), // Encrypted token
-  refreshToken: safeOptionalString(2000),
-  scope: safeOptionalString(500),
-  apiKeyName: safeOptionalString(200),
-  apiSecret: safeOptionalString(2000), // Encrypted
-
-  // 🔗 Integer coercion for FKs
-  platformId: z.coerce.number().int().positive("Se requiere una plataforma válida"),
-
-  // 📅 Date coercion
-  tokenExpiresAt: z.coerce.date().optional().nullable(),
-  lastSyncAt: z.coerce.date().optional().nullable(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updatePlatformConnectionSchema = insertPlatformConnectionSchema.partial();
-
-export type PlatformConnection = typeof platformConnections.$inferSelect;
-export type InsertPlatformConnection = z.infer<typeof insertPlatformConnectionSchema>;
-export type UpdatePlatformConnection = z.infer<typeof updatePlatformConnectionSchema>;
-
-// Account Mappings (Ad Account to Internal Client)
-export const accountMappings = pgTable("account_mappings", {
-  id: serial("id").primaryKey(),
-  connectionId: integer("connection_id").notNull().references(() => platformConnections.id, { onDelete: "cascade" }),
-  platformAccountId: text("platform_account_id").notNull(), // External Ad Account ID
-  platformAccountName: text("platform_account_name"), // Display name from platform
-  internalClientId: integer("internal_client_id"), // Future: reference to clients table
-  internalClientName: text("internal_client_name").notNull(), // For now, just text
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertAccountMappingSchema = createInsertSchema(accountMappings, {
-  // 🛡️ XSS Protection for text fields
-  platformAccountId: safeString(200),
-  platformAccountName: safeOptionalString(200),
-  internalClientName: safeString(200),
-
-  // 🔗 Integer coercion for FKs
-  connectionId: z.coerce.number().int().positive("Se requiere una conexión válida"),
-  internalClientId: z.coerce.number().int().positive().optional().nullable(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateAccountMappingSchema = insertAccountMappingSchema.partial();
-
-export type AccountMapping = typeof accountMappings.$inferSelect;
-export type InsertAccountMapping = z.infer<typeof insertAccountMappingSchema>;
-export type UpdateAccountMapping = z.infer<typeof updateAccountMappingSchema>;
-
-// Client KPI Configuration
-export const clientKpiConfig = pgTable("client_kpi_config", {
-  id: serial("id").primaryKey(),
-  clientName: text("client_name").notNull().unique(), // Keyed by client name for now
-  targetROAS: numeric("target_roas", { precision: 5, scale: 2 }), // e.g., 4.00
-  targetCPA: numeric("target_cpa", { precision: 12, scale: 2 }), // e.g., 15.00
-  monthlyBudgetCap: numeric("monthly_budget_cap", { precision: 12, scale: 2 }), // e.g., 50000.00
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertClientKpiConfigSchema = createInsertSchema(clientKpiConfig, {
-  // 🛡️ XSS Protection for text fields
-  clientName: safeString(200),
-
-  // 🔢 Positive number validation for KPIs
-  targetROAS: optionalPositiveNumericString(),
-  targetCPA: optionalPositiveNumericString(),
-  monthlyBudgetCap: optionalPositiveNumericString(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateClientKpiConfigSchema = insertClientKpiConfigSchema.partial();
-
-export type ClientKpiConfig = typeof clientKpiConfig.$inferSelect;
-export type InsertClientKpiConfig = z.infer<typeof insertClientKpiConfigSchema>;
-export type UpdateClientKpiConfig = z.infer<typeof updateClientKpiConfigSchema>;
-
 // Financial Hub - Transactions Table
 // ✅ Strict Categories
 export const INCOME_CATEGORIES = [
@@ -1112,7 +883,7 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  serviceType: text("service_type").notNull(), // "SEO", "Web", "Ads", "General"
+  serviceType: text("service_type").notNull(), // "SEO", "Web", "General"
   status: text("status").notNull().default("Planificación"), // "Planificación", "En Desarrollo", "Pausa", "Terminado", "Cancelado"
   health: text("health").notNull().default("green"), // "green", "yellow", "red"
   deadline: timestamp("deadline"),
@@ -1286,6 +1057,77 @@ export const updateInstallmentSchema = insertInstallmentSchema.partial();
 export type Installment = typeof installments.$inferSelect;
 export type InsertInstallment = z.infer<typeof insertInstallmentSchema>;
 export type UpdateInstallment = z.infer<typeof updateInstallmentSchema>;
+
+export const financialCalendarEventSourceTypeSchema = z.enum([
+  "segmentacion",
+  "cotizacion_proyecto",
+  "mantenimiento",
+  "obligacion_recurrente",
+  "transaccion_manual",
+  "transaccion_independiente",
+]);
+
+export const financialCalendarEventDirectionSchema = z.enum([
+  "ingreso",
+  "egreso",
+]);
+
+export const financialCalendarEventStatusSchema = z.enum([
+  "pendiente",
+  "pagado",
+  "vencido",
+]);
+
+export const financialCalendarRangeSchema = z.object({
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
+export const financialCalendarEventSchema = z.object({
+  id: z.string(),
+  sourceType: financialCalendarEventSourceTypeSchema,
+  direction: financialCalendarEventDirectionSchema,
+  amount: z.number().nonnegative(),
+  currency: z.string().default("MXN"),
+  scheduledDate: z.string(),
+  paidDate: z.string().nullable(),
+  status: financialCalendarEventStatusSchema,
+  title: z.string(),
+  projectId: z.number().int().positive().nullable(),
+  projectName: z.string().nullable(),
+  clientId: z.number().int().positive().nullable(),
+  clientName: z.string().nullable(),
+  transactionId: z.number().int().positive().nullable(),
+  installmentId: z.number().int().positive().nullable(),
+  recurringTemplateId: z.number().int().positive().nullable(),
+  isSynthetic: z.boolean(),
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+});
+
+export const financialCalendarMonthlyTotalsSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+  scheduledIncome: z.number(),
+  collectedIncome: z.number(),
+  scheduledExpenses: z.number(),
+  paidExpenses: z.number(),
+  scheduledNet: z.number(),
+  collectedNet: z.number(),
+  eventCount: z.number().int().nonnegative(),
+});
+
+export const financialCalendarResponseSchema = z.object({
+  requestedRange: financialCalendarRangeSchema,
+  events: z.array(financialCalendarEventSchema),
+  monthlyTotals: z.array(financialCalendarMonthlyTotalsSchema),
+});
+
+export type FinancialCalendarEventSourceType = z.infer<typeof financialCalendarEventSourceTypeSchema>;
+export type FinancialCalendarEventDirection = z.infer<typeof financialCalendarEventDirectionSchema>;
+export type FinancialCalendarEventStatus = z.infer<typeof financialCalendarEventStatusSchema>;
+export type FinancialCalendarRange = z.infer<typeof financialCalendarRangeSchema>;
+export type FinancialCalendarEvent = z.infer<typeof financialCalendarEventSchema>;
+export type FinancialCalendarMonthlyTotals = z.infer<typeof financialCalendarMonthlyTotalsSchema>;
+export type FinancialCalendarResponse = z.infer<typeof financialCalendarResponseSchema>;
 
 // Project Attachments (defined before deliverables due to foreign key reference)
 export const projectAttachments = pgTable("project_attachments", {
@@ -1497,8 +1339,33 @@ export const insertProjectServiceSchema = createInsertSchema(projectServices, {
   createdAt: true,
 });
 
+export const updateProjectServicePriceSchema = insertProjectServiceSchema
+  .pick({
+    customPrice: true,
+    notes: true,
+  })
+  .partial()
+  .refine((data) => Object.values(data).some((value) => value !== undefined), {
+    message: "Debe enviarse al menos un campo para actualizar",
+  });
+
+export const updateProjectServiceLineSchema = insertProjectServiceSchema
+  .pick({
+    quantity: true,
+    customCost: true,
+    customPrice: true,
+    sellPrice: true,
+    notes: true,
+  })
+  .partial()
+  .refine((data) => Object.values(data).some((value) => value !== undefined), {
+    message: "Debe enviarse al menos un campo para actualizar",
+  });
+
 export type ProjectService = typeof projectServices.$inferSelect;
 export type InsertProjectService = z.infer<typeof insertProjectServiceSchema>;
+export type UpdateProjectServicePrice = z.infer<typeof updateProjectServicePriceSchema>;
+export type UpdateProjectServiceLine = z.infer<typeof updateProjectServiceLineSchema>;
 
 // ===========================================
 // 🎯 LEADS MODULE (CRM Kanban)

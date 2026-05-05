@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Building2, Users, FolderKanban, Megaphone, DollarSign } from "lucide-react";
+import { LayoutDashboard, Building2, FolderKanban, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -12,7 +12,6 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Home", href: "/" },
   { icon: Building2, label: "Clientes", href: "/clientes" },
   { icon: FolderKanban, label: "Proyectos", href: "/proyectos" },
-  { icon: Megaphone, label: "Ads", href: "/ads" },
   { icon: DollarSign, label: "Finanzas", href: "/finanzas" },
 ];
 

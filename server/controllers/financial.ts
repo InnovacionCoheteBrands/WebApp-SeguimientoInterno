@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import {
@@ -11,6 +11,43 @@ import { z } from "zod";
 import { logAction } from "../utils/audit-helper";
 
 const router = Router();
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+    }
+    next();
+};
+
+const positiveIntParamSchema = z.coerce.number().int().positive();
+const financialCalendarQuerySchema = z.object({
+    startDate: z.string().min(1),
+    endDate: z.string().min(1),
+});
+const optionalDateRangeQuerySchema = z.object({
+    startDate: z.string().min(1).optional(),
+    endDate: z.string().min(1).optional(),
+});
+const monthlyObligationsQuerySchema = z.object({
+    year: z.coerce.number().int().min(2000).max(2100).optional(),
+    month: z.coerce.number().int().min(1).max(12).optional(),
+});
+const payObligationSchema = z.object({
+    paidDate: z.string().min(1).optional(),
+});
+const MAX_FINANCIAL_CALENDAR_RANGE_MONTHS = 24;
+
+const parseQueryDate = (value: string): Date | null => {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const exceedsFinancialCalendarRange = (startDate: Date, endDate: Date): boolean => {
+    const maxEndDate = new Date(startDate);
+    maxEndDate.setMonth(maxEndDate.getMonth() + MAX_FINANCIAL_CALENDAR_RANGE_MONTHS);
+    return endDate > maxEndDate;
+};
+
+router.use(requireAdmin);
 
 // Transactions endpoints
 router.get("/transactions", async (req, res) => {
@@ -25,13 +62,16 @@ router.get("/transactions", async (req, res) => {
 
 router.get("/transactions/:id", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const transaction = await storage.getTransactionById(id);
         if (!transaction) {
             return res.status(404).json({ error: "Transaction not found" });
         }
         res.json(transaction);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
         res.status(500).json({ error: "Failed to fetch transaction" });
     }
 });
@@ -62,7 +102,7 @@ router.post("/transactions", async (req, res) => {
 
 router.patch("/transactions/:id", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const validatedData = updateTransactionSchema.parse(req.body);
         const transaction = await storage.updateTransaction(id, validatedData);
         if (!transaction) {
@@ -80,7 +120,7 @@ router.patch("/transactions/:id", async (req, res) => {
 
 router.delete("/transactions/:id", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const deleted = await storage.deleteTransaction(id);
         if (!deleted) {
             return res.status(404).json({ error: "Transaction not found" });
@@ -88,20 +128,69 @@ router.delete("/transactions/:id", async (req, res) => {
         logAction(req, "DELETE", "FINANCE", id.toString(), `Eliminó la transacción #${id}`);
         res.status(204).send();
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
         res.status(500).json({ error: "Failed to delete transaction" });
+    }
+});
+
+router.get("/finance/payment-calendar", async (req, res) => {
+    try {
+        const parsedQuery = financialCalendarQuerySchema.safeParse(req.query);
+        if (!parsedQuery.success) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        const startDate = parseQueryDate(parsedQuery.data.startDate);
+        if (!startDate) {
+            return res.status(400).json({ error: "startDate must be a valid date" });
+        }
+
+        const endDate = parseQueryDate(parsedQuery.data.endDate);
+        if (!endDate) {
+            return res.status(400).json({ error: "endDate must be a valid date" });
+        }
+
+        if (startDate > endDate) {
+            return res.status(400).json({ error: "startDate must be less than or equal to endDate" });
+        }
+
+        if (exceedsFinancialCalendarRange(startDate, endDate)) {
+            return res.status(400).json({ error: "Date range cannot exceed 24 months" });
+        }
+
+        const calendar = await storage.getFinancialCalendar(startDate, endDate);
+        res.json(calendar);
+    } catch (error) {
+        logger.error({ err: error }, "Failed to fetch financial calendar");
+        res.status(500).json({ error: "Failed to fetch financial calendar" });
     }
 });
 
 router.get("/finance/summary", async (req, res) => {
     try {
-        const parseDate = (val: any) => {
-            if (!val) return undefined;
-            const d = new Date(val as string);
-            return isNaN(d.getTime()) ? undefined : d;
-        };
+        const parsedQuery = optionalDateRangeQuerySchema.safeParse(req.query);
+        if (!parsedQuery.success) {
+            return res.status(400).json({ error: "Invalid date range" });
+        }
 
-        const startDate = parseDate(req.query.startDate);
-        const endDate = parseDate(req.query.endDate);
+        const parsedStartDate = parsedQuery.data.startDate ? parseQueryDate(parsedQuery.data.startDate) : undefined;
+        if (parsedQuery.data.startDate && !parsedStartDate) {
+            return res.status(400).json({ error: "startDate must be a valid date" });
+        }
+        const startDate = parsedStartDate ?? undefined;
+
+        const parsedEndDate = parsedQuery.data.endDate ? parseQueryDate(parsedQuery.data.endDate) : undefined;
+        if (parsedQuery.data.endDate && !parsedEndDate) {
+            return res.status(400).json({ error: "endDate must be a valid date" });
+        }
+        const endDate = parsedEndDate ?? undefined;
+
+        if (startDate && endDate && startDate > endDate) {
+            return res.status(400).json({ error: "startDate must be less than or equal to endDate" });
+        }
+
         const summary = await storage.getFinancialSummary(startDate, endDate);
         res.json(summary);
     } catch (error) {
@@ -122,13 +211,16 @@ router.get("/recurring-transactions", async (req, res) => {
 
 router.get("/recurring-transactions/:id", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const recurring = await storage.getRecurringTransactionById(id);
         if (!recurring) {
             return res.status(404).json({ error: "Recurring transaction not found" });
         }
         res.json(recurring);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
         res.status(500).json({ error: "Failed to fetch recurring transaction" });
     }
 });
@@ -160,7 +252,7 @@ router.post("/recurring-transactions", async (req, res) => {
 
 router.patch("/recurring-transactions/:id", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const dataToValidate = {
             ...req.body,
             nextExecutionDate: req.body.nextExecutionDate ? new Date(req.body.nextExecutionDate) : undefined,
@@ -183,7 +275,7 @@ router.patch("/recurring-transactions/:id", async (req, res) => {
 
 router.delete("/recurring-transactions/:id", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const deleted = await storage.deleteRecurringTransaction(id);
         if (!deleted) {
             return res.status(404).json({ error: "Recurring transaction not found" });
@@ -191,6 +283,9 @@ router.delete("/recurring-transactions/:id", async (req, res) => {
         logAction(req, "DELETE", "FINANCE_RECURRING", id.toString(), `Eliminó transacción recurrente #${id}`);
         res.status(204).send();
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
         res.status(500).json({ error: "Failed to delete recurring transaction" });
     }
 });
@@ -198,10 +293,16 @@ router.delete("/recurring-transactions/:id", async (req, res) => {
 // Execute a specific recurring transaction manually
 router.post("/recurring-transactions/:id/execute", async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = positiveIntParamSchema.parse(req.params.id);
         const transaction = await storage.executeRecurringTransaction(id);
         res.status(201).json(transaction);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
+        if (error instanceof Error && error.message === "Recurring transaction not found") {
+            return res.status(404).json({ error: "Recurring transaction not found" });
+        }
         logger.error({ err: error }, "Failed to execute recurring transaction:");
         res.status(500).json({ error: "Failed to execute recurring transaction" });
     }
@@ -222,8 +323,12 @@ router.post("/recurring-transactions/execute-pending", async (req, res) => {
 // Get monthly accounts payable (Gastos recurrentes pendientes)
 router.get("/finance/obligations/payables", async (req, res) => {
     try {
-        const year = parseInt(req.query.year as string) || new Date().getFullYear();
-        const month = parseInt(req.query.month as string) || new Date().getMonth() + 1;
+        const parsedQuery = monthlyObligationsQuerySchema.safeParse(req.query);
+        if (!parsedQuery.success) {
+            return res.status(400).json({ error: "year and month must be valid values" });
+        }
+        const year = parsedQuery.data.year ?? new Date().getFullYear();
+        const month = parsedQuery.data.month ?? new Date().getMonth() + 1;
         const payables = await storage.getMonthlyAccountsPayable(year, month);
         res.json(payables);
     } catch (error) {
@@ -235,8 +340,12 @@ router.get("/finance/obligations/payables", async (req, res) => {
 // Get monthly accounts receivable (Ingresos recurrentes pendientes)
 router.get("/finance/obligations/receivables", async (req, res) => {
     try {
-        const year = parseInt(req.query.year as string) || new Date().getFullYear();
-        const month = parseInt(req.query.month as string) || new Date().getMonth() + 1;
+        const parsedQuery = monthlyObligationsQuerySchema.safeParse(req.query);
+        if (!parsedQuery.success) {
+            return res.status(400).json({ error: "year and month must be valid values" });
+        }
+        const year = parsedQuery.data.year ?? new Date().getFullYear();
+        const month = parsedQuery.data.month ?? new Date().getMonth() + 1;
         const receivables = await storage.getMonthlyAccountsReceivable(year, month);
         res.json(receivables);
     } catch (error) {
@@ -248,12 +357,25 @@ router.get("/finance/obligations/receivables", async (req, res) => {
 // Mark an obligation as paid/collected
 router.post("/finance/obligations/:id/pay", async (req, res) => {
     try {
-        const templateId = parseInt(req.params.id);
-        const paidDate = req.body.paidDate ? new Date(req.body.paidDate) : new Date();
+        const templateId = positiveIntParamSchema.parse(req.params.id);
+        const parsedBody = payObligationSchema.safeParse(req.body ?? {});
+        if (!parsedBody.success) {
+            return res.status(400).json({ error: "paidDate must be a valid date" });
+        }
+        const paidDate = parsedBody.data.paidDate ? parseQueryDate(parsedBody.data.paidDate) : new Date();
+        if (!paidDate) {
+            return res.status(400).json({ error: "paidDate must be a valid date" });
+        }
         const transaction = await storage.markObligationAsPaid(templateId, paidDate);
         logAction(req, "CREATE", "FINANCE", transaction.id.toString(), `Pagó obligación recurrente (Generó transacción '${transaction.description}')`);
         res.status(201).json(transaction);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
+        if (error instanceof Error && error.message === "Recurring template not found") {
+            return res.status(404).json({ error: "Recurring template not found" });
+        }
         logger.error({ err: error }, "Failed to mark obligation as paid:");
         res.status(500).json({ error: "Failed to mark obligation as paid" });
     }
@@ -263,7 +385,11 @@ router.post("/finance/obligations/:id/pay", async (req, res) => {
 // FIN-001: Properly delete the transaction, not just hide it
 router.post("/finance/obligations/:id/unpay", async (req, res) => {
     try {
-        const templateId = parseInt(req.params.id);
+        const templateId = positiveIntParamSchema.parse(req.params.id);
+        const existingRecurring = await storage.getRecurringTransactionById(templateId);
+        if (!existingRecurring) {
+            return res.status(404).json({ error: "Recurring template not found" });
+        }
 
         // 1. Delete the linked transaction from this month
         const deleted = await storage.deleteTransactionByRecurringTemplateId(templateId);
@@ -285,6 +411,9 @@ router.post("/finance/obligations/:id/unpay", async (req, res) => {
         });
         logAction(req, "UNPAY", "FINANCE", templateId.toString(), `Deshizo el pago de la obligación recurrente #${templateId}`);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: "Invalid ID" });
+        }
         logger.error({ err: error }, "Failed to unpay obligation:");
         res.status(500).json({ error: "Failed to revert payment status" });
     }

@@ -26,6 +26,12 @@ pm2-*.log
 # Docker
 .dockerignore
 
+# Secrets and local probes (do not commit)
+API Keys.md
+scripts/brute-db.ts
+scripts/test-db2.ts
+scripts/test-local-dbs.ts
+
 # IDE
 .vscode/settings.json
 .idea

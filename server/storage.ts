@@ -17,25 +17,15 @@ import {
   type InsertTeamAssignment,
   type Resource,
   type InsertResource,
-  type AdPlatform,
-  type InsertAdPlatform,
-  type AdCreative,
-  type InsertAdCreative,
-  type UpdateAdCreative,
-  type AdMetric,
-  type InsertAdMetric,
-  type PlatformConnection,
-  type InsertPlatformConnection,
-  type UpdatePlatformConnection,
-  type AccountMapping,
-  type InsertAccountMapping,
-  type UpdateAccountMapping,
-  type ClientKpiConfig,
-  type InsertClientKpiConfig,
-  type UpdateClientKpiConfig,
   type Transaction,
   type InsertTransaction,
   type UpdateTransaction,
+  type FinancialCalendarEvent,
+  type FinancialCalendarEventDirection,
+  type FinancialCalendarEventSourceType,
+  type FinancialCalendarEventStatus,
+  type FinancialCalendarMonthlyTotals,
+  type FinancialCalendarResponse,
   type RecurringTransaction,
   type InsertRecurringTransaction,
   type UpdateRecurringTransaction,
@@ -90,12 +80,6 @@ import {
   team,
   teamAssignments,
   resources,
-  adPlatforms,
-  adCreatives,
-  adMetrics,
-  platformConnections,
-  accountMappings,
-  clientKpiConfig,
   transactions,
   recurringTransactions,
   projects,
@@ -129,6 +113,11 @@ import {
 import { db } from "../db";
 import { eq, desc, sql, and } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
+
+/**
+ * Capa de persistencia (repositorio): encapsula Drizzle/M SQL y politicas de acceso por dominio.
+ * Los controladores deben delegar aqui en vez de armar queries ad hoc.
+ */
 
 interface PostgresResult {
   count: number;
@@ -203,53 +192,6 @@ export interface IStorage {
   createAgencyRole(role: InsertAgencyRole): Promise<AgencyRole>;
   updateAgencyRole(id: number, role: UpdateAgencyRole): Promise<AgencyRole | undefined>;
   deleteAgencyRole(id: number): Promise<boolean>;
-
-  // Ads Command Center methods
-  getAdPlatforms(): Promise<AdPlatform[]>;
-  getAdPlatformById(id: number): Promise<AdPlatform | undefined>;
-  getAdPlatformByName(name: string): Promise<AdPlatform | undefined>;
-  createAdPlatform(platform: InsertAdPlatform): Promise<AdPlatform>;
-  updateAdPlatform(id: number, platform: Partial<InsertAdPlatform>): Promise<AdPlatform | undefined>;
-  deleteAdPlatform(id: number): Promise<boolean>;
-
-  getAllAdCreatives(): Promise<AdCreative[]>;
-  getAdCreativeById(id: number): Promise<AdCreative | undefined>;
-  getAdCreativesByPlatform(platformId: number): Promise<AdCreative[]>;
-  getTopPerformingCreatives(limit: number): Promise<(AdCreative & { metrics: AdMetric })[]>;
-  getBottomPerformingCreatives(limit: number): Promise<(AdCreative & { metrics: AdMetric })[]>;
-  createAdCreative(creative: InsertAdCreative): Promise<AdCreative>;
-  updateAdCreative(id: number, creative: UpdateAdCreative): Promise<AdCreative | undefined>;
-  deleteAdCreative(id: number): Promise<boolean>;
-
-  getAdMetrics(): Promise<AdMetric[]>;
-  getAdMetricsByCreative(creativeId: number): Promise<AdMetric[]>;
-  getLatestAdMetricByCreative(creativeId: number): Promise<AdMetric | undefined>;
-  createAdMetric(metric: InsertAdMetric): Promise<AdMetric>;
-  getBlendedROAS(): Promise<{ roas: number; totalSpend: number; totalRevenue: number }>;
-
-  // Platform Connections
-  getPlatformConnections(): Promise<PlatformConnection[]>;
-  getPlatformConnectionById(id: number): Promise<PlatformConnection | undefined>;
-  getPlatformConnectionsByPlatformId(platformId: number): Promise<PlatformConnection[]>;
-  createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection>;
-  updatePlatformConnection(id: number, connection: UpdatePlatformConnection): Promise<PlatformConnection | undefined>;
-  deletePlatformConnection(id: number): Promise<boolean>;
-
-  // Account Mappings
-  getAccountMappings(): Promise<AccountMapping[]>;
-  getAccountMappingById(id: number): Promise<AccountMapping | undefined>;
-  getAccountMappingsByConnectionId(connectionId: number): Promise<AccountMapping[]>;
-  createAccountMapping(mapping: InsertAccountMapping): Promise<AccountMapping>;
-  updateAccountMapping(id: number, mapping: UpdateAccountMapping): Promise<AccountMapping | undefined>;
-  deleteAccountMapping(id: number): Promise<boolean>;
-
-  // Client KPI Config
-  getClientKpiConfigs(): Promise<ClientKpiConfig[]>;
-  getClientKpiConfigByClientName(clientName: string): Promise<ClientKpiConfig | undefined>;
-  createClientKpiConfig(config: InsertClientKpiConfig): Promise<ClientKpiConfig>;
-  updateClientKpiConfig(clientName: string, config: UpdateClientKpiConfig): Promise<ClientKpiConfig | undefined>;
-  deleteClientKpiConfig(clientName: string): Promise<boolean>;
-
   // Financial Hub - Transactions
   getTransactions(): Promise<Transaction[]>;
   getTransactionById(id: number): Promise<Transaction | undefined>;
@@ -265,6 +207,7 @@ export interface IStorage {
     expensesByCategory: Record<string, number>;
     monthlyData: Array<{ month: string; income: number; expenses: number }>;
   }>;
+  getFinancialCalendar(startDate: Date, endDate: Date): Promise<FinancialCalendarResponse>;
 
   // Financial Hub - Recurring Transactions
   getRecurringTransactions(): Promise<RecurringTransaction[]>;
@@ -407,7 +350,6 @@ export interface ProjectDetails {
     totalExpenses: number;
     laborCosts: number;
     serviceCosts: number;
-    adSpend: number;
     actualCost: number;
     margin: number;
     marginPercentage: number;
@@ -415,36 +357,6 @@ export interface ProjectDetails {
 }
 
 // Type definitions for SQL query results
-interface AdCreativeWithMetricsRow {
-  id: number;
-  platform_id: number;
-  creative_name: string;
-  creative_type: string;
-  status: string;
-  created_at: Date;
-  updated_at: Date;
-  metrics: {
-    id: number;
-    creativeId: number;
-    platformId: number;
-    impressions: number;
-    clicks: number;
-    conversions: number;
-    spend: string;
-    revenue: string;
-    ctr: string;
-    cpa: string;
-    roas: string;
-    metricDate: Date;
-    syncedAt: Date;
-  };
-}
-
-interface BlendedRoasRow {
-  total_spend: string;
-  total_revenue: string;
-  roas: string;
-}
 
 interface TransactionRow {
   type: string;
@@ -480,7 +392,159 @@ interface ProjectWithClientRow {
   };
 }
 
+type ProjectWithClient = Project & { client: ClientAccount };
+
+interface InstallmentCalendarSource {
+  installment: Installment;
+  project: ProjectWithClient;
+}
+
+interface ProjectCalendarOccurrence {
+  kind: "cotizacion_proyecto" | "mantenimiento";
+  project: ProjectWithClient;
+  scheduledDate: Date;
+  amount: number;
+  previousBoundary: Date | null;
+  nextBoundary: Date | null;
+}
+
+interface RecurringCalendarOccurrence {
+  template: RecurringTransaction;
+  scheduledDate: Date;
+  previousBoundary: Date | null;
+  nextBoundary: Date | null;
+}
+
 export class DBStorage implements IStorage {
+  private getTransactionPaymentFields(isPaid: boolean, paidDate?: Date | null) {
+    return {
+      isPaid,
+      status: isPaid ? "Pagado" : "Pendiente",
+      paidDate: isPaid ? (paidDate ?? new Date()) : null,
+    };
+  }
+
+  private getInstallmentPaymentFields(value: { isPaid?: boolean | null; status?: string | null; paidDate?: Date | null }) {
+    const isPaid = value.isPaid === true || value.status === "collected";
+    const status = isPaid ? "collected" : (value.status === "collected" ? "pending" : value.status ?? "pending");
+
+    return {
+      isPaid,
+      status,
+      paidDate: isPaid ? (value.paidDate ?? new Date()) : null,
+    };
+  }
+
+  private async syncInstallmentFromTransactionRecord(transaction: Transaction, executor: any = db): Promise<void> {
+    if (!transaction.installmentId) {
+      return;
+    }
+
+    const paymentFields = this.getInstallmentPaymentFields({
+      isPaid: transaction.isPaid,
+      status: transaction.isPaid ? "collected" : "pending",
+      paidDate: transaction.paidDate,
+    });
+
+    await executor
+      .update(installments)
+      .set({
+        transactionId: transaction.id,
+        amount: String(transaction.amount),
+        dueDate: transaction.date,
+        ...paymentFields,
+        updatedAt: new Date(),
+      })
+      .where(eq(installments.id, transaction.installmentId));
+  }
+
+  private async clearInstallmentTransactionLink(installmentId: number, executor: any = db): Promise<void> {
+    await executor
+      .update(installments)
+      .set({
+        transactionId: null,
+        isPaid: false,
+        status: "pending",
+        paidDate: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(installments.id, installmentId));
+  }
+
+  private async upsertTransactionForInstallment(installment: Installment, executor: any = db): Promise<Installment> {
+    const [project] = await executor
+      .select()
+      .from(projects)
+      .where(eq(projects.id, installment.projectId))
+      .limit(1);
+
+    if (!project) {
+      return installment;
+    }
+
+    const paymentFields = this.getTransactionPaymentFields(
+      installment.isPaid || installment.status === "collected",
+      installment.paidDate,
+    );
+
+    const transactionValues = {
+      type: "Ingreso" as const,
+      category: "Proyectos",
+      amount: String(installment.amount),
+      date: installment.dueDate,
+      ...paymentFields,
+      clientId: project.clientId,
+      projectId: project.id,
+      installmentId: installment.id,
+      source: "client_project",
+      sourceId: project.id,
+      notes: installment.notes || "Generado automaticamente desde parcialidad de proyecto",
+      description: installment.resolvedConcept || installment.concept || `Parcialidad ${installment.installmentNumber} - ${project.name}`,
+    };
+
+    let linkedTransaction: Transaction | undefined;
+    if (installment.transactionId) {
+      [linkedTransaction] = await executor
+        .update(transactions)
+        .set({ ...transactionValues, updatedAt: new Date() })
+        .where(eq(transactions.id, installment.transactionId))
+        .returning();
+    }
+
+    if (!linkedTransaction) {
+      [linkedTransaction] = await executor
+        .select()
+        .from(transactions)
+        .where(eq(transactions.installmentId, installment.id))
+        .limit(1);
+    }
+
+    if (linkedTransaction) {
+      [linkedTransaction] = await executor
+        .update(transactions)
+        .set({ ...transactionValues, updatedAt: new Date() })
+        .where(eq(transactions.id, linkedTransaction.id))
+        .returning();
+    } else {
+      [linkedTransaction] = await executor
+        .insert(transactions)
+        .values(transactionValues)
+        .returning();
+    }
+
+    if (!linkedTransaction || installment.transactionId === linkedTransaction.id) {
+      return installment;
+    }
+
+    const [linkedInstallment] = await executor
+      .update(installments)
+      .set({ transactionId: linkedTransaction.id, updatedAt: new Date() })
+      .where(eq(installments.id, installment.id))
+      .returning();
+
+    return linkedInstallment ?? installment;
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -1156,473 +1220,6 @@ export class DBStorage implements IStorage {
       throw new Error("Error al eliminar el rol de agencia");
     }
   }
-
-  // Ads Command Center implementation
-  async getAdPlatforms(): Promise<AdPlatform[]> {
-    return await db.select().from(adPlatforms).orderBy(desc(adPlatforms.createdAt));
-  }
-
-  async getAdPlatformById(id: number): Promise<AdPlatform | undefined> {
-    const [platform] = await db.select().from(adPlatforms).where(eq(adPlatforms.id, id));
-    return platform;
-  }
-
-  async getAdPlatformByName(name: string): Promise<AdPlatform | undefined> {
-    const [platform] = await db.select().from(adPlatforms).where(eq(adPlatforms.platformName, name));
-    return platform;
-  }
-
-  async createAdPlatform(platform: InsertAdPlatform): Promise<AdPlatform> {
-    try {
-      const [newPlatform] = await db.insert(adPlatforms).values(platform).returning();
-      return newPlatform;
-    } catch (error) {
-      console.error(`❌ [createAdPlatform] Error al insertar plataforma:`, {
-        input: platform,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al guardar la plataforma de ads");
-    }
-  }
-
-  async updateAdPlatform(id: number, platform: Partial<InsertAdPlatform>): Promise<AdPlatform | undefined> {
-    try {
-      const [updated] = await db
-        .update(adPlatforms)
-        .set(platform)
-        .where(eq(adPlatforms.id, id))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error(`❌ [updateAdPlatform] Error al actualizar plataforma:`, {
-        id,
-        input: platform,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al actualizar la plataforma de ads");
-    }
-  }
-
-  async deleteAdPlatform(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(adPlatforms).where(eq(adPlatforms.id, id));
-      return (result as any).count > 0;
-    } catch (error) {
-      console.error(`❌ [deleteAdPlatform] Error al eliminar plataforma:`, {
-        id,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al eliminar la plataforma de ads");
-    }
-  }
-
-  async getAllAdCreatives(): Promise<AdCreative[]> {
-    return await db.select().from(adCreatives).orderBy(desc(adCreatives.createdAt));
-  }
-
-  async getAdCreativeById(id: number): Promise<AdCreative | undefined> {
-    const [creative] = await db.select().from(adCreatives).where(eq(adCreatives.id, id));
-    return creative;
-  }
-
-  async getAdCreativesByPlatform(platformId: number): Promise<AdCreative[]> {
-    return await db.select().from(adCreatives).where(eq(adCreatives.platformId, platformId));
-  }
-
-  async getTopPerformingCreatives(limit: number = 3): Promise<(AdCreative & { metrics: AdMetric })[]> {
-    const result = await db.execute(sql`
-      SELECT 
-        c.*,
-        json_build_object(
-          'id', m.id,
-          'creativeId', m.creative_id,
-          'platformId', m.platform_id,
-          'impressions', m.impressions,
-          'clicks', m.clicks,
-          'conversions', m.conversions,
-          'spend', m.spend,
-          'revenue', m.revenue,
-          'ctr', m.ctr,
-          'cpa', m.cpa,
-          'roas', m.roas,
-          'metricDate', m.metric_date,
-          'syncedAt', m.synced_at
-        ) as metrics
-      FROM ${adCreatives} c
-      INNER JOIN LATERAL (
-        SELECT * FROM ${adMetrics}
-        WHERE creative_id = c.id
-        ORDER BY metric_date DESC
-        LIMIT 1
-      ) m ON true
-      WHERE c.status = 'active'
-      ORDER BY m.roas DESC NULLS LAST
-      LIMIT ${limit}
-    `);
-    return result as unknown as (AdCreative & { metrics: AdMetric })[];
-  }
-
-  async getBottomPerformingCreatives(limit: number = 3): Promise<(AdCreative & { metrics: AdMetric })[]> {
-    const result = await db.execute(sql`
-      SELECT 
-        c.*,
-        json_build_object(
-          'id', m.id,
-          'creativeId', m.creative_id,
-          'platformId', m.platform_id,
-          'impressions', m.impressions,
-          'clicks', m.clicks,
-          'conversions', m.conversions,
-          'spend', m.spend,
-          'revenue', m.revenue,
-          'ctr', m.ctr,
-          'cpa', m.cpa,
-          'roas', m.roas,
-          'metricDate', m.metric_date,
-          'syncedAt', m.synced_at
-        ) as metrics
-      FROM ${adCreatives} c
-      INNER JOIN LATERAL (
-        SELECT * FROM ${adMetrics}
-        WHERE creative_id = c.id
-        ORDER BY metric_date DESC
-        LIMIT 1
-      ) m ON true
-      WHERE c.status = 'active'
-      ORDER BY m.roas ASC NULLS LAST
-      LIMIT ${limit}
-    `);
-    return result as unknown as (AdCreative & { metrics: AdMetric })[];
-  }
-
-  async createAdCreative(creative: InsertAdCreative): Promise<AdCreative> {
-    try {
-      const [newCreative] = await db.insert(adCreatives).values(creative).returning();
-      return newCreative;
-    } catch (error) {
-      console.error(`❌ [createAdCreative] Error al insertar creativo:`, {
-        input: creative,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al guardar el creativo de ads");
-    }
-  }
-
-  async updateAdCreative(id: number, creative: UpdateAdCreative): Promise<AdCreative | undefined> {
-    try {
-      const [updated] = await db
-        .update(adCreatives)
-        .set({ ...creative, updatedAt: new Date() })
-        .where(eq(adCreatives.id, id))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error(`❌ [updateAdCreative] Error al actualizar creativo:`, {
-        id,
-        input: creative,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al actualizar el creativo de ads");
-    }
-  }
-
-  async deleteAdCreative(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(adCreatives).where(eq(adCreatives.id, id));
-      return (result as any).count > 0;
-    } catch (error) {
-      console.error(`❌ [deleteAdCreative] Error al eliminar creativo:`, {
-        id,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al eliminar el creativo de ads");
-    }
-  }
-
-  async getAdMetrics(): Promise<AdMetric[]> {
-    return await db.select().from(adMetrics).orderBy(desc(adMetrics.metricDate));
-  }
-
-  async getAdMetricsByCreative(creativeId: number): Promise<AdMetric[]> {
-    return await db
-      .select()
-      .from(adMetrics)
-      .where(eq(adMetrics.creativeId, creativeId))
-      .orderBy(desc(adMetrics.metricDate));
-  }
-
-  async getLatestAdMetricByCreative(creativeId: number): Promise<AdMetric | undefined> {
-    const [metric] = await db
-      .select()
-      .from(adMetrics)
-      .where(eq(adMetrics.creativeId, creativeId))
-      .orderBy(desc(adMetrics.metricDate))
-      .limit(1);
-    return metric;
-  }
-
-  async createAdMetric(metric: InsertAdMetric): Promise<AdMetric> {
-    try {
-      const [newMetric] = await db.insert(adMetrics).values(metric).returning();
-
-      // 360 Bridge 3: Marketing (Ad Metrics) to Finance (Ad Spend Conciliation)
-      if (metric.spend && parseFloat(metric.spend.toString()) > 0) {
-        // 1. Get Creative to find Campaign
-        const [creative] = await db.select().from(adCreatives).where(eq(adCreatives.id, metric.creativeId)).limit(1);
-
-        if (creative && creative.campaignId) {
-          // 2. Get Campaign to find Client
-          const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, creative.campaignId)).limit(1);
-
-          if (campaign) {
-            // Note: campaigns only stores clientName string, not clientId relation.
-            // For a perfect 360 link, we try to match the clientAccount by name, but fallback to null if not found
-            let matchedClientId = null;
-            if (campaign.clientName) {
-              const [client] = await db.select().from(clientAccounts)
-                .where(eq(clientAccounts.companyName, campaign.clientName))
-                .limit(1);
-              if (client) matchedClientId = client.id;
-            }
-
-            // Get Platform Name for notes
-            const [platform] = await db.select().from(adPlatforms).where(eq(adPlatforms.id, metric.platformId)).limit(1);
-            const platformName = platform ? platform.displayName : 'Desconocida';
-
-            // 3. Register the Ad Spend as an Expense (Gasto - Pauta)
-            await db.insert(transactions).values({
-              type: "Gasto",
-              category: "Pauta",
-              amount: metric.spend.toString(),
-              date: new Date(metric.metricDate),
-              isPaid: true, // Ad spend is usually already paid/captured by the platform
-              clientId: matchedClientId, // Nullable FK, ok if null
-              source: "ad_metric",
-              sourceId: newMetric.id,
-              description: `Gasto Pauta: Ad ${creative.platformAdId} (Campaña: ${campaign.name})`,
-              notes: `Métrica de Ads (${platformName}) del ${new Date(metric.metricDate).toLocaleDateString()} importada para ${campaign.clientName}`
-            });
-          }
-        }
-      }
-
-      return newMetric;
-    } catch (error) {
-      console.error(`❌ [createAdMetric] Error al insertar métrica de ads:`, {
-        input: metric,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al guardar la métrica de ads");
-    }
-  }
-
-  async getBlendedROAS(): Promise<{ roas: number; totalSpend: number; totalRevenue: number }> {
-    const result = await db.execute(sql`
-      SELECT 
-        COALESCE(SUM(CAST(spend AS DECIMAL)), 0) as total_spend,
-        COALESCE(SUM(CAST(revenue AS DECIMAL)), 0) as total_revenue,
-        CASE 
-          WHEN SUM(CAST(spend AS DECIMAL)) > 0 
-          THEN SUM(CAST(revenue AS DECIMAL)) / SUM(CAST(spend AS DECIMAL))
-          ELSE 0
-        END as roas
-      FROM ${adMetrics}
-      WHERE metric_date >= NOW() - INTERVAL '30 days'
-    `);
-    const row = result[0] as unknown as BlendedRoasRow;
-    return {
-      totalSpend: parseFloat(row.total_spend || '0'),
-      totalRevenue: parseFloat(row.total_revenue || '0'),
-      roas: parseFloat(row.roas || '0'),
-    };
-  }
-
-  // Platform Connections implementation
-  async getPlatformConnections(): Promise<PlatformConnection[]> {
-    return await db.select().from(platformConnections).orderBy(desc(platformConnections.createdAt));
-  }
-
-  async getPlatformConnectionById(id: number): Promise<PlatformConnection | undefined> {
-    const [connection] = await db.select().from(platformConnections).where(eq(platformConnections.id, id));
-    return connection;
-  }
-
-  async getPlatformConnectionsByPlatformId(platformId: number): Promise<PlatformConnection[]> {
-    return await db.select().from(platformConnections).where(eq(platformConnections.platformId, platformId));
-  }
-
-  async createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection> {
-    try {
-      const [newConnection] = await db.insert(platformConnections).values(connection).returning();
-      return newConnection;
-    } catch (error) {
-      console.error(`❌ [createPlatformConnection] Error al insertar conexión:`, {
-        input: { platformId: connection.platformId, connectionType: connection.connectionType },
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al guardar la conexión de plataforma");
-    }
-  }
-
-  async updatePlatformConnection(id: number, connection: UpdatePlatformConnection): Promise<PlatformConnection | undefined> {
-    try {
-      const [updated] = await db
-        .update(platformConnections)
-        .set({ ...connection, updatedAt: new Date() })
-        .where(eq(platformConnections.id, id))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error(`❌ [updatePlatformConnection] Error al actualizar conexión:`, {
-        id,
-        input: connection,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al actualizar la conexión de plataforma");
-    }
-  }
-
-  async deletePlatformConnection(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(platformConnections).where(eq(platformConnections.id, id));
-      return (result as any).count > 0;
-    } catch (error) {
-      console.error(`❌ [deletePlatformConnection] Error al eliminar conexión:`, {
-        id,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al eliminar la conexión de plataforma");
-    }
-  }
-
-  // Account Mappings implementation
-  async getAccountMappings(): Promise<AccountMapping[]> {
-    return await db.select().from(accountMappings).orderBy(desc(accountMappings.createdAt));
-  }
-
-  async getAccountMappingById(id: number): Promise<AccountMapping | undefined> {
-    const [mapping] = await db.select().from(accountMappings).where(eq(accountMappings.id, id));
-    return mapping;
-  }
-
-  async getAccountMappingsByConnectionId(connectionId: number): Promise<AccountMapping[]> {
-    return await db.select().from(accountMappings).where(eq(accountMappings.connectionId, connectionId));
-  }
-
-  async createAccountMapping(mapping: InsertAccountMapping): Promise<AccountMapping> {
-    try {
-      const [newMapping] = await db.insert(accountMappings).values(mapping).returning();
-      return newMapping;
-    } catch (error) {
-      console.error(`❌ [createAccountMapping] Error al insertar mapeo de cuenta:`, {
-        input: mapping,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al guardar el mapeo de cuenta");
-    }
-  }
-
-  async updateAccountMapping(id: number, mapping: UpdateAccountMapping): Promise<AccountMapping | undefined> {
-    try {
-      const [updated] = await db
-        .update(accountMappings)
-        .set({ ...mapping, updatedAt: new Date() })
-        .where(eq(accountMappings.id, id))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error(`❌ [updateAccountMapping] Error al actualizar mapeo de cuenta:`, {
-        id,
-        input: mapping,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al actualizar el mapeo de cuenta");
-    }
-  }
-
-  async deleteAccountMapping(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(accountMappings).where(eq(accountMappings.id, id));
-      return (result as any).count > 0;
-    } catch (error) {
-      console.error(`❌ [deleteAccountMapping] Error al eliminar mapeo de cuenta:`, {
-        id,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al eliminar el mapeo de cuenta");
-    }
-  }
-
-  // Client KPI Config implementation
-  async getClientKpiConfigs(): Promise<ClientKpiConfig[]> {
-    return await db.select().from(clientKpiConfig).orderBy(desc(clientKpiConfig.createdAt));
-  }
-
-  async getClientKpiConfigByClientName(clientName: string): Promise<ClientKpiConfig | undefined> {
-    const [config] = await db.select().from(clientKpiConfig).where(eq(clientKpiConfig.clientName, clientName));
-    return config;
-  }
-
-  async createClientKpiConfig(config: InsertClientKpiConfig): Promise<ClientKpiConfig> {
-    try {
-      const [newConfig] = await db.insert(clientKpiConfig).values(config).returning();
-      return newConfig;
-    } catch (error) {
-      console.error(`❌ [createClientKpiConfig] Error al insertar config KPI:`, {
-        input: config,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al guardar la configuración KPI del cliente");
-    }
-  }
-
-  async updateClientKpiConfig(clientName: string, config: UpdateClientKpiConfig): Promise<ClientKpiConfig | undefined> {
-    try {
-      const [updated] = await db
-        .update(clientKpiConfig)
-        .set({ ...config, updatedAt: new Date() })
-        .where(eq(clientKpiConfig.clientName, clientName))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error(`❌ [updateClientKpiConfig] Error al actualizar config KPI:`, {
-        clientName,
-        input: config,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al actualizar la configuración KPI del cliente");
-    }
-  }
-
-  async deleteClientKpiConfig(clientName: string): Promise<boolean> {
-    try {
-      const result = await db.delete(clientKpiConfig).where(eq(clientKpiConfig.clientName, clientName));
-      return (result as any).count > 0;
-    } catch (error) {
-      console.error(`❌ [deleteClientKpiConfig] Error al eliminar config KPI:`, {
-        clientName,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Error al eliminar la configuración KPI del cliente");
-    }
-  }
-
   // Financial Hub - Transactions implementation
   async getTransactions(): Promise<Transaction[]> {
     return await db.select().from(transactions).orderBy(desc(transactions.date));
@@ -1656,8 +1253,11 @@ export class DBStorage implements IStorage {
         syncedTransaction.amount = (sub + tax).toFixed(2);
       }
 
-      const [newTransaction] = await db.insert(transactions).values(syncedTransaction).returning();
-      return newTransaction;
+      return await db.transaction(async (tx) => {
+        const [newTransaction] = await tx.insert(transactions).values(syncedTransaction).returning();
+        await this.syncInstallmentFromTransactionRecord(newTransaction, tx);
+        return newTransaction;
+      });
     } catch (error) {
       console.error(`❌ [createTransaction] Error al insertar transacción:`, {
         input: { type: transaction.type, category: transaction.category, amount: transaction.amount },
@@ -1670,6 +1270,11 @@ export class DBStorage implements IStorage {
 
   async updateTransaction(id: number, transaction: UpdateTransaction): Promise<Transaction | undefined> {
     try {
+      const existing = await this.getTransactionById(id);
+      if (!existing) {
+        return undefined;
+      }
+
       // 🛡️ SYNC LOGIC: Enforce synchronization during updates
       let syncedTransaction: any = { ...transaction };
 
@@ -1705,12 +1310,24 @@ export class DBStorage implements IStorage {
         }
       }
 
-      const [updated] = await db
-        .update(transactions)
-        .set({ ...syncedTransaction, updatedAt: new Date() })
-        .where(eq(transactions.id, id))
-        .returning();
-      return updated;
+      return await db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(transactions)
+          .set({ ...syncedTransaction, updatedAt: new Date() })
+          .where(eq(transactions.id, id))
+          .returning();
+
+        if (!updated) {
+          return undefined;
+        }
+
+        if (existing.installmentId && existing.installmentId !== updated.installmentId) {
+          await this.clearInstallmentTransactionLink(existing.installmentId, tx);
+        }
+
+        await this.syncInstallmentFromTransactionRecord(updated, tx);
+        return updated;
+      });
     } catch (error) {
       console.error(`❌ [updateTransaction] Error al actualizar transacción:`, {
         id,
@@ -1724,8 +1341,23 @@ export class DBStorage implements IStorage {
 
   async deleteTransaction(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(transactions).where(eq(transactions.id, id));
-      return (result as any).count > 0;
+      return await db.transaction(async (tx) => {
+        const [transaction] = await tx.select().from(transactions).where(eq(transactions.id, id)).limit(1);
+        if (!transaction) {
+          return false;
+        }
+
+        const [deleted] = await tx
+          .delete(transactions)
+          .where(eq(transactions.id, id))
+          .returning({ id: transactions.id });
+
+        if (deleted && transaction.installmentId) {
+          await this.clearInstallmentTransactionLink(transaction.installmentId, tx);
+        }
+
+        return Boolean(deleted);
+      });
     } catch (error) {
       console.error(`❌ [deleteTransaction] Error al eliminar transacción:`, {
         id,
@@ -1812,6 +1444,614 @@ export class DBStorage implements IStorage {
     };
   }
 
+  async getFinancialCalendar(startDate: Date, endDate: Date): Promise<FinancialCalendarResponse> {
+    const rangeStart = this.startOfDay(startDate);
+    const rangeEnd = this.endOfDay(endDate);
+
+    const [projects, clients, installmentsInRange, allInstallments, allTransactions, recurringTemplates] = await Promise.all([
+      this.getProjects(),
+      this.getClientAccounts(),
+      this.getFinancialCalendarInstallments(rangeStart, rangeEnd),
+      this.getAllInstallments(),
+      this.getTransactions(),
+      this.getRecurringTransactions(),
+    ]);
+
+    const projectMap = new Map<number, ProjectWithClient>(projects.map((project) => [project.id, project]));
+    const clientMap = new Map<number, ClientAccount>(clients.map((client) => [client.id, client]));
+    const projectIdsWithInstallments = new Set(allInstallments.map((installment) => installment.projectId));
+    const absorbedTransactionIds = new Set<number>();
+    const events: FinancialCalendarEvent[] = [];
+
+    const installmentSources = installmentsInRange
+      .map((installment) => {
+        const project = projectMap.get(installment.projectId);
+        if (!project) {
+          return null;
+        }
+
+        return { installment, project };
+      })
+      .filter((source): source is InstallmentCalendarSource => Boolean(source));
+
+    for (const source of installmentSources) {
+      const candidates = this.getInstallmentTransactionCandidates(
+        source.installment,
+        allTransactions,
+        absorbedTransactionIds,
+      );
+      const matchedTransaction = candidates.length === 1 ? candidates[0] : null;
+      if (matchedTransaction) {
+        absorbedTransactionIds.add(matchedTransaction.id);
+      }
+
+      const installmentPaid = Boolean(
+        matchedTransaction?.isPaid ||
+        source.installment.isPaid ||
+        source.installment.status === "collected",
+      );
+
+      const paidDate = matchedTransaction
+        ? this.getPaidDateFromTransaction(matchedTransaction)
+        : source.installment.paidDate;
+
+      const status = installmentPaid
+        ? "pagado"
+        : source.installment.status === "overdue"
+          ? "vencido"
+          : this.deriveEventStatus(source.installment.dueDate, false);
+
+      events.push({
+        id: `segmentacion:${source.installment.id}`,
+        sourceType: "segmentacion",
+        direction: "ingreso",
+        amount: this.parseNumericAmount(source.installment.amount),
+        currency: "MXN",
+        scheduledDate: this.toIsoString(source.installment.dueDate),
+        paidDate: this.toOptionalIsoString(paidDate),
+        status,
+        title: source.installment.resolvedConcept
+          || source.installment.concept
+          || `Parcialidad ${source.installment.installmentNumber} - ${source.project.name}`,
+        projectId: source.project.id,
+        projectName: source.project.name,
+        clientId: source.project.clientId,
+        clientName: source.project.client.companyName,
+        transactionId: matchedTransaction?.id ?? source.installment.transactionId ?? null,
+        installmentId: source.installment.id,
+        recurringTemplateId: null,
+        isSynthetic: false,
+        month: this.toMonthKey(source.installment.dueDate),
+      });
+    }
+
+    const projectOccurrences = this.materializeProjectOccurrences(
+      projects,
+      projectIdsWithInstallments,
+      rangeStart,
+      rangeEnd,
+    );
+
+    for (const occurrence of projectOccurrences) {
+      const candidates = this.getProjectOccurrenceTransactionCandidates(
+        occurrence,
+        allTransactions,
+        absorbedTransactionIds,
+      );
+      const matchedTransaction = candidates.length === 1 ? candidates[0] : null;
+      if (matchedTransaction) {
+        absorbedTransactionIds.add(matchedTransaction.id);
+      }
+
+      const paidDate = matchedTransaction ? this.getPaidDateFromTransaction(matchedTransaction) : null;
+      const status = matchedTransaction?.isPaid
+        ? "pagado"
+        : this.deriveEventStatus(occurrence.scheduledDate, false);
+
+      events.push({
+        id: `${occurrence.kind}:${occurrence.project.id}:${this.toMonthKey(occurrence.scheduledDate)}`,
+        sourceType: occurrence.kind,
+        direction: "ingreso",
+        amount: occurrence.amount,
+        currency: "MXN",
+        scheduledDate: this.toIsoString(occurrence.scheduledDate),
+        paidDate: this.toOptionalIsoString(paidDate),
+        status,
+        title: occurrence.kind === "cotizacion_proyecto"
+          ? `Cotizacion - ${occurrence.project.name}`
+          : `Mantenimiento - ${occurrence.project.name}`,
+        projectId: occurrence.project.id,
+        projectName: occurrence.project.name,
+        clientId: occurrence.project.clientId,
+        clientName: occurrence.project.client.companyName,
+        transactionId: matchedTransaction?.id ?? null,
+        installmentId: null,
+        recurringTemplateId: null,
+        isSynthetic: true,
+        month: this.toMonthKey(occurrence.scheduledDate),
+      });
+    }
+
+    const recurringOccurrences = recurringTemplates
+      .filter((template) => template.isActive)
+      .flatMap((template) => this.materializeRecurringOccurrences(template, rangeStart, rangeEnd));
+
+    for (const occurrence of recurringOccurrences) {
+      const candidates = this.getRecurringOccurrenceTransactionCandidates(
+        occurrence,
+        allTransactions,
+        absorbedTransactionIds,
+      );
+      const matchedTransaction = candidates.length === 1 ? candidates[0] : null;
+      if (matchedTransaction) {
+        absorbedTransactionIds.add(matchedTransaction.id);
+      }
+
+      const client = occurrence.template.clientId
+        ? clientMap.get(occurrence.template.clientId) ?? null
+        : null;
+
+      events.push({
+        id: `obligacion_recurrente:${occurrence.template.id}:${this.toIsoDateKey(occurrence.scheduledDate)}`,
+        sourceType: "obligacion_recurrente",
+        direction: this.mapTransactionDirection(occurrence.template.type),
+        amount: this.parseNumericAmount(occurrence.template.amount),
+        currency: "MXN",
+        scheduledDate: this.toIsoString(occurrence.scheduledDate),
+        paidDate: this.toOptionalIsoString(matchedTransaction ? this.getPaidDateFromTransaction(matchedTransaction) : null),
+        status: matchedTransaction?.isPaid
+          ? "pagado"
+          : this.deriveEventStatus(occurrence.scheduledDate, false),
+        title: occurrence.template.description || occurrence.template.name,
+        projectId: null,
+        projectName: null,
+        clientId: client?.id ?? occurrence.template.clientId ?? null,
+        clientName: client?.companyName ?? null,
+        transactionId: matchedTransaction?.id ?? null,
+        installmentId: null,
+        recurringTemplateId: occurrence.template.id,
+        isSynthetic: true,
+        month: this.toMonthKey(occurrence.scheduledDate),
+      });
+    }
+
+    for (const transaction of allTransactions) {
+      if (absorbedTransactionIds.has(transaction.id)) {
+        continue;
+      }
+
+      if (!this.isDateWithinRange(transaction.date, rangeStart, rangeEnd)) {
+        continue;
+      }
+
+      events.push(this.buildStandaloneTransactionEvent(transaction, projectMap, clientMap));
+    }
+
+    const sortedEvents = events.sort((left, right) => {
+      const byDate = new Date(left.scheduledDate).getTime() - new Date(right.scheduledDate).getTime();
+      if (byDate !== 0) {
+        return byDate;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+
+    return {
+      requestedRange: {
+        startDate: this.toIsoString(rangeStart),
+        endDate: this.toIsoString(rangeEnd),
+      },
+      events: sortedEvents,
+      monthlyTotals: this.buildFinancialCalendarMonthlyTotals(sortedEvents),
+    };
+  }
+
+  private async getFinancialCalendarInstallments(startDate: Date, endDate: Date): Promise<Installment[]> {
+    return db.select()
+      .from(installments)
+      .where(and(
+        sql`${installments.dueDate} >= ${startDate}`,
+        sql`${installments.dueDate} <= ${endDate}`,
+      ))
+      .orderBy(installments.dueDate);
+  }
+
+  private async getAllInstallments(): Promise<Installment[]> {
+    return db.select().from(installments);
+  }
+
+  private getInstallmentTransactionCandidates(
+    installment: Installment,
+    transactionsList: Transaction[],
+    absorbedTransactionIds: Set<number>,
+  ): Transaction[] {
+    const candidates = transactionsList.filter((transaction) => {
+      if (absorbedTransactionIds.has(transaction.id)) {
+        return false;
+      }
+
+      if (transaction.installmentId === installment.id) {
+        return true;
+      }
+
+      return installment.transactionId != null && transaction.id === installment.transactionId;
+    });
+
+    return this.deduplicateTransactions(candidates);
+  }
+
+  private materializeProjectOccurrences(
+    projects: ProjectWithClient[],
+    projectIdsWithInstallments: Set<number>,
+    startDate: Date,
+    endDate: Date,
+  ): ProjectCalendarOccurrence[] {
+    const occurrences: ProjectCalendarOccurrence[] = [];
+
+    for (const project of projects) {
+      const activationDate = this.startOfDay(project.startDate ?? project.createdAt);
+
+      if (
+        !projectIdsWithInstallments.has(project.id)
+        && this.parseNumericAmount(project.quotationAmount) > 0
+        && this.isDateWithinRange(activationDate, startDate, endDate)
+      ) {
+        const monthStart = new Date(activationDate.getFullYear(), activationDate.getMonth(), 1);
+        const nextMonthStart = new Date(activationDate.getFullYear(), activationDate.getMonth() + 1, 1);
+
+        occurrences.push({
+          kind: "cotizacion_proyecto",
+          project,
+          scheduledDate: activationDate,
+          amount: this.parseNumericAmount(project.quotationAmount),
+          previousBoundary: activationDate > monthStart ? activationDate : monthStart,
+          nextBoundary: nextMonthStart,
+        });
+      }
+
+      const monthlyMaintenance = this.parseNumericAmount(project.monthlyMaintenance);
+      if (monthlyMaintenance <= 0) {
+        continue;
+      }
+
+      const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+
+      while (current <= endMonth) {
+        const scheduledDate = this.createClampedMonthDate(
+          current.getFullYear(),
+          current.getMonth(),
+          project.billingDay ?? project.expectedPaymentDay ?? 1,
+        );
+
+        if (scheduledDate >= activationDate && this.isDateWithinRange(scheduledDate, startDate, endDate)) {
+          const previousOccurrence = this.createClampedMonthDate(
+            current.getMonth() === 0 ? current.getFullYear() - 1 : current.getFullYear(),
+            current.getMonth() === 0 ? 11 : current.getMonth() - 1,
+            project.billingDay ?? project.expectedPaymentDay ?? 1,
+          );
+          const nextOccurrence = this.createClampedMonthDate(
+            current.getMonth() === 11 ? current.getFullYear() + 1 : current.getFullYear(),
+            current.getMonth() === 11 ? 0 : current.getMonth() + 1,
+            project.billingDay ?? project.expectedPaymentDay ?? 1,
+          );
+
+          occurrences.push({
+            kind: "mantenimiento",
+            project,
+            scheduledDate,
+            amount: monthlyMaintenance,
+            previousBoundary: previousOccurrence > activationDate ? previousOccurrence : activationDate,
+            nextBoundary: nextOccurrence,
+          });
+        }
+
+        current.setMonth(current.getMonth() + 1);
+      }
+    }
+
+    return occurrences;
+  }
+
+  private getProjectOccurrenceTransactionCandidates(
+    occurrence: ProjectCalendarOccurrence,
+    transactionsList: Transaction[],
+    absorbedTransactionIds: Set<number>,
+  ): Transaction[] {
+    return transactionsList.filter((transaction) => {
+      if (absorbedTransactionIds.has(transaction.id)) {
+        return false;
+      }
+
+      if (transaction.projectId !== occurrence.project.id) {
+        return false;
+      }
+
+      if (transaction.installmentId != null || transaction.recurringTemplateId != null) {
+        return false;
+      }
+
+      if (transaction.type !== "Ingreso") {
+        return false;
+      }
+
+      if (!this.areAmountsEqual(transaction.amount, occurrence.amount)) {
+        return false;
+      }
+
+      return this.isBetweenBoundaries(transaction.date, occurrence.previousBoundary, occurrence.nextBoundary);
+    });
+  }
+
+  private materializeRecurringOccurrences(
+    template: RecurringTransaction,
+    startDate: Date,
+    endDate: Date,
+  ): RecurringCalendarOccurrence[] {
+    const occurrences: RecurringCalendarOccurrence[] = [];
+    const createdAt = this.startOfDay(template.createdAt);
+    let cursor = this.startOfDay(template.nextExecutionDate);
+
+    while (cursor > endDate) {
+      const previous = this.shiftRecurringOccurrenceDate(cursor, template, -1);
+      if (previous.getTime() === cursor.getTime()) {
+        break;
+      }
+
+      cursor = previous;
+    }
+
+    while (cursor <= endDate) {
+      if (cursor >= startDate && cursor >= createdAt) {
+        const previousBoundary = this.shiftRecurringOccurrenceDate(cursor, template, -1);
+        const nextBoundary = this.shiftRecurringOccurrenceDate(cursor, template, 1);
+
+        occurrences.push({
+          template,
+          scheduledDate: new Date(cursor),
+          previousBoundary: previousBoundary > createdAt ? previousBoundary : createdAt,
+          nextBoundary,
+        });
+      }
+
+      const next = this.shiftRecurringOccurrenceDate(cursor, template, 1);
+      if (next.getTime() === cursor.getTime()) {
+        break;
+      }
+
+      cursor = next;
+    }
+
+    return occurrences;
+  }
+
+  private getRecurringOccurrenceTransactionCandidates(
+    occurrence: RecurringCalendarOccurrence,
+    transactionsList: Transaction[],
+    absorbedTransactionIds: Set<number>,
+  ): Transaction[] {
+    return transactionsList.filter((transaction) => {
+      if (absorbedTransactionIds.has(transaction.id)) {
+        return false;
+      }
+
+      if (transaction.recurringTemplateId !== occurrence.template.id) {
+        return false;
+      }
+
+      return this.isBetweenBoundaries(transaction.date, occurrence.previousBoundary, occurrence.nextBoundary);
+    });
+  }
+
+  private buildStandaloneTransactionEvent(
+    transaction: Transaction,
+    projectMap: Map<number, ProjectWithClient>,
+    clientMap: Map<number, ClientAccount>,
+  ): FinancialCalendarEvent {
+    const project = transaction.projectId ? projectMap.get(transaction.projectId) ?? null : null;
+    const client = project?.client
+      ?? (transaction.clientId ? clientMap.get(transaction.clientId) ?? null : null);
+    const sourceType = this.resolveStandaloneTransactionSourceType(transaction);
+
+    return {
+      id: `${sourceType}:${transaction.id}`,
+      sourceType,
+      direction: this.mapTransactionDirection(transaction.type),
+      amount: this.parseNumericAmount(transaction.amount),
+      currency: "MXN",
+      scheduledDate: this.toIsoString(transaction.date),
+      paidDate: this.toOptionalIsoString(this.getPaidDateFromTransaction(transaction)),
+      status: this.deriveEventStatus(transaction.date, transaction.isPaid),
+      title: transaction.description
+        || (sourceType === "transaccion_manual" ? "Transaccion manual" : "Transaccion independiente"),
+      projectId: project?.id ?? transaction.projectId ?? null,
+      projectName: project?.name ?? null,
+      clientId: client?.id ?? transaction.clientId ?? null,
+      clientName: client?.companyName ?? null,
+      transactionId: transaction.id,
+      installmentId: transaction.installmentId ?? null,
+      recurringTemplateId: transaction.recurringTemplateId ?? null,
+      isSynthetic: false,
+      month: this.toMonthKey(transaction.date),
+    };
+  }
+
+  private buildFinancialCalendarMonthlyTotals(events: FinancialCalendarEvent[]): FinancialCalendarMonthlyTotals[] {
+    const totalsByMonth = new Map<string, FinancialCalendarMonthlyTotals>();
+
+    for (const event of events) {
+      const current = totalsByMonth.get(event.month) ?? {
+        month: event.month,
+        scheduledIncome: 0,
+        collectedIncome: 0,
+        scheduledExpenses: 0,
+        paidExpenses: 0,
+        scheduledNet: 0,
+        collectedNet: 0,
+        eventCount: 0,
+      };
+
+      if (event.direction === "ingreso") {
+        current.scheduledIncome += event.amount;
+        if (event.status === "pagado") {
+          current.collectedIncome += event.amount;
+        }
+      } else {
+        current.scheduledExpenses += event.amount;
+        if (event.status === "pagado") {
+          current.paidExpenses += event.amount;
+        }
+      }
+
+      current.scheduledNet = current.scheduledIncome - current.scheduledExpenses;
+      current.collectedNet = current.collectedIncome - current.paidExpenses;
+      current.eventCount += 1;
+      totalsByMonth.set(event.month, current);
+    }
+
+    return Array.from(totalsByMonth.values()).sort((left, right) => left.month.localeCompare(right.month));
+  }
+
+  private resolveStandaloneTransactionSourceType(transaction: Transaction): FinancialCalendarEventSourceType {
+    const isManual = transaction.installmentId == null
+      && transaction.recurringTemplateId == null
+      && transaction.projectId == null;
+
+    if (isManual) {
+      return "transaccion_manual";
+    }
+
+    return "transaccion_independiente";
+  }
+
+  private mapTransactionDirection(type: string): FinancialCalendarEventDirection {
+    return type === "Ingreso" ? "ingreso" : "egreso";
+  }
+
+  private deriveEventStatus(date: Date, isPaid: boolean): FinancialCalendarEventStatus {
+    if (isPaid) {
+      return "pagado";
+    }
+
+    return this.startOfDay(date) < this.startOfDay(new Date()) ? "vencido" : "pendiente";
+  }
+
+  private getPaidDateFromTransaction(transaction: Transaction): Date | null {
+    if (transaction.paidDate) {
+      return transaction.paidDate;
+    }
+
+    if (transaction.isPaid) {
+      return transaction.date;
+    }
+
+    return null;
+  }
+
+  private parseNumericAmount(value: string | number | null | undefined): number {
+    if (value == null) {
+      return 0;
+    }
+
+    return Number.parseFloat(value.toString()) || 0;
+  }
+
+  private areAmountsEqual(value: string | number | null | undefined, expected: number): boolean {
+    return Math.abs(this.parseNumericAmount(value) - expected) < 0.01;
+  }
+
+  private isDateWithinRange(value: Date, startDate: Date, endDate: Date): boolean {
+    return value >= startDate && value <= endDate;
+  }
+
+  private isBetweenBoundaries(value: Date, lowerBoundary: Date | null, upperBoundary: Date | null): boolean {
+    const meetsLowerBoundary = lowerBoundary == null || value >= lowerBoundary;
+    const meetsUpperBoundary = upperBoundary == null || value < upperBoundary;
+    return meetsLowerBoundary && meetsUpperBoundary;
+  }
+
+  private deduplicateTransactions(transactionsList: Transaction[]): Transaction[] {
+    const seen = new Set<number>();
+    return transactionsList.filter((transaction) => {
+      if (seen.has(transaction.id)) {
+        return false;
+      }
+
+      seen.add(transaction.id);
+      return true;
+    });
+  }
+
+  private createClampedMonthDate(year: number, monthIndex: number, preferredDay: number): Date {
+    const lastDayOfMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const date = new Date(year, monthIndex, Math.min(preferredDay, lastDayOfMonth));
+    return this.startOfDay(date);
+  }
+
+  private shiftRecurringOccurrenceDate(
+    currentDate: Date,
+    template: RecurringTransaction,
+    direction: 1 | -1,
+  ): Date {
+    switch (template.frequency) {
+      case "weekly": {
+        const shifted = new Date(currentDate);
+        shifted.setDate(shifted.getDate() + (7 * direction));
+        return this.startOfDay(shifted);
+      }
+      case "biweekly": {
+        const shifted = new Date(currentDate);
+        shifted.setDate(shifted.getDate() + (14 * direction));
+        return this.startOfDay(shifted);
+      }
+      case "quarterly":
+        return this.shiftMonthBasedDate(currentDate, 3 * direction, template.dayOfMonth ?? undefined);
+      case "yearly":
+        return this.shiftMonthBasedDate(currentDate, 12 * direction, template.dayOfMonth ?? undefined);
+      case "monthly":
+      default:
+        return this.shiftMonthBasedDate(currentDate, direction, template.dayOfMonth ?? undefined);
+    }
+  }
+
+  private shiftMonthBasedDate(baseDate: Date, monthDelta: number, preferredDay?: number): Date {
+    const shifted = new Date(baseDate);
+    const targetDay = preferredDay ?? baseDate.getDate();
+    shifted.setDate(1);
+    shifted.setMonth(shifted.getMonth() + monthDelta);
+    const lastDayOfMonth = new Date(shifted.getFullYear(), shifted.getMonth() + 1, 0).getDate();
+    shifted.setDate(Math.min(targetDay, lastDayOfMonth));
+    return this.startOfDay(shifted);
+  }
+
+  private startOfDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  }
+
+  private endOfDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(23, 59, 59, 999);
+    return normalized;
+  }
+
+  private toMonthKey(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  private toIsoDateKey(date: Date): string {
+    return this.toIsoString(date).slice(0, 10);
+  }
+
+  private toIsoString(date: Date): string {
+    return new Date(date).toISOString();
+  }
+
+  private toOptionalIsoString(date: Date | null | undefined): string | null {
+    return date ? this.toIsoString(date) : null;
+  }
+
   // Financial Hub - Recurring Transactions implementation
   async getRecurringTransactions(): Promise<RecurringTransaction[]> {
     return await db.select().from(recurringTransactions).orderBy(desc(recurringTransactions.nextExecutionDate));
@@ -1857,8 +2097,11 @@ export class DBStorage implements IStorage {
 
   async deleteRecurringTransaction(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(recurringTransactions).where(eq(recurringTransactions.id, id));
-      return (result as any).count > 0;
+      const [deleted] = await db
+        .delete(recurringTransactions)
+        .where(eq(recurringTransactions.id, id))
+        .returning({ id: recurringTransactions.id });
+      return Boolean(deleted);
     } catch (error) {
       console.error(`❌ [deleteRecurringTransaction] Error al eliminar transacción recurrente:`, {
         id,
@@ -2136,16 +2379,17 @@ export class DBStorage implements IStorage {
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
       // Find and delete transactions linked to this template created this month
-      const result = await db.delete(transactions)
+      const deletedTransactions = await db.delete(transactions)
         .where(
           and(
             eq(transactions.recurringTemplateId, templateId),
             sql`${transactions.date} >= ${startOfMonth}`,
             sql`${transactions.date} <= ${endOfMonth}`
           )
-        );
+        )
+        .returning({ id: transactions.id });
 
-      const deletedCount = (result as any).rowCount ?? 0;
+      const deletedCount = deletedTransactions.length;
       console.log(`[deleteTransactionByRecurringTemplateId] Deleted ${deletedCount} transaction(s) for template ${templateId}`);
       return deletedCount > 0;
     } catch (error) {
@@ -2635,23 +2879,9 @@ export class DBStorage implements IStorage {
     `);
     const serviceCosts = parseFloat((servicesResult[0] as any)?.service_costs || '0');
 
-    // 4.2 Get Ad Spend for Campaigns associated with this Project's Client
-    let adSpend = 0;
-    if (projectData.client_id) {
-      const adSpendResult = await db.execute(sql`
-        SELECT COALESCE(SUM(CAST(am.spend AS DECIMAL)), 0) as total_ad_spend
-        FROM ${adMetrics} am
-        INNER JOIN ${adCreatives} ac ON am.creative_id = ac.id
-        INNER JOIN ${campaigns} c ON ac.campaign_id = c.id
-        INNER JOIN ${clientAccounts} ca ON c.client_name = ca.company_name
-        WHERE ca.id = ${projectData.client_id}
-      `);
-      adSpend = parseFloat((adSpendResult[0] as any)?.total_ad_spend || '0');
-    }
-
     const budget = parseFloat(projectData.budget || '0');
-    // True cost includes direct registered expenses + labor + services + ad spend
-    const actualCost = totalExpenses + laborCosts + serviceCosts + adSpend;
+    // True cost includes direct registered expenses + labor + services
+    const actualCost = totalExpenses + laborCosts + serviceCosts;
     const margin = budget - actualCost;
     const marginPercentage = budget > 0 ? (margin / budget) * 100 : 0;
 
@@ -2697,7 +2927,6 @@ export class DBStorage implements IStorage {
         totalExpenses,
         laborCosts,
         serviceCosts,
-        adSpend,
         actualCost,
         margin,
         marginPercentage,
@@ -2732,8 +2961,10 @@ export class DBStorage implements IStorage {
   }
 
   async deleteContact(id: number): Promise<boolean> {
-    const result = await db.delete(contacts).where(eq(contacts.id, id));
-    return true;
+    const [deleted] = await db.delete(contacts)
+      .where(eq(contacts.id, id))
+      .returning({ id: contacts.id });
+    return Boolean(deleted);
   }
 
   // ===========================================
@@ -2763,8 +2994,10 @@ export class DBStorage implements IStorage {
   }
 
   async deleteBillingProfile(id: number): Promise<boolean> {
-    await db.delete(billingProfiles).where(eq(billingProfiles.id, id));
-    return true;
+    const [deleted] = await db.delete(billingProfiles)
+      .where(eq(billingProfiles.id, id))
+      .returning({ id: billingProfiles.id });
+    return Boolean(deleted);
   }
 
   // ===========================================
@@ -2840,12 +3073,19 @@ export class DBStorage implements IStorage {
   async deleteDigitalAsset(id: number): Promise<boolean> {
     // Also clean up the linked recurring transaction if it exists
     const [asset] = await db.select().from(digitalAssets).where(eq(digitalAssets.id, id)).limit(1);
+    if (!asset) {
+      return false;
+    }
+
     if (asset && asset.linkedRecurringTransactionId) {
       await db.delete(recurringTransactions)
         .where(eq(recurringTransactions.id, asset.linkedRecurringTransactionId));
     }
-    await db.delete(digitalAssets).where(eq(digitalAssets.id, id));
-    return true;
+
+    const [deleted] = await db.delete(digitalAssets)
+      .where(eq(digitalAssets.id, id))
+      .returning({ id: digitalAssets.id });
+    return Boolean(deleted);
   }
 
   async getExpiringDigitalAssets(daysAhead: number): Promise<DigitalAsset[]> {
@@ -2880,8 +3120,10 @@ export class DBStorage implements IStorage {
   }
 
   async deleteClientDocument(id: number): Promise<boolean> {
-    await db.delete(clientDocuments).where(eq(clientDocuments.id, id));
-    return true;
+    const [deleted] = await db.delete(clientDocuments)
+      .where(eq(clientDocuments.id, id))
+      .returning({ id: clientDocuments.id });
+    return Boolean(deleted);
   }
 
   // ===========================================
@@ -2900,59 +3142,56 @@ export class DBStorage implements IStorage {
   }
 
   async createInstallment(installment: InsertInstallment): Promise<Installment> {
-    const [newInstallment] = await db.insert(installments).values(installment).returning();
+    return await db.transaction(async (tx) => {
+      const paymentFields = this.getInstallmentPaymentFields(installment);
+      const [newInstallment] = await tx
+        .insert(installments)
+        .values({ ...installment, ...paymentFields })
+        .returning();
 
-    // Financial Sync Middleware: Create a Pending Transaction for this installment
-    const project = await this.getProjectById(newInstallment.projectId);
-    if (project) {
-      await db.insert(transactions).values({
-        type: "Ingreso",
-        category: "Proyectos",
-        amount: String(newInstallment.amount),
-        date: newInstallment.dueDate,
-        isPaid: newInstallment.isPaid || newInstallment.status === "collected",
-        paidDate: newInstallment.paidDate,
-        clientId: project.clientId,
-        projectId: project.id,
-        installmentId: newInstallment.id,
-        source: "client_project",
-        sourceId: project.id,
-        notes: newInstallment.notes || "Generado automáticamente desde parcialidad de proyecto",
-        description: newInstallment.resolvedConcept || `Parcialidad ${newInstallment.installmentNumber} - ${project.name}`
-      });
-    }
-
-    return newInstallment;
+      return await this.upsertTransactionForInstallment(newInstallment, tx);
+    });
   }
 
   async updateInstallment(id: number, installmentData: UpdateInstallment): Promise<Installment | undefined> {
-    const [updated] = await db.update(installments)
-      .set({ ...installmentData, updatedAt: new Date() })
-      .where(eq(installments.id, id))
-      .returning();
+    return await db.transaction(async (tx) => {
+      const [existing] = await tx.select().from(installments).where(eq(installments.id, id)).limit(1);
+      if (!existing) {
+        return undefined;
+      }
 
-    if (updated) {
-      // Financial Sync Middleware: Sync status with linked transaction
-      const isPaid = updated.isPaid || updated.status === "collected";
-      await db.update(transactions)
-        .set({
-          isPaid,
-          paidDate: updated.paidDate,
-          amount: String(updated.amount),
-          date: updated.dueDate,
-          updatedAt: new Date()
-        })
-        .where(eq(transactions.installmentId, updated.id));
-    }
+      const paymentFields = this.getInstallmentPaymentFields({ ...existing, ...installmentData });
+      const [updated] = await tx
+        .update(installments)
+        .set({ ...installmentData, ...paymentFields, updatedAt: new Date() })
+        .where(eq(installments.id, id))
+        .returning();
 
-    return updated;
+      if (!updated) {
+        return undefined;
+      }
+
+      return await this.upsertTransactionForInstallment(updated, tx);
+    });
   }
 
   async deleteInstallment(id: number): Promise<boolean> {
-    // Financial Sync Middleware: Delete linked transaction
-    await db.delete(transactions).where(eq(transactions.installmentId, id));
-    await db.delete(installments).where(eq(installments.id, id));
-    return true;
+    return await db.transaction(async (tx) => {
+      const [installment] = await tx.select().from(installments).where(eq(installments.id, id)).limit(1);
+      if (!installment) {
+        return false;
+      }
+
+      await tx.delete(transactions).where(eq(transactions.installmentId, id));
+      if (installment.transactionId) {
+        await tx.delete(transactions).where(eq(transactions.id, installment.transactionId));
+      }
+
+      const [deleted] = await tx.delete(installments)
+        .where(eq(installments.id, id))
+        .returning({ id: installments.id });
+      return Boolean(deleted);
+    });
   }
 
   async generateInstallmentsForProject(projectId: number): Promise<Installment[]> {
@@ -2971,6 +3210,18 @@ export class DBStorage implements IStorage {
     const numberOfPayments = project.numberOfPayments || 1;
     const totalAmount = parseFloat(project.totalAmount || "0");
     const amountPerInstallment = (totalAmount / numberOfPayments).toFixed(2);
+
+    const existingInstallments = await db
+      .select()
+      .from(installments)
+      .where(eq(installments.projectId, projectId));
+
+    for (const existingInstallment of existingInstallments) {
+      await db.delete(transactions).where(eq(transactions.installmentId, existingInstallment.id));
+      if (existingInstallment.transactionId) {
+        await db.delete(transactions).where(eq(transactions.id, existingInstallment.transactionId));
+      }
+    }
 
     // Delete existing installments for this project
     await db.delete(installments).where(eq(installments.projectId, projectId));
@@ -3012,12 +3263,13 @@ export class DBStorage implements IStorage {
       }).returning();
 
       // Financial Sync Middleware: Create Transaction for auto-generated installment
-      await db.insert(transactions).values({
+      const [transaction] = await db.insert(transactions).values({
         type: "Ingreso",
         category: "Proyectos",
         amount: amountPerInstallment,
         date: dueDate,
         isPaid: false,
+        status: "Pendiente",
         clientId: project.clientId,
         projectId: project.id,
         installmentId: installment.id,
@@ -3025,9 +3277,14 @@ export class DBStorage implements IStorage {
         sourceId: project.id,
         notes: "Generado automáticamente (Iguala)",
         description: `${project.name} - Parcialidad ${i} de ${numberOfPayments}`
-      });
+      }).returning();
 
-      newInstallments.push(installment);
+      const [linkedInstallment] = await db.update(installments)
+        .set({ transactionId: transaction.id, updatedAt: new Date() })
+        .where(eq(installments.id, installment.id))
+        .returning();
+
+      newInstallments.push(linkedInstallment ?? installment);
     }
 
     console.log(`Generated ${newInstallments.length} installments for project ${projectId}`);
@@ -3124,6 +3381,17 @@ export class DBStorage implements IStorage {
   }
 
   async removeProjectService(projectId: number, serviceId: number): Promise<boolean> {
+    const [assignment] = await db.select()
+      .from(projectServices)
+      .where(and(
+        eq(projectServices.projectId, projectId),
+        eq(projectServices.serviceId, serviceId)
+      ))
+      .limit(1);
+    if (!assignment) {
+      return false;
+    }
+
     const service = await this.getServiceCatalogById(serviceId);
 
     // Financial Sync Middleware: Delete associated pending expense
@@ -3139,17 +3407,22 @@ export class DBStorage implements IStorage {
         );
     }
 
-    const result = await db.delete(projectServices)
+    const [deleted] = await db.delete(projectServices)
       .where(and(
         eq(projectServices.projectId, projectId),
         eq(projectServices.serviceId, serviceId)
-      ));
-    return true;
+      ))
+      .returning({ id: projectServices.id });
+    return Boolean(deleted);
   }
 
-  async updateProjectServicePrice(projectId: number, serviceId: number, customPrice: string | null, notes?: string): Promise<ProjectService | undefined> {
+  async updateProjectServicePrice(projectId: number, serviceId: number, customPrice?: string | null, notes?: string | null): Promise<ProjectService | undefined> {
+    const updatePayload: Record<string, any> = {};
+    if (customPrice !== undefined) updatePayload.customPrice = customPrice;
+    if (notes !== undefined) updatePayload.notes = notes;
+
     const [updated] = await db.update(projectServices)
-      .set({ customPrice, notes })
+      .set(updatePayload)
       .where(and(
         eq(projectServices.projectId, projectId),
         eq(projectServices.serviceId, serviceId)
@@ -3361,8 +3634,10 @@ export class DBStorage implements IStorage {
   }
 
   async deleteLead(id: number): Promise<boolean> {
-    await db.delete(leads).where(eq(leads.id, id));
-    return true;
+    const [deleted] = await db.delete(leads)
+      .where(eq(leads.id, id))
+      .returning({ id: leads.id });
+    return Boolean(deleted);
   }
 
   async convertLeadToClient(leadId: number): Promise<{ lead: Lead; clientId: number }> {

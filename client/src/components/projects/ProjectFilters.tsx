@@ -33,7 +33,6 @@ const projectTypes = [
     { value: "all", label: "Todos los tipos" },
     { value: "SEO", label: "SEO" },
     { value: "Web", label: "Web" },
-    { value: "Ads", label: "Ads" },
     { value: "General", label: "General" },
 ];
 

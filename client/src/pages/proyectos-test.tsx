@@ -70,7 +70,6 @@ export default function ProyectosSimplified() {
                                     <SelectItem value="all">Todos</SelectItem>
                                     <SelectItem value="SEO">SEO</SelectItem>
                                     <SelectItem value="Web">Web</SelectItem>
-                                    <SelectItem value="Ads">Ads</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

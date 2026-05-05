@@ -12,7 +12,6 @@ import resourcesRouter from "./controllers/resources";
 import financialRouter from "./controllers/financial";
 import miscRouter from "./controllers/misc";
 import projectsRouter from "./controllers/projects";
-import adsRouter from "./controllers/ads";
 import agentRouter from "./controllers/agent";
 import agencyRouter from "./controllers/agency";
 import settingsRouter from "./controllers/settings";
@@ -33,6 +32,13 @@ import { asyncHandler } from "./middleware/error-handler";
 import { setupGoogleAuth } from "./auth-google";
 import { checkDatabaseConnection } from "../db";
 
+/**
+ * Monta rutas HTTP y WebSocket en orden fijo:
+ * - /api/health y /uploads tienen reglas propias (uploads exige sesion).
+ * - /api/auth queda publico para login y OAuth.
+ * - El resto de /api/* pasa por requireAuth antes del controlador correspondiente.
+ * - Google OAuth y WS se registran sobre el mismo httpServer al final.
+ */
 export async function registerRoutes(app: Express): Promise<Server> {
   const uploadDir = path.join(process.cwd(), "uploads");
   if (!fs.existsSync(uploadDir)) {
@@ -57,7 +63,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", requireAuth, financialRouter);
   app.use("/api", requireAuth, miscRouter);
   app.use("/api", requireAuth, projectsRouter);
-  app.use("/api", requireAuth, adsRouter);
   app.use("/api", requireAuth, agentRouter);
   app.use("/api", requireAuth, agencyRouter);
   app.use("/api", requireAuth, settingsRouter);

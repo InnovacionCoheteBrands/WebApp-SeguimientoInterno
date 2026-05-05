@@ -26,7 +26,7 @@ Este documento detalla la infraestructura técnica de **Mission Control**.
 ## 🗄️ Base de Datos & Modelos
 - **Esquema:** Localizado en `shared/schema.ts`.
 - **Drizzle Config:** `drizzle.config.ts`.
-- **Migraciones:** Gestión mediante `drizzle-kit push` para rapidez en desarrollo.
+- **Migraciones:** Gestión mediante `drizzle-kit push` para rapidez en desarrollo. El módulo Ads legacy fue retirado; en PostgreSQL con datos históricos puede aplicarse `migrations/0007_remove_ads_module.sql` además del esquema Drizzle.
 
 ## 🏗️ Estructura de Carpetas
 - `/client`: Aplicación React.

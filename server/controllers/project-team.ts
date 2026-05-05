@@ -62,7 +62,10 @@ router.patch("/project-team/:id", async (req: Request, res: Response) => {
 router.delete("/project-team/:id", async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
-        await storage.deleteProjectTeamAssignment(id);
+        const deleted = await storage.deleteProjectTeamAssignment(id);
+        if (!deleted) {
+            return res.status(404).json({ error: "Assignment not found" });
+        }
         logAction(req, "UNASSIGN", "PROJECT", id.toString(), `Removió asignación de equipo #${id}`);
         res.status(204).send();
     } catch (error) {

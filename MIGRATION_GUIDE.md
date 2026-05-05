@@ -1,5 +1,7 @@
 # 📦 Data Migration Guide - Finanzas Module
 
+> **Ads module removal (PostgreSQL):** si la base aún tenía tablas del módulo Ads legacy, puede aplicarse el script [`migrations/0007_remove_ads_module.sql`](migrations/0007_remove_ads_module.sql) (backup previo obligatorio). Es independiente del flujo npm `db:migrate:*` descrito abajo.
+
 ## Overview
 
 This guide explains how to migrate legacy financial data to the new schema structure.
