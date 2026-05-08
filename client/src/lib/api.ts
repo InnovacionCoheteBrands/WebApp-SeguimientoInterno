@@ -32,7 +32,13 @@ import type {
   UpdateAgencyRole,
   FinancialCalendarResponse,
 } from "@shared/schema";
-import type { SystemSettingsResponse, SystemSettingsValues } from "./system-settings";
+import type { ApiKeySummary, SystemSettingsResponse, SystemSettingsValues } from "./system-settings";
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+  withRefreshLock,
+} from "./auth-token-store";
 
 /**
  * Cliente HTTP del frontend: usa `request()` (auth + base URL) y agrupa llamadas por dominio de negocio.
@@ -50,11 +56,49 @@ export type Project = DBProject & {
   deliverables?: ProjectDeliverable[];
 };
 
-let refreshPromise: Promise<string | null> | null = null;
+const AUTH_ENDPOINTS_WITHOUT_RETRY = [
+  "/api/auth/login",
+  "/api/auth/refresh",
+  "/api/auth/session",
+  "/api/auth/logout",
+];
+
+function shouldSkipAutoRefresh(url: string): boolean {
+  return AUTH_ENDPOINTS_WITHOUT_RETRY.some((path) => url.includes(path));
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const refreshRes = await fetch("/api/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: "{}",
+    });
+
+    if (!refreshRes.ok) {
+      clearAccessToken();
+      return null;
+    }
+
+    const data = await refreshRes.json();
+    if (!data?.token || typeof data.token !== "string") {
+      clearAccessToken();
+      return null;
+    }
+
+    setAccessToken(data.token);
+    return data.token;
+  } catch (error) {
+    console.error("Token refresh failed", error);
+    clearAccessToken();
+    return null;
+  }
+}
 
 // ðŸ”’ Security Wrapper: Auto-injects JWT token and handles refresh
 export async function request(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
   const headers = new Headers(options.headers);
 
   if (token) {
@@ -71,45 +115,17 @@ export async function request(url: string, options: RequestInit = {}): Promise<R
   const res = await fetch(url, fetchOptions);
 
   // ðŸš¨ Intercept 401 Unauthorized globally
-  if (res.status === 401 && !url.includes('/api/auth/refresh') && !url.includes('/api/auth/login')) {
-    const refreshToken = localStorage.getItem("refreshToken");
-
-    if (refreshToken) {
-      if (!refreshPromise) {
-        refreshPromise = fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken })
-        })
-          .then(async (refreshRes) => {
-            if (!refreshRes.ok) throw new Error('Refresh failed');
-            const data = await refreshRes.json();
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("refreshToken", data.refreshToken);
-            return data.token;
-          })
-          .catch((err) => {
-            console.error("Token refresh failed", err);
-            return null;
-          })
-          .finally(() => {
-            refreshPromise = null;
-          });
-      }
-
-      const newToken = await refreshPromise;
-      if (newToken) {
-        // Retry original request
-        const newHeaders = new Headers(options.headers);
-        newHeaders.set("Authorization", `Bearer ${newToken}`);
-        return fetch(url, { ...fetchOptions, headers: newHeaders });
-      }
+  if (res.status === 401 && !shouldSkipAutoRefresh(url)) {
+    const newToken = await withRefreshLock(refreshAccessToken);
+    if (newToken) {
+      const newHeaders = new Headers(options.headers);
+      newHeaders.set("Authorization", `Bearer ${newToken}`);
+      return fetch(url, { ...fetchOptions, headers: newHeaders });
     }
 
-    // Skip dispatching on auth pages to prevent logout cascade during OAuth callback flow
-    const isAuthPage = window.location.pathname.startsWith('/auth');
+    const isAuthPage = window.location.pathname.startsWith("/auth");
     if (!isAuthPage) {
-      window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: 401 } }));
+      window.dispatchEvent(new CustomEvent("auth:unauthorized", { detail: { status: 401 } }));
     }
   }
 
@@ -351,7 +367,12 @@ export async function saveSystemSettings(settings: SystemSettingsValues): Promis
   return res.json();
 }
 
-export async function regenerateSystemApiKey(): Promise<{ apiKey: string }> {
+export interface RegenerateApiKeyResponse {
+  newApiKey: string;
+  apiKey: ApiKeySummary;
+}
+
+export async function regenerateSystemApiKey(): Promise<RegenerateApiKeyResponse> {
   const res = await request("/api/settings/api-key", { method: "POST" });
   if (!res.ok) throw new Error("Failed to regenerate key");
   return res.json();

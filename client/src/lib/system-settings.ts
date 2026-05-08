@@ -18,17 +18,59 @@ export interface SystemSettingsValues {
   chartAnimations: boolean;
 }
 
+export interface ApiKeySummary {
+  present: boolean;
+  masked: string | null;
+  last4: string | null;
+}
+
 export interface SystemSettingsResponse {
   settings: Partial<SystemSettingsValues> | null | undefined;
-  apiKey?: string | null;
+  apiKey?: ApiKeySummary | string | null;
   webhookUrl?: string | null;
   username?: string;
   role?: string;
 }
 
 export interface NormalizedSystemSettings extends SystemSettingsValues {
-  apiKey: string;
+  apiKey: ApiKeySummary;
   webhookUrl: string;
+}
+
+export const NO_API_KEY_SUMMARY: ApiKeySummary = {
+  present: false,
+  masked: null,
+  last4: null,
+};
+
+function normalizeApiKeySummary(value: SystemSettingsResponse["apiKey"]): ApiKeySummary {
+  if (!value) {
+    return NO_API_KEY_SUMMARY;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return NO_API_KEY_SUMMARY;
+    }
+
+    const last4 = trimmed.slice(-4);
+    return {
+      present: true,
+      masked: `legacy_...${last4}`,
+      last4,
+    };
+  }
+
+  if (!value.present) {
+    return NO_API_KEY_SUMMARY;
+  }
+
+  return {
+    present: true,
+    masked: value.masked ?? null,
+    last4: value.last4 ?? null,
+  };
 }
 
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettingsValues = {
@@ -64,7 +106,7 @@ export function normalizeSystemSettings(resp: SystemSettingsResponse | null | un
     ...raw,
     theme: normalizeTheme(raw.theme),
     language: normalizeLanguage(raw.language),
-    apiKey: resp?.apiKey ?? "",
+    apiKey: normalizeApiKeySummary(resp?.apiKey),
     webhookUrl: resp?.webhookUrl ?? "",
   };
 }

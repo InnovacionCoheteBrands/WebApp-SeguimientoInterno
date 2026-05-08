@@ -113,6 +113,7 @@ import {
 import { db } from "../db";
 import { eq, desc, sql, and } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
+import { generateApiKey, toStoredApiKey } from "./utils/api-key";
 
 /**
  * Capa de persistencia (repositorio): encapsula Drizzle/M SQL y politicas de acceso por dominio.
@@ -701,10 +702,10 @@ export class DBStorage implements IStorage {
 
   async regenerateApiKey(userId: string): Promise<string> {
     try {
-      const newKey = "sk_live_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const newKey = generateApiKey();
       await db
         .update(users)
-        .set({ apiKey: newKey })
+        .set({ apiKey: toStoredApiKey(newKey) })
         .where(eq(users.id, userId));
       return newKey;
     } catch (error) {

@@ -25,14 +25,14 @@ import { useLanguage } from "@/components/language-provider";
 import { useSystemSettings } from "@/hooks/use-system-settings";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import type { NormalizedSystemSettings, ThemeSetting, LanguageSetting } from "@/lib/system-settings";
-import { DEFAULT_SYSTEM_SETTINGS, normalizeSystemSettings } from "@/lib/system-settings";
+import { DEFAULT_SYSTEM_SETTINGS, NO_API_KEY_SUMMARY, normalizeSystemSettings } from "@/lib/system-settings";
 import { regenerateSystemApiKey, saveSystemSettings } from "@/lib/api";
 
 type Settings = NormalizedSystemSettings;
 
 const defaultSettings: Settings = {
   ...DEFAULT_SYSTEM_SETTINGS,
-  apiKey: "",
+  apiKey: NO_API_KEY_SUMMARY,
   webhookUrl: "",
 };
 
@@ -48,6 +48,7 @@ const Settings = memo(function Settings() {
   // SEC-004: State for robust API key regeneration confirmation
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [latestGeneratedApiKey, setLatestGeneratedApiKey] = useState<string | null>(null);
 
   // Fetch settings from API (shared cache)
   const { data: serverSettings, isLoading } = useSystemSettings();
@@ -100,13 +101,12 @@ const Settings = memo(function Settings() {
     mutationFn: regenerateSystemApiKey,
     onSuccess: (data) => {
       setLocalSettings(prev => ({ ...prev, apiKey: data.apiKey }));
-      setHasChanges(true); // User might want to verify before navigating away, or we could auto-save. 
-      // Actually, generating a key is a server action that updates DB immediately usually.
-      // Let's assume it updates backend immediately.
+      setLatestGeneratedApiKey(data.newApiKey);
+      setHasChanges(false);
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "New API Key Generated",
-        description: "Your previous key has been invalidated",
+        description: "Your previous key has been invalidated. Copy the new key now.",
       });
     },
     onError: () => {
@@ -394,9 +394,9 @@ const Settings = memo(function Settings() {
                   <div className="flex gap-3">
                     <Input
                       id="api-key"
-                      value={localSettings.apiKey || ""}
+                      value={localSettings.apiKey.masked ?? ""}
                       readOnly
-                      placeholder="NO_HASH_GENERATED"
+                      placeholder="NO_KEY_GENERATED"
                       className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20 blur-[2px] hover:blur-none transition-all duration-300"
                       data-testid="input-api-key"
                     />
@@ -412,6 +412,18 @@ const Settings = memo(function Settings() {
                   <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest leading-relaxed">
                     CRITICAL: Use this cryptographic string for external node authentication. Keep encrypted.
                   </p>
+                  {latestGeneratedApiKey && (
+                    <div className="space-y-2">
+                      <Label htmlFor="api-key-once" className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest pl-1">One-Time API Key View</Label>
+                      <Input
+                        id="api-key-once"
+                        value={latestGeneratedApiKey}
+                        readOnly
+                        className="h-12 rounded-xl bg-emerald-500/10 border-emerald-500/30 text-emerald-200 font-mono text-xs focus:ring-emerald-500/20"
+                        data-testid="input-api-key-once"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">

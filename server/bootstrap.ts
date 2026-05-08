@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { type Express } from "express";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 import type { Server } from "http";
 import { registerRoutes } from "./routes";
 import { globalErrorHandler } from "./middleware/error-handler";
@@ -21,6 +22,20 @@ function validateRuntimeConfig() {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret || jwtSecret.length < 32) {
       issues.push("JWT_SECRET must be configured with at least 32 characters in production.");
+    }
+
+    const baseUrl = process.env.BASE_URL;
+    if (!baseUrl) {
+      issues.push("BASE_URL must be configured in production.");
+    } else {
+      try {
+        const parsed = new URL(baseUrl);
+        if (parsed.protocol !== "https:") {
+          issues.push("BASE_URL must start with https:// in production.");
+        }
+      } catch {
+        issues.push("BASE_URL must be a valid absolute URL.");
+      }
     }
   }
 
@@ -75,6 +90,7 @@ export async function runServer(
     },
   }));
   app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
 
   app.use((req, res, next) => {
     const start = Date.now();

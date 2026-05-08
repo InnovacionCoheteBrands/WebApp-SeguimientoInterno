@@ -73,7 +73,7 @@ export default function AuthPage() {
                 throw new Error(result.message || "Access Denied: Invalid Authorization Hash");
             }
 
-            login(result.token, result.user, result.refreshToken);
+            login(result.token, result.user);
 
             toast({
                 title: "Authentication Successful",

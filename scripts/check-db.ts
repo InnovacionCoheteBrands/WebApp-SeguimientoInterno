@@ -13,7 +13,6 @@ async function main() {
         console.log("SELECT success. User found:", !!user);
         if (user) {
             console.log("Current settings:", user.settings);
-            console.log("Current apiKey:", user.apiKey);
         }
 
         // 2. Update if user exists

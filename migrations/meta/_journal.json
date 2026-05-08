@@ -15,6 +15,55 @@
       "when": 1765557549297,
       "tag": "0001_demonic_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765557549298,
+      "tag": "0001_add_projects_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765557549299,
+      "tag": "0002_add_financial_enhancements",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1765557549300,
+      "tag": "0003_sync_team_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1765557549301,
+      "tag": "0004_add_team_assignments_project_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1765557549302,
+      "tag": "0005_add_projects_level",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1765557549303,
+      "tag": "0006_sync_projects_kanban_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1765557549304,
+      "tag": "0007_remove_ads_module",
+      "breakpoints": true
     }
   ]
 }

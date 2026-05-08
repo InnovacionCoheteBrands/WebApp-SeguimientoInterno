@@ -1,4 +1,4 @@
-# Mission Control / Cohete Brands
+﻿# Mission Control / Cohete Brands
 
 Plataforma interna de operaciones para la agencia Cohete Brands. El sistema centraliza la gestion de clientes, proyectos, finanzas, leads, equipo, activos digitales, proveedores, servicios, POEs y automatizaciones con IA, todo en una interfaz tipo *Mission Control*.
 
@@ -31,6 +31,10 @@ El producto usa una experiencia visual oscura, premium y tecnologica, con compon
 
 ## Cambios recientes
 
+- **Remediacion seguridad (auditoria production readiness, mayo 2026):**
+  - **Migraciones (hallazgo 3.1):** `migrations/meta/_journal.json` alineado con los SQL versionados; `npm run predeploy:audit` ejecuta [`scripts/check-migration-journal.ts`](scripts/check-migration-journal.ts) antes de `audit-check`. La validacion contra la base de datos real (read-only) sigue siendo prerequisito antes de produccion; ver addendum en [`docs/audit/REPORTE_AUDITORIA_PRODUCTION_READINESS_2026-05-06.md`](docs/audit/REPORTE_AUDITORIA_PRODUCTION_READINESS_2026-05-06.md).
+  - **OAuth (hallazgo 2.1):** refresh token en cookie `HttpOnly` (no en URL ni `localStorage`); endpoints `/api/auth/session`, `/api/auth/refresh`, `/api/auth/logout`; `cookie-parser` en bootstrap; flags `AUTH_REFRESH_COOKIE_ENABLED` y `AUTH_LEGACY_REFRESH_BODY_ENABLED` en [`.env.example`](.env.example).
+  - **API keys (hallazgo 2.3):** generacion con CSPRNG, almacenamiento como hash `sha256:...:last4`, respuestas enmascaradas en settings; script [`scripts/invalidate-legacy-api-keys.ts`](scripts/invalidate-legacy-api-keys.ts) (dry-run por defecto; `--execute` solo tras backup y aviso a usuarios).
 - **Modulo Ads retirado:** se eliminaron pantallas, rutas API `/api/ads/*`, controlador y tablas asociadas. En bases existentes, aplicar la migracion SQL [`migrations/0007_remove_ads_module.sql`](migrations/0007_remove_ads_module.sql) (limpieza de datos, normalizacion de proyectos `service_type` y `DROP` de tablas Ads). Un respaldo declarativo opcional esta en `scripts/backup-ads-module.sql`.
 - **Finanzas y calendario de pagos:** el cliente usa `fetchPaymentCalendar` ([`client/src/lib/api.ts`](client/src/lib/api.ts)) contra `/api/finance/payment-calendar`; la logica de agregacion y permisos sigue en [`server/storage.ts`](server/storage.ts) y controladores en [`server/controllers/financial.ts`](server/controllers/financial.ts).
 - **Contrato de datos:** el esquema Drizzle compartido vive en [`shared/schema.ts`](shared/schema.ts); la capa de persistencia concentrada en [`server/storage.ts`](server/storage.ts) (mantener controladores delgados).
@@ -109,7 +113,7 @@ El producto usa una experiencia visual oscura, premium y tecnologica, con compon
 
 ### Marketing y medios
 
-- campañas
+- campaÃ±as
 - recursos creativos
 
 El modulo legacy de pauta publicitaria (Ads) fue retirado; la informacion de auditorias al respecto puede consultarse en [`docs/audit/`](docs/audit/).
@@ -190,8 +194,10 @@ Puntos relevantes:
 
 - `GET /api/health`: verifica estado general y conexion a base de datos
 - `/api/auth/*`: login, registro, refresh y flujo de autenticacion
-- `/api/*`: recursos del dominio como campañas, clientes, proyectos, equipo, finanzas, leads, POEs, proveedores, servicios, activos digitales, documentos y auditoria
+- `/api/*`: recursos del dominio como campaÃ±as, clientes, proyectos, equipo, finanzas, leads, POEs, proveedores, servicios, activos digitales, documentos y auditoria
 - `/api/agent/*`: asistente IA con herramientas y flujo de aprobacion
+- `/api/settings`: devuelve `apiKey` como resumen enmascarado (`present`, `masked`, `last4`), nunca el secreto completo
+- `POST /api/settings/api-key`: regenera y devuelve la API key completa solo una vez como `newApiKey`; luego solo se expone el resumen enmascarado
 
 Tambien hay soporte para:
 
@@ -270,10 +276,12 @@ npm install
 1. Copia `.env.example` a `.env`.
 2. Completa `DATABASE_URL` con tu cadena de PostgreSQL.
 3. Define `SESSION_SECRET`, `JWT_SECRET` y `ENCRYPTION_KEY`.
-4. Si vas a usar login con Google, configura `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
-5. Si usas IA, define `AI_ENABLED`, `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_MODEL_AGENT`, `AI_MODEL_SUMMARY` y `AI_API_KEY`.
-6. Si necesitas probar flujos sin login en local, puedes habilitar `SKIP_AUTH=true` solo en desarrollo.
-7. Si heredas configuraciones antiguas, el sistema tambien reconoce alias legacy como `AI_INTEGRATIONS_OPENAI_API_KEY` y `AI_INTEGRATIONS_OPENAI_BASE_URL`.
+4. Define `BASE_URL` (en produccion debe iniciar con `https://`).
+5. Si vas a usar login con Google, configura `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+6. Si usas IA, define `AI_ENABLED`, `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_MODEL_AGENT`, `AI_MODEL_SUMMARY` y `AI_API_KEY`.
+7. MantÃ©n `AUTH_REFRESH_COOKIE_ENABLED=true`; deja `AUTH_LEGACY_REFRESH_BODY_ENABLED=true` durante migracion y cambialo a `false` al retirar clientes legacy.
+8. Si necesitas probar flujos sin login en local, puedes habilitar `SKIP_AUTH=true` solo en desarrollo.
+9. Si heredas configuraciones antiguas, el sistema tambien reconoce alias legacy como `AI_INTEGRATIONS_OPENAI_API_KEY` y `AI_INTEGRATIONS_OPENAI_BASE_URL`.
 
 Ejemplo minimo:
 
@@ -287,6 +295,8 @@ LOG_LEVEL=info
 SESSION_SECRET="change-this-to-a-secure-random-string"
 JWT_SECRET="your-super-secret-jwt-key-min-32-characters-long"
 ENCRYPTION_KEY="your-32-byte-encryption-key-as-64-hex-chars"
+AUTH_REFRESH_COOKIE_ENABLED=true
+AUTH_LEGACY_REFRESH_BODY_ENABLED=true
 AI_ENABLED=false
 AI_MODEL="grok-4-1-fast-reasoning"
 GOOGLE_CLIENT_ID=""
@@ -368,7 +378,7 @@ npm run deploy:start
 
 - `scripts/test-db.ts`: prueba rapida de conexion usando `DATABASE_URL` del entorno (no imprimas la URL en logs compartidos).
 - `scripts/qa_payment_calendar.ts`: llamadas HTTP locales para validar permisos y el calendario de pagos contra un servidor en marcha.
-- `scripts/brute-db.ts`, `scripts/test-local-dbs.ts` y similares no se versionan (solo local); si existen en tu copia, mantenlos fuera del indice o añade nombres a `.gitignore`.
+- `scripts/brute-db.ts`, `scripts/test-local-dbs.ts` y similares no se versionan (solo local); si existen en tu copia, mantenlos fuera del indice o aÃ±ade nombres a `.gitignore`.
 
 ### PM2
 
@@ -424,15 +434,15 @@ Si `AI_ENABLED=false`, el sistema debe seguir funcionando sin la capa generativa
 
 Archivos que vale la pena revisar junto con este `README`:
 
-- [`AGENTS.md`](AGENTS.md) — reglas para agentes y colaboradores
+- [`AGENTS.md`](AGENTS.md) â€” reglas para agentes y colaboradores
 - [`MEMORY.md`](MEMORY.md)
 - [`SUPABASE_SETUP.md`](SUPABASE_SETUP.md)
 - [`DEPLOYMENT.md`](DEPLOYMENT.md)
-- [`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) — migracion de datos legacy de finanzas
+- [`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) â€” migracion de datos legacy de finanzas
 - [`.agent/context/tech_stack.md`](.agent/context/tech_stack.md)
 - [`.agent/context/business_logic.md`](.agent/context/business_logic.md)
 - [`.agent/context/rules.md`](.agent/context/rules.md)
-- [`docs/audit/`](docs/audit/) — reportes de auditoria
+- [`docs/audit/`](docs/audit/) â€” reportes de auditoria
 
 ## Guia rapida para agentes
 
@@ -457,3 +467,4 @@ Si eres un agente automatico o un colaborador nuevo:
 ---
 
 Si necesitas una version mas corta para onboarding o una version orientada a despliegue, puedo generar una segunda edicion del `README` enfocada en ese perfil.
+

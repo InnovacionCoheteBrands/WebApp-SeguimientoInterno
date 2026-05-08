@@ -2,8 +2,25 @@ import { Router, Request } from "express";
 import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import { requireAuth } from "../middleware/auth";
+import { createApiKeySummary, createApiKeySummaryFromRaw } from "../utils/api-key";
 
 const router = Router();
+
+function parseUserSettings(settings: unknown): Record<string, unknown> {
+    if (typeof settings !== "string" || settings.trim().length === 0) {
+        return {};
+    }
+
+    try {
+        const parsed = JSON.parse(settings);
+        if (parsed && typeof parsed === "object") {
+            return parsed as Record<string, unknown>;
+        }
+        return {};
+    } catch {
+        return {};
+    }
+}
 
 /**
  * SEC-001 REFACTOR: Settings are now scoped to the authenticated user.
@@ -23,19 +40,9 @@ router.get("/settings", requireAuth, async (req: Request, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Parse settings JSON if it is a string
-        let parsedSettings = {};
-        if (user.settings && typeof user.settings === "string") {
-            try {
-                parsedSettings = JSON.parse(user.settings);
-            } catch (e) {
-                parsedSettings = {};
-            }
-        }
-
         res.json({
-            settings: parsedSettings,
-            apiKey: user.apiKey,
+            settings: parseUserSettings(user.settings),
+            apiKey: createApiKeySummary(user.apiKey),
             username: user.username,
             role: user.role
         });
@@ -52,26 +59,27 @@ router.put("/settings", requireAuth, async (req: Request, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const { settings } = req.body;
+        if (Object.prototype.hasOwnProperty.call(req.body ?? {}, "apiKey")) {
+            return res.status(400).json({
+                error: "ApiKeyCannotBeUpdatedHere",
+                message: "Use POST /api/settings/api-key to rotate your API key."
+            });
+        }
 
-        if (settings) {
+        const { settings } = req.body ?? {};
+
+        if (settings !== undefined) {
             await storage.updateUserSettings(userId, settings);
         }
 
         const updatedUser = await storage.getUser(userId);
-
-        let parsedUpdatedSettings = {};
-        if (updatedUser?.settings && typeof updatedUser.settings === "string") {
-            try {
-                parsedUpdatedSettings = JSON.parse(updatedUser.settings);
-            } catch (e) {
-                parsedUpdatedSettings = {};
-            }
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
         }
 
         res.json({
-            settings: parsedUpdatedSettings,
-            apiKey: updatedUser?.apiKey
+            settings: parseUserSettings(updatedUser.settings),
+            apiKey: createApiKeySummary(updatedUser.apiKey)
         });
     } catch (error) {
         logger.error({ err: error }, "Failed to update settings");
@@ -87,7 +95,10 @@ router.post("/settings/api-key", requireAuth, async (req: Request, res) => {
         }
 
         const newKey = await storage.regenerateApiKey(userId);
-        res.json({ apiKey: newKey });
+        res.json({
+            newApiKey: newKey,
+            apiKey: createApiKeySummaryFromRaw(newKey)
+        });
     } catch (error) {
         logger.error({ err: error }, "Failed to regenerate API key");
         res.status(500).json({ error: "Failed to regenerate API key" });
