@@ -3,9 +3,7 @@ import {
   Users,
   Target,
   Briefcase,
-  Wallet,
-  TrendingUp,
-  TrendingDown
+  Wallet
 } from "lucide-react";
 import {
   QuickActions,
@@ -24,20 +22,51 @@ import {
   fetchFinancialSummary,
   fetchTeam
 } from "@/lib/api";
-import { useSystemSettings } from "@/hooks/use-system-settings";
 import { formatCurrency } from "@/lib/format-currency";
 
+const inactiveLeadStatuses = new Set(["Ganado", "Perdido", "Descartado"]);
+
+function isActiveLead(status?: string | null) {
+  return !inactiveLeadStatuses.has(status || "");
+}
+
+function isActiveProjectStatus(status?: string | null) {
+  return [
+    "active",
+    "Active",
+    "In Progress",
+    "En Curso",
+    "En Desarrollo",
+    "En Revision",
+    "En Revisión",
+    "Planificacion",
+    "Planificación",
+    "planning"
+  ].includes(status || "");
+}
+
+function isCompletedProjectStatus(status?: string | null) {
+  return ["completed", "Completado", "Terminado"].includes(status || "");
+}
+
+function getProjectValue(project: { quotationAmount?: unknown; budget?: unknown }) {
+  return Number(project.quotationAmount || project.budget) || 0;
+}
+
+function isActiveEmployee(employee: { employeeStatus?: string | null; status?: string | null }) {
+  return employee.employeeStatus !== "Inactivo" && employee.status !== "Inactive";
+}
+
 export default function Dashboard() {
-  const { data: settings } = useSystemSettings();
   const [activeModal, setActiveModal] = useState<"finance" | "leads" | "projects" | "hr" | null>(null);
 
   // --- Data Fetching ---
-  const { data: leadsMetrics, isLoading: loadingLeads } = useQuery({
+  const { data: leadsMetrics, isLoading: loadingLeadsMetrics } = useQuery({
     queryKey: ["leads-metrics"],
     queryFn: fetchLeadsMetrics,
   });
 
-  const { data: leads } = useQuery({
+  const { data: leads, isLoading: loadingLeads } = useQuery({
     queryKey: ["leads"],
     queryFn: fetchLeads,
   });
@@ -58,13 +87,19 @@ export default function Dashboard() {
   });
 
   // --- Derived Metrics ---
-  const activeLeadsCount = leadsMetrics?.total || 0;
-  // If we had a specific "active" field in metrics we'd use it, otherwise total is a decent proxy for now
+  const activeLeads = leads?.filter((lead) => isActiveLead(lead.status)) || [];
+  const wonLeadsCount = leads?.filter((lead) => lead.status === "Ganado").length || 0;
+  const activeLeadsCount = activeLeads.length;
+  const activeLeadPipelineValue = activeLeads.reduce((acc, lead) => acc + (Number(lead.estimatedValue) || 0), 0);
 
-  const activeProjectsCount = projects?.filter(p => p.status === "Active" || p.status === "In Progress").length || 0;
-  const totalProjectsValue = projects?.reduce((acc, curr) => acc + (Number(curr.budget) || 0), 0) || 0;
+  const activeProjectsCount = projects?.filter((project) => isActiveProjectStatus(project.status)).length || 0;
+  const completedProjectsCount = projects?.filter((project) => isCompletedProjectStatus(project.status)).length || 0;
+  const totalProjectsValue = projects?.reduce((acc, curr) => acc + getProjectValue(curr), 0) || 0;
 
-  const activeEmployeesCount = team?.length || 0;
+  const activeEmployees = team?.filter((employee) => isActiveEmployee(employee)) || [];
+  const inactiveEmployeesCount = (team?.length || 0) - activeEmployees.length;
+  const activeEmployeesCount = activeEmployees.length;
+  const monthlyPayroll = activeEmployees.reduce((acc, employee) => acc + (Number(employee.monthlySalary) || 0), 0);
 
   const balance = financialSummary?.netProfit || 0;
   const income = financialSummary?.totalIncome || 0;
@@ -91,7 +126,7 @@ export default function Dashboard() {
           value={formatCurrency(balance)}
           subValue={`Ing: ${formatCurrency(income)} | Gas: ${formatCurrency(expenses)}`}
           icon={Wallet}
-          trend={balance >= 0 ? "+ Rentable" : "- Déficit"}
+          trend={balance >= 0 ? "Neto positivo" : "Neto negativo"}
           trendUp={balance >= 0}
           color="green"
           onClick={() => setActiveModal("finance")}
@@ -99,9 +134,9 @@ export default function Dashboard() {
         <KpiCard
           title="Leads Activos"
           value={activeLeadsCount.toString()}
-          subValue={`Valor Est: ${formatCurrency(leadsMetrics?.avgValue ? leadsMetrics.avgValue * activeLeadsCount : 0)}`}
+          subValue={`Pipeline: ${formatCurrency(activeLeadPipelineValue)}`}
           icon={Target}
-          trend="+ Nuevo Hoy"
+          trend={`Ganados: ${wonLeadsCount}`}
           trendUp={true}
           color="blue"
           onClick={() => setActiveModal("leads")}
@@ -109,21 +144,21 @@ export default function Dashboard() {
         <KpiCard
           title="Proyectos Activos"
           value={activeProjectsCount.toString()}
-          subValue={`Cotización: ${formatCurrency(totalProjectsValue)}`}
+          subValue={`Cotizacion: ${formatCurrency(totalProjectsValue)}`}
           icon={Briefcase}
           color="amber"
-          trend="En tiempo"
+          trend={`Completados: ${completedProjectsCount}`}
           trendUp={true}
           onClick={() => setActiveModal("projects")}
         />
         <KpiCard
-          title="Empleados"
+          title="Empleados Activos"
           value={activeEmployeesCount.toString()}
-          subValue="Nómina calc. pendiente"
+          subValue={`Nomina: ${formatCurrency(monthlyPayroll)}`}
           icon={Users}
           color="purple"
-          trend="Estable"
-          trendUp={true}
+          trend={`Inactivos: ${inactiveEmployeesCount}`}
+          trendUp={inactiveEmployeesCount === 0}
           onClick={() => setActiveModal("hr")}
         />
       </div>
@@ -132,12 +167,12 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-auto">
         {/* CRM Widget */}
         <div className="min-h-[300px]">
-          <CrmWidget data={{ leads, metrics: leadsMetrics }} loading={loadingLeads} />
+          <CrmWidget data={{ leads, metrics: leadsMetrics }} loading={loadingLeads || loadingLeadsMetrics} />
         </div>
 
         {/* Projects Widget */}
         <div className="min-h-[300px]">
-          <ProjectsWidget data={projects?.filter(p => p.status === "Active" || p.status === "In Progress")} loading={loadingProjects} />
+          <ProjectsWidget data={projects} loading={loadingProjects} />
         </div>
 
         {/* Finance Widget */}
@@ -151,33 +186,33 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* --- Modales de KPI --- */}
-      <KpiDetailsDialog 
-        isOpen={activeModal === "finance"} 
+      {/* KPI details */}
+      <KpiDetailsDialog
+        isOpen={activeModal === "finance"}
         onClose={() => setActiveModal(null)}
         title="Balance Financiero"
         description="Listado exhaustivo del estado financiero"
         data={financialSummary}
         moduleName="finance"
       />
-      <KpiDetailsDialog 
-        isOpen={activeModal === "leads"} 
+      <KpiDetailsDialog
+        isOpen={activeModal === "leads"}
         onClose={() => setActiveModal(null)}
         title="Leads Activos"
         description="Resumen del CRM y prospectos comerciales"
         data={leads}
         moduleName="leads"
       />
-      <KpiDetailsDialog 
-        isOpen={activeModal === "projects"} 
+      <KpiDetailsDialog
+        isOpen={activeModal === "projects"}
         onClose={() => setActiveModal(null)}
-        title="Proyectos Activos"
-        description="Estado de ejecución y cotizaciones"
-        data={projects?.filter(p => p.status === "Active" || p.status === "In Progress")}
+        title="Proyectos"
+        description="Estado de ejecucion y cotizaciones"
+        data={projects}
         moduleName="projects"
       />
-      <KpiDetailsDialog 
-        isOpen={activeModal === "hr"} 
+      <KpiDetailsDialog
+        isOpen={activeModal === "hr"}
         onClose={() => setActiveModal(null)}
         title="Equipo y Recursos Humanos"
         description="Empleados registrados en el sistema"

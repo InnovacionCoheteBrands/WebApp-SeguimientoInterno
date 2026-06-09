@@ -163,20 +163,20 @@ export function AppLayout({ children }: AppLayoutProps) {
                   {t("mission_control")}
                 </p>
               )}
-              <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" collapsed={isCollapsed} />
               <NavButton icon={FolderKanban} label={t("projects")} active={location === "/proyectos"} href="/proyectos" collapsed={isCollapsed} />
-              <NavButton icon={BarChart3} label="Control de Proyectos" active={location === "/control-proyectos"} href="/control-proyectos" collapsed={isCollapsed} />
-              <NavButton icon={Users} label={t("team")} active={location === "/equipo"} href="/equipo" collapsed={isCollapsed} />
-              <NavButton icon={TrendingUp} label={t("analytics")} active={location === "/kpis"} href="/kpis" collapsed={isCollapsed} />
+              <NavButton icon={BarChart3} label="Control Proyectos" active={location === "/control-proyectos"} href="/control-proyectos" collapsed={isCollapsed} />
+              <NavButton icon={CalendarDays} label="Calendario Pagos" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
+              <NavButton icon={Users} label="Empleados" active={location === "/equipo"} href="/equipo" collapsed={isCollapsed} />
               <NavButton icon={Target} label="CRM" active={location === "/crm"} href="/crm" collapsed={isCollapsed} />
-              <NavButton icon={Globe} label="Digital Assets" active={location === "/digital-assets"} href="/digital-assets" collapsed={isCollapsed} />
+              <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" collapsed={isCollapsed} />
               <NavButton icon={Briefcase} label="Servicios" active={location === "/servicios"} href="/servicios" collapsed={isCollapsed} />
+              <NavButton icon={DollarSign} label="Financiero" active={location === "/finanzas"} href="/finanzas" collapsed={isCollapsed} />
+              <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" collapsed={isCollapsed} />
+              <NavButton icon={Globe} label="Digital Assets" active={location === "/digital-assets"} href="/digital-assets" collapsed={isCollapsed} />
               <NavButton icon={Truck} label="Proveedores" active={location === "/proveedores"} href="/proveedores" collapsed={isCollapsed} />
-              <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" collapsed={isCollapsed} />
               <NavButton icon={FileText} label="POES" active={location === "/poes"} href="/poes" collapsed={isCollapsed} />
-              <NavButton icon={CalendarDays} label="Calendario" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
-              <NavButton icon={Shield} label="Usuarios" active={location === "/usuarios"} href="/usuarios" collapsed={isCollapsed} />
               <NavButton icon={Activity} label="Actividad" active={location === "/actividad"} href="/actividad" collapsed={isCollapsed} />
+              <NavButton icon={Shield} label="Usuarios" active={location === "/usuarios"} href="/usuarios" collapsed={isCollapsed} />
             </div>
           </nav>
 

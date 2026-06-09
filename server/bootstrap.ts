@@ -5,7 +5,6 @@ import cookieParser from "cookie-parser";
 import type { Server } from "http";
 import { registerRoutes } from "./routes";
 import { globalErrorHandler } from "./middleware/error-handler";
-import { storage } from "./storage";
 import { logAiConfigStatus } from "./utils/ai";
 import { logger } from "./utils/logger";
 
@@ -112,14 +111,6 @@ export async function runServer(
 
     next();
   });
-
-  const revokedLegacyTokens = await storage.revokeLegacyRefreshTokens();
-  if (revokedLegacyTokens > 0) {
-    logger.warn(
-      { revokedLegacyTokens },
-      "Revoked legacy plaintext refresh tokens during startup",
-    );
-  }
 
   const server = await registerRoutes(app);
 

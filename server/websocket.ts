@@ -224,8 +224,12 @@ export function setupWebSocket(server: Server) {
     });
   });
 
-  startTelemetrySimulator();
-  startMetricsSimulator();
+  if (process.env.WEBSOCKET_SIMULATORS_ENABLED === "true") {
+    startTelemetrySimulator();
+    startMetricsSimulator();
+  } else {
+    logger.info("[websocket] DB-writing simulators disabled. Set WEBSOCKET_SIMULATORS_ENABLED=true to enable them.");
+  }
 
   logger.info("[websocket] WebSocket server initialized on /ws");
 }

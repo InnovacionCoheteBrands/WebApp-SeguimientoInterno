@@ -1,51 +1,53 @@
 /**
  * Proyectos - Grid/List Project View
- * Matches cohetebrands.web.app/proyectos design
- * Features: Grid/List toggle, Status tabs, Multi-filters, Premium cards
  */
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-    FolderKanban,
-    Clock,
-    CheckCircle2,
-    DollarSign,
-    Plus,
-    ArrowLeft,
-} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, CheckCircle2, Clock, DollarSign, FolderKanban, Plus } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-    fetchProjects,
     fetchClientAccounts,
-    updateProject,
+    fetchInstallmentsByProject,
+    fetchProjectServices,
+    fetchProjectTeam,
+    fetchProjects,
+    fetchServiceCatalog,
     fetchTeam,
+    updateProject,
     type Project,
 } from "@/lib/api";
-
-// Import new components
-import { ViewToggle } from "@/components/projects/ViewToggle";
-import { StatusTabs, type ProjectStatusTab } from "@/components/projects/StatusTabs";
-import { ProjectFilters, type ProjectFiltersState } from "@/components/projects/ProjectFilters";
+import {
+    buildProjectAnalyticsRecord,
+    computePortfolioAnalytics,
+    mapProjectStatusToTab,
+    normalizeComparableText,
+} from "@/components/projects/project-analytics-helpers";
+import {
+    ProjectAnalyticsMonthlyCards,
+    ProjectAnalyticsPanels,
+} from "@/components/projects/ProjectAnalyticsPanels";
 import { ProjectCard } from "@/components/projects/ProjectCard";
+import { ProjectFilters, type ProjectFiltersState } from "@/components/projects/ProjectFilters";
 import { ProjectsTable } from "@/components/projects/ProjectsTable";
+import { StatusTabs, type ProjectStatusTab } from "@/components/projects/StatusTabs";
+import { ViewToggle } from "@/components/projects/ViewToggle";
 import { ProjectForm } from "@/components/forms/project-form";
 
 export default function Proyectos() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    // View state
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [activeTab, setActiveTab] = useState<ProjectStatusTab>("active");
     const [filters, setFilters] = useState<ProjectFiltersState>({
@@ -54,13 +56,11 @@ export default function Proyectos() {
         status: "all",
         employee: "all",
         client: "all",
+        service: "all",
     });
-
-    // Dialog state
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-    // Fetch data
     const { data: projects = [], isLoading } = useQuery({
         queryKey: ["projects"],
         queryFn: fetchProjects,
@@ -76,10 +76,37 @@ export default function Proyectos() {
         queryFn: fetchTeam,
     });
 
-    // Update mutation for status change
+    const { data: serviceCatalog = [], isPending: isServiceCatalogLoading } = useQuery({
+        queryKey: ["service-catalog"],
+        queryFn: fetchServiceCatalog,
+    });
+
+    const projectServicesQueries = useQueries({
+        queries: projects.map((project) => ({
+            queryKey: ["project-services", project.id],
+            queryFn: () => fetchProjectServices(project.id),
+            staleTime: 60_000,
+        })),
+    });
+
+    const projectTeamQueries = useQueries({
+        queries: projects.map((project) => ({
+            queryKey: ["project-team", project.id],
+            queryFn: () => fetchProjectTeam(project.id),
+            staleTime: 60_000,
+        })),
+    });
+
+    const projectInstallmentQueries = useQueries({
+        queries: projects.map((project) => ({
+            queryKey: ["installments", project.id],
+            queryFn: () => fetchInstallmentsByProject(project.id),
+            staleTime: 60_000,
+        })),
+    });
+
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: { status?: string } }) =>
-            updateProject(id, data),
+        mutationFn: ({ id, data }: { id: number; data: { status?: string } }) => updateProject(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             toast({ title: "Estado actualizado" });
@@ -93,76 +120,124 @@ export default function Proyectos() {
         },
     });
 
-    // Map internal statuses to display statuses
-    const mapStatusToTab = (status: string): ProjectStatusTab | null => {
-        const mapping: Record<string, ProjectStatusTab> = {
-            "En Curso": "active",
-            "active": "active",
-            "En Revisión": "active",
-            "Planificación": "active",
-            "planning": "active",
-            "Bloqueado": "on_hold",
-            "on_hold": "on_hold",
-            "Completado": "completed",
-            "completed": "completed",
-        };
-        return mapping[status] || null;
-    };
-
-    // Status counts for tabs
     const statusCounts = useMemo(() => {
         const counts = { active: 0, on_hold: 0, completed: 0 };
-        projects.forEach((p) => {
-            const tab = mapStatusToTab(p.status);
-            if (tab) counts[tab]++;
-        });
+
+        for (const project of projects) {
+            const statusBucket = mapProjectStatusToTab(project.status);
+            if (statusBucket) {
+                counts[statusBucket] += 1;
+            }
+        }
+
         return counts;
     }, [projects]);
 
-    // Parse budget as number for calculations
-    const parseBudget = (budget: string | number | null | undefined): number => {
-        if (!budget) return 0;
-        const num = typeof budget === "string" ? parseFloat(budget) : budget;
-        return isNaN(num) ? 0 : num;
-    };
+    const serviceCatalogMap = useMemo(
+        () => new Map(serviceCatalog.map((service) => [service.id, service])),
+        [serviceCatalog],
+    );
 
-    // Filter projects
+    const teamDirectory = useMemo(
+        () => employees.map((employee) => ({ id: employee.id, name: employee.name })),
+        [employees],
+    );
+
+    const enrichedProjects = useMemo(() => {
+        return projects.map((project, index) =>
+            buildProjectAnalyticsRecord({
+                project,
+                projectServices: projectServicesQueries[index]?.data ?? [],
+                installments: projectInstallmentQueries[index]?.data ?? [],
+                teamAssignments: projectTeamQueries[index]?.data ?? [],
+                serviceCatalogMap,
+                teamDirectory,
+            }),
+        );
+    }, [
+        projects,
+        projectServicesQueries,
+        projectInstallmentQueries,
+        projectTeamQueries,
+        serviceCatalogMap,
+        teamDirectory,
+    ]);
+
+    const availableStatuses = useMemo(() => {
+        return Array.from(
+            new Set(
+                projects
+                    .map((project) => project.status)
+                    .filter((status): status is string => Boolean(status?.trim())),
+            ),
+        ).sort((left, right) => left.localeCompare(right, "es"));
+    }, [projects]);
+
+    const availableServices = useMemo(() => {
+        const visibleServiceIds = new Set<number>();
+
+        for (const project of enrichedProjects) {
+            project.serviceIds.forEach((serviceId) => visibleServiceIds.add(serviceId));
+        }
+
+        return serviceCatalog
+            .filter((service) => visibleServiceIds.has(service.id))
+            .map((service) => ({ id: service.id, name: service.name }))
+            .sort((left, right) => left.name.localeCompare(right.name, "es"));
+    }, [enrichedProjects, serviceCatalog]);
+
     const filteredProjects = useMemo(() => {
-        return projects.filter((project) => {
-            // Tab filter
-            const projectTab = mapStatusToTab(project.status);
-            if (projectTab !== activeTab) return false;
+        const normalizedSearch = normalizeComparableText(filters.search);
 
-            // Search filter
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
-                const matchesName = project.name.toLowerCase().includes(searchLower);
-                const matchesClient = project.client?.companyName?.toLowerCase().includes(searchLower);
-                const matchesDesc = project.description?.toLowerCase().includes(searchLower);
-                if (!matchesName && !matchesClient && !matchesDesc) return false;
+        return enrichedProjects.filter((project) => {
+            if (mapProjectStatusToTab(project.status) !== activeTab) {
+                return false;
             }
 
-            // Type filter
-            if (filters.type !== "all" && project.serviceType !== filters.type) return false;
+            if (normalizedSearch) {
+                const matchesName = normalizeComparableText(project.name).includes(normalizedSearch);
+                const matchesClient = normalizeComparableText(project.client?.companyName).includes(normalizedSearch);
+                const matchesDescription = normalizeComparableText(project.description).includes(normalizedSearch);
 
-            // Client filter
-            if (filters.client !== "all" && project.clientId?.toString() !== filters.client) return false;
+                if (!matchesName && !matchesClient && !matchesDescription) {
+                    return false;
+                }
+            }
+
+            if (filters.type !== "all" && project.serviceType !== filters.type) {
+                return false;
+            }
+
+            if (filters.status !== "all" && project.status !== filters.status) {
+                return false;
+            }
+
+            if (filters.employee !== "all" && !project.assignedEmployeeIds.includes(Number(filters.employee))) {
+                return false;
+            }
+
+            if (filters.service !== "all" && !project.serviceIds.includes(Number(filters.service))) {
+                return false;
+            }
+
+            if (filters.client !== "all" && project.clientId?.toString() !== filters.client) {
+                return false;
+            }
 
             return true;
         });
-    }, [projects, activeTab, filters]);
+    }, [activeTab, enrichedProjects, filters]);
 
-    // Statistics
-    const stats = useMemo(() => ({
-        total: projects.length,
-        totalBudget: projects.reduce((sum, p) => sum + parseBudget(p.quotationAmount || p.budget), 0),
-        collected: projects
-            .filter((p) => mapStatusToTab(p.status) === "completed")
-            .reduce((sum, p) => sum + parseBudget(p.quotationAmount || p.budget), 0),
-        pending: projects
-            .filter((p) => mapStatusToTab(p.status) !== "completed")
-            .reduce((sum, p) => sum + parseBudget(p.quotationAmount || p.budget), 0),
-    }), [projects]);
+    const analyticsSummary = useMemo(
+        () => computePortfolioAnalytics(filteredProjects),
+        [filteredProjects],
+    );
+
+    const isAnalyticsLoading =
+        isServiceCatalogLoading ||
+        projectServicesQueries.some((query) => query.isPending) ||
+        projectTeamQueries.some((query) => query.isPending) ||
+        projectInstallmentQueries.some((query) => query.isPending);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat("es-MX", {
@@ -172,7 +247,6 @@ export default function Proyectos() {
         }).format(amount);
     };
 
-    // Handlers
     const handleStatusChange = (id: number, status: string) => {
         updateMutation.mutate({ id, data: { status } });
     };
@@ -182,8 +256,9 @@ export default function Proyectos() {
         setIsDialogOpen(true);
     }, []);
 
-    const handleDelete = (id: number) => {
-        toast({ title: "Función no implementada", description: "Eliminar proyecto" });
+    const handleDelete = (_id: number) => {
+        void _id;
+        toast({ title: "Funcion no implementada", description: "Eliminar proyecto" });
     };
 
     const handleNewProject = () => {
@@ -193,26 +268,25 @@ export default function Proyectos() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-3 sm:p-6">
-            <div className="max-w-[1700px] mx-auto space-y-4 sm:space-y-6">
-                {/* Header */}
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="min-h-screen bg-background p-3 text-foreground sm:p-6">
+            <div className="mx-auto max-w-[1700px] space-y-4 sm:space-y-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
                         <Link href="/">
-                            <Button variant="outline" size="icon" className=" h-11 w-11">
+                            <Button variant="outline" size="icon" className="h-11 w-11">
                                 <ArrowLeft className="size-5" />
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Proyectos</h1>
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                            <h1 className="text-2xl font-bold sm:text-3xl">Gestion de Proyectos</h1>
+                            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                                 Administra todos los proyectos de la empresa
                             </p>
                         </div>
@@ -220,88 +294,99 @@ export default function Proyectos() {
                     <div className="flex items-center gap-3">
                         <ViewToggle view={viewMode} onViewChange={setViewMode} />
                         <Button onClick={handleNewProject} className="gap-2">
-                            <Plus className="w-4 h-4" />
+                            <Plus className="h-4 w-4" />
                             Nuevo Proyecto
                         </Button>
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-500">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 transition-all duration-500 hover:bg-zinc-900/50 hover:border-white/30">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-primary/10 border border-white/5">
-                                    <FolderKanban className="w-5 h-5 text-primary" />
+                                <div className="rounded-lg border border-white/5 bg-primary/10 p-2">
+                                    <FolderKanban className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-zinc-50">{stats.total}</p>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Proyectos</p>
+                                    <p className="text-2xl font-bold text-zinc-50">{analyticsSummary.totalProjects}</p>
+                                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Proyectos</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
+
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 transition-all duration-300 hover:bg-zinc-900/50 hover:border-white/30">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-zinc-500/10 border border-white/5">
-                                    <DollarSign className="w-5 h-5 text-zinc-400" />
+                                <div className="rounded-lg border border-white/5 bg-zinc-500/10 p-2">
+                                    <DollarSign className="h-5 w-5 text-zinc-400" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-zinc-50">{formatCurrency(stats.totalBudget)}</p>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Cotización Total</p>
+                                    <p className="text-2xl font-bold text-zinc-50">
+                                        {formatCurrency(analyticsSummary.totalQuotation)}
+                                    </p>
+                                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Cotizacion Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
+
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 transition-all duration-300 hover:bg-zinc-900/50 hover:border-white/30">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-primary/10 border border-white/5">
-                                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                                <div className="rounded-lg border border-white/5 bg-primary/10 p-2">
+                                    <CheckCircle2 className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-primary">{formatCurrency(stats.collected)}</p>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Cobrado</p>
+                                    <p className="text-2xl font-bold text-primary">
+                                        {formatCurrency(analyticsSummary.totalCollected)}
+                                    </p>
+                                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                                        {isAnalyticsLoading ? "Total Cobrado (actualizando)" : "Total Cobrado"}
+                                    </p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 hover:bg-zinc-900/50 hover:border-white/30 transition-all duration-300">
+
+                    <Card className="bg-zinc-950/40 border-white/15 ring-1 ring-inset ring-white/10 transition-all duration-300 hover:bg-zinc-900/50 hover:border-white/30">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-zinc-500/10 border border-white/5">
-                                    <Clock className="w-5 h-5 text-zinc-400" />
+                                <div className="rounded-lg border border-white/5 bg-zinc-500/10 p-2">
+                                    <Clock className="h-5 w-5 text-zinc-400" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-zinc-100">{formatCurrency(stats.pending)}</p>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Pendiente por Cobrar</p>
+                                    <p className="text-2xl font-bold text-zinc-100">
+                                        {formatCurrency(analyticsSummary.totalPending)}
+                                    </p>
+                                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Pendiente por Cobrar</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Filters */}
+                <ProjectAnalyticsMonthlyCards summary={analyticsSummary} isLoading={isAnalyticsLoading} />
+
                 <ProjectFilters
                     filters={filters}
                     onFiltersChange={setFilters}
                     clients={clients}
-                    employees={employees}
+                    employees={employees.map((employee) => ({ id: employee.id, name: employee.name }))}
+                    services={availableServices}
+                    statuses={availableStatuses}
                 />
 
-                {/* Status Tabs */}
                 <StatusTabs
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
                     counts={statusCounts}
                 />
 
-                {/* Projects View */}
                 {viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {filteredProjects.length === 0 ? (
-                            <div className="col-span-full text-center text-muted-foreground py-12 bg-card/30 rounded-lg border border-border/50">
+                            <div className="col-span-full rounded-lg border border-border/50 bg-card/30 py-12 text-center text-muted-foreground">
                                 No hay proyectos que mostrar
                             </div>
                         ) : (
@@ -325,18 +410,24 @@ export default function Proyectos() {
                     />
                 )}
 
-                {/* Project Form Dialog */}
+                <ProjectAnalyticsPanels
+                    summary={analyticsSummary}
+                    isLoading={isAnalyticsLoading}
+                />
+
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogContent className="sm:max-w-4xl">
-                        <DialogHeader className="px-10 pt-10 pb-6">
+                        <DialogHeader className="px-10 pb-6 pt-10">
                             <DialogTitle>{selectedProject ? "Editar Proyecto" : "Nuevo Proyecto"}</DialogTitle>
                             <DialogDescription>
-                                {selectedProject ? "Actualiza la información del proyecto" : "Crea un nuevo proyecto asignado a un cliente"}
+                                {selectedProject
+                                    ? "Actualiza la informacion del proyecto"
+                                    : "Crea un nuevo proyecto asignado a un cliente"}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="px-10 pb-10">
                             <ProjectForm
-                                key={isDialogOpen ? (selectedProject ? `edit-${selectedProject.id}` : 'new') : 'closed'}
+                                key={isDialogOpen ? (selectedProject ? `edit-${selectedProject.id}` : "new") : "closed"}
                                 open={isDialogOpen}
                                 onOpenChange={setIsDialogOpen}
                                 initialData={selectedProject}
