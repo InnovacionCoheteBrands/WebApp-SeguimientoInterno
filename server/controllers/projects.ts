@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import { storage } from "../storage";
 import { logger } from "../utils/logger";
 import {
@@ -14,8 +14,15 @@ import {
 import { z } from "zod";
 import { desc } from "drizzle-orm";
 import { logAction } from "../utils/audit-helper";
+import { AppError, asyncHandler } from "../middleware/error-handler";
 
 const router = Router();
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (req.user?.role !== "admin") {
+        return next(new AppError("Access denied", 403, "PROJECT_FINANCIAL_ANALYTICS_FORBIDDEN"));
+    }
+    next();
+};
 
 // Projects Management endpoints
 router.get("/projects", async (req, res) => {
@@ -27,6 +34,11 @@ router.get("/projects", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch projects" });
     }
 });
+
+router.get("/projects/financial-analytics", requireAdmin, asyncHandler(async (_req, res) => {
+    const analytics = await storage.getProjectFinancialAnalytics();
+    res.json(analytics);
+}));
 
 router.get("/projects/:id", async (req, res) => {
     try {
