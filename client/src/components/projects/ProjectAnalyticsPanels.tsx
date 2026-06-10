@@ -2,7 +2,6 @@ import type { ComponentType, ReactNode } from "react";
 import { BarChart3, Briefcase, DollarSign, Loader2, PieChart as PieChartIcon, Users } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/format-currency";
@@ -243,6 +242,9 @@ function ProfitabilitySection(props: {
             <div className={`text-sm font-medium ${project.monthlyProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
               {formatCurrency(project.monthlyProfit)}
             </div>
+            {project.monthlyMargin !== null ? (
+              <div className="mt-1 text-xs text-muted-foreground">{project.monthlyMargin.toFixed(1)}% margen</div>
+            ) : null}
           </div>
           <div className="flex items-center">
             <Badge
@@ -255,9 +257,14 @@ function ProfitabilitySection(props: {
             </Badge>
           </div>
           <div className="flex items-center justify-end">
-            <Button variant="outline" size="sm" disabled className="border-white/10 bg-transparent text-zinc-400">
-              Ver Detalles
-            </Button>
+            <Badge
+              variant="outline"
+              className={project.financialDataSource === "backend"
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                : "border-amber-500/30 bg-amber-500/10 text-amber-300"}
+            >
+              {project.financialDataSource === "backend" ? "Backend" : "Fallback"}
+            </Badge>
           </div>
         </div>
       ))}
@@ -346,10 +353,20 @@ function PaymentTrackingSection(props: {
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">Cobrado</div>
                   <div className="font-medium text-emerald-400">{formatCurrency(project.collected)}</div>
+                  {project.financialDataSource === "backend" && Math.abs(project.collectionDifference) > 0.009 ? (
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      Operativo: {formatCurrency(project.operationalCollected)}
+                    </div>
+                  ) : null}
                 </div>
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">Pendiente</div>
                   <div className="font-medium text-amber-400">{formatCurrency(project.pending)}</div>
+                  {project.financialDataSource === "backend" && Math.abs(project.collectionDifference) > 0.009 ? (
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      Operativo: {formatCurrency(project.operationalPending)}
+                    </div>
+                  ) : null}
                 </div>
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">Porcentaje</div>
@@ -365,6 +382,37 @@ function PaymentTrackingSection(props: {
                 <span>{project.percentage.toFixed(1)}%</span>
               </div>
             </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge
+                variant="outline"
+                className={project.financialDataSource === "backend"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-300"}
+              >
+                {project.financialDataSource === "backend" ? "Cobro real backend" : "Fallback operativo"}
+              </Badge>
+              {project.reconciliationStatus ? (
+                <Badge variant="outline" className="border-white/10 bg-transparent text-zinc-200">
+                  {project.reconciliationStatus}
+                </Badge>
+              ) : null}
+              {project.discrepancyCount > 0 ? (
+                <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-300">
+                  Discrepancias: {project.discrepancyCount}
+                </Badge>
+              ) : null}
+              {project.warningCount > 0 ? (
+                <Badge variant="outline" className="border-white/10 bg-transparent text-zinc-200">
+                  Advertencias: {project.warningCount}
+                </Badge>
+              ) : null}
+              {project.financialDataSource === "backend" && Math.abs(project.collectionDifference) > 0.009 ? (
+                <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-300">
+                  Diferencia: {formatCurrency(project.collectionDifference)}
+                </Badge>
+              ) : null}
+            </div>
           </div>
         );
       })}
@@ -377,27 +425,45 @@ export function ProjectAnalyticsMonthlyCards(props: {
   isLoading?: boolean;
 }) {
   const { summary, isLoading } = props;
+  const monthlyDescription =
+    summary.sourceState === "backend"
+      ? "Suma visible desde la lectura financiera read-only del backend."
+      : summary.sourceState === "mixed"
+        ? "Suma visible con backend read-only y fallback operativo."
+        : "Suma visible usando fallback operativo seguro.";
+  const costDescription =
+    summary.sourceState === "backend"
+      ? "Costos mensuales reportados por el consolidado backend."
+      : summary.sourceState === "mixed"
+        ? "Costos visibles combinados entre backend y fallback."
+        : "Costos visibles calculados desde datos operativos disponibles.";
+  const profitDescription =
+    summary.sourceState === "backend"
+      ? "Ingresos mensuales menos costos mensuales visibles del backend."
+      : summary.sourceState === "mixed"
+        ? "Resultado visible combinando backend y fallback."
+        : "Resultado visible a partir del fallback operativo seguro.";
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <MonthlyMetricCard
         title="Total Ingresos Mensuales"
         value={summary.monthlyRevenue}
-        description="Suma del mantenimiento mensual del conjunto visible."
+        description={monthlyDescription}
         accentClassName="text-emerald-400"
         isLoading={isLoading}
       />
       <MonthlyMetricCard
         title="Total Costos Mensuales"
         value={summary.monthlyCost}
-        description="Costos recurrentes detectados con datos confiables."
+        description={costDescription}
         accentClassName="text-zinc-100"
         isLoading={isLoading}
       />
       <MonthlyMetricCard
         title="Ganancia Mensual Total"
         value={summary.monthlyProfit}
-        description="Ingresos mensuales menos costos mensuales."
+        description={profitDescription}
         accentClassName={summary.monthlyProfit >= 0 ? "text-primary" : "text-rose-400"}
         isLoading={isLoading}
       />
@@ -414,7 +480,7 @@ export function ProjectAnalyticsPanels(props: ProjectAnalyticsPanelsProps) {
         <PanelShell
           icon={BarChart3}
           title="Estado de Pagos por Proyecto"
-          description="Comparativo entre monto cobrado y pendiente por proyecto."
+          description="Comparativo visible entre cobro prioritario y pendiente por proyecto."
         >
           <ProjectPaymentsStatusChart summary={summary} isLoading={isLoading} />
         </PanelShell>
@@ -422,7 +488,7 @@ export function ProjectAnalyticsPanels(props: ProjectAnalyticsPanelsProps) {
         <PanelShell
           icon={PieChartIcon}
           title="Distribucion de Pagos"
-          description="Relacion acumulada entre cobrado y pendiente."
+          description="Relacion acumulada entre cobro visible y pendiente visible."
         >
           <PaymentsDistributionChart summary={summary} isLoading={isLoading} />
         </PanelShell>
@@ -448,7 +514,7 @@ export function ProjectAnalyticsPanels(props: ProjectAnalyticsPanelsProps) {
         <PanelShell
           icon={Briefcase}
           title="Seguimiento de Pagos por Proyecto"
-          description="Cotizacion, cobrado, pendiente y avance de cobro por proyecto."
+          description="Cotizacion, cobro prioritario, pendiente y discrepancias por proyecto."
         >
           <PaymentTrackingSection summary={summary} isLoading={isLoading} />
         </PanelShell>

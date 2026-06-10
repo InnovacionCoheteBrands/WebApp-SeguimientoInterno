@@ -22,8 +22,15 @@ export async function setupVite(app: Express, server: Server) {
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
+        console.error("VITE ERROR DETECTED:", msg);
+        if (options?.error) {
+          console.error(options.error);
+        }
         viteLogger.error(msg, options);
-        process.exit(1);
+        // Add a small timeout to ensure logs are printed before exiting
+        setTimeout(() => {
+          process.exit(1);
+        }, 100);
       },
     },
     server: serverOptions,

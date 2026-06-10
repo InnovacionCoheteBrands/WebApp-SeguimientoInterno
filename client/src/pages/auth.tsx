@@ -63,26 +63,26 @@ export default function AuthPage() {
             const contentType = response.headers.get("content-type") || "";
             if (!contentType.includes("application/json")) {
                 throw new Error(
-                    "Gateway Error: Authentication node unreachable. Verify infrastructure status."
+                    "No fue posible contactar el servicio de autenticacion. Verifica el estado de la infraestructura."
                 );
             }
 
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || "Access Denied: Invalid Authorization Hash");
+                throw new Error(result.message || "Acceso denegado: credenciales invalidas.");
             }
 
             login(result.token, result.user);
 
             toast({
-                title: "Authentication Successful",
-                description: `Node connectivity established for ${result.user.username}`,
+                title: "Acceso correcto",
+                description: `Sesion iniciada para ${result.user.username}.`,
             });
 
             setLocation("/");
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Handshake Failure: Connection Refused");
+            setError(err instanceof Error ? err.message : "No fue posible iniciar sesion. Intenta de nuevo.");
         } finally {
             setIsLoading(false);
         }
@@ -110,7 +110,7 @@ export default function AuthPage() {
                             Mission Control
                         </h1>
                         <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.5em] font-bold pl-1">
-                            Secure Access Terminal v2.0
+                            Terminal de acceso seguro v2.0
                         </p>
                     </div>
                 </div>
@@ -119,9 +119,9 @@ export default function AuthPage() {
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                     
                     <CardHeader className="pt-10 pb-6 text-center">
-                        <CardTitle className="text-xl font-display italic text-white tracking-tight">Initiate Handshake</CardTitle>
+                        <CardTitle className="text-xl font-display italic text-white tracking-tight">Iniciar sesion</CardTitle>
                         <CardDescription className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mt-2">
-                            Provide Authorization Credentials
+                            Ingresa tus credenciales de acceso
                         </CardDescription>
                     </CardHeader>
                     
@@ -147,7 +147,7 @@ export default function AuthPage() {
                                                     </div>
                                                     <FormControl>
                                                         <Input 
-                                                            placeholder="OPERATOR_ID" 
+                                                            placeholder="USUARIO" 
                                                             className="h-14 pl-12 rounded-2xl bg-white/[0.03] border-white/5 text-white font-mono text-xs placeholder:text-zinc-600 focus:bg-white/[0.05] focus:border-white/10 focus:ring-primary/20 transition-all" 
                                                             {...field} 
                                                         />
@@ -170,7 +170,7 @@ export default function AuthPage() {
                                                     <FormControl>
                                                         <Input 
                                                             type="password" 
-                                                            placeholder="ENCRYPTION_HASH" 
+                                                            placeholder="CONTRASENA" 
                                                             className="h-14 pl-12 rounded-2xl bg-white/[0.03] border-white/5 text-white font-mono text-xs placeholder:text-zinc-600 focus:bg-white/[0.05] focus:border-white/10 focus:ring-primary/20 transition-all" 
                                                             {...field} 
                                                         />
@@ -190,10 +190,10 @@ export default function AuthPage() {
                                     {isLoading ? (
                                         <div className="flex items-center gap-3">
                                             <Loader2 className="size-4 animate-spin" />
-                                            Encrypting...
+                                            Validando...
                                         </div>
                                     ) : (
-                                        "Authenticate Node"
+                                        "Entrar"
                                     )}
                                 </Button>
                             </form>
@@ -205,7 +205,7 @@ export default function AuthPage() {
                             </div>
                             <div className="relative flex justify-center text-[9px] font-mono uppercase tracking-[0.3em] font-bold">
                                 <span className="bg-zinc-950 px-4 text-zinc-500">
-                                    Alternative Sync
+                                    Acceso alternativo
                                 </span>
                             </div>
                         </div>
@@ -222,13 +222,13 @@ export default function AuthPage() {
                                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                             </svg>
-                            Google_Oauth_Node
+                            Continuar con Google
                         </Button>
                     </CardContent>
                     
                     <CardFooter className="px-10 pb-10 flex justify-center border-t border-white/5 bg-white/[0.01]">
                         <p className="text-[9px] font-mono uppercase tracking-[0.3em] font-normal text-zinc-600">
-                            Authorized Personnel Only // Restricted Access
+                            Solo personal autorizado // Acceso restringido
                         </p>
                     </CardFooter>
                 </Card>

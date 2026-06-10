@@ -75,7 +75,7 @@ function normalizeApiKeySummary(value: SystemSettingsResponse["apiKey"]): ApiKey
 
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettingsValues = {
   theme: "dark",
-  language: "en",
+  language: "es",
   timezone: "UTC",
   campaignAlerts: true,
   analyticsAlerts: true,
@@ -95,7 +95,7 @@ export function normalizeLanguage(language: LanguageSetting | undefined | null):
   if (language === "en" || language === "es" || language === "fr" || language === "de" || language === "ja") {
     return language;
   }
-  return "en";
+  return "es";
 }
 
 export function normalizeSystemSettings(resp: SystemSettingsResponse | null | undefined): NormalizedSystemSettings {

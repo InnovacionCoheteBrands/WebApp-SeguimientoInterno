@@ -9,7 +9,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Home", href: "/" },
+  { icon: LayoutDashboard, label: "Inicio", href: "/" },
   { icon: Building2, label: "Clientes", href: "/clientes" },
   { icon: FolderKanban, label: "Proyectos", href: "/proyectos" },
   { icon: DollarSign, label: "Finanzas", href: "/finanzas" },

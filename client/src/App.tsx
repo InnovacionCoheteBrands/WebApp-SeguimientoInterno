@@ -43,7 +43,7 @@ function LoadingFallback() {
       <div className="text-center space-y-4 relative z-10">
         <div className="size-12 border-4 border-primary/50 border-t-primary rounded-full animate-spin mx-auto shadow-[0_0_30px_-5px_hsl(var(--primary)/0.5)]" />
         <p className="text-sm text-muted-foreground font-display font-bold tracking-widest animate-pulse">
-          Accediendo a Mission Control...
+          Cargando Mission Control...
         </p>
       </div>
     </div>
@@ -121,7 +121,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <LanguageProvider defaultLanguage="en" storageKey="app-language">
+        <LanguageProvider defaultLanguage="es" storageKey="app-language">
           <AuthProvider>
             <TooltipProvider>
               <Toaster />
