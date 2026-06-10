@@ -111,7 +111,7 @@ import {
   type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "../db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import { generateApiKey, toStoredApiKey } from "./utils/api-key";
 import {
@@ -1658,8 +1658,8 @@ export class DBStorage implements IStorage {
     return db.select()
       .from(installments)
       .where(and(
-        sql`${installments.dueDate} >= ${startDate}`,
-        sql`${installments.dueDate} <= ${endDate}`,
+        gte(installments.dueDate, startDate),
+        lte(installments.dueDate, endDate),
       ))
       .orderBy(installments.dueDate);
   }
