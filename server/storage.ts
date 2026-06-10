@@ -2182,7 +2182,12 @@ export class DBStorage implements IStorage {
     const pending = await db
       .select()
       .from(recurringTransactions)
-      .where(sql`${recurringTransactions.isActive} = true AND ${recurringTransactions.nextExecutionDate} <= ${now}`);
+      .where(
+        and(
+          eq(recurringTransactions.isActive, true),
+          lte(recurringTransactions.nextExecutionDate, now)
+        )
+      );
 
     const created: Transaction[] = [];
     for (const recurring of pending) {
@@ -2436,8 +2441,8 @@ export class DBStorage implements IStorage {
         .where(
           and(
             eq(transactions.recurringTemplateId, templateId),
-            sql`${transactions.date} >= ${startOfMonth}`,
-            sql`${transactions.date} <= ${endOfMonth}`
+            gte(transactions.date, startOfMonth),
+            lte(transactions.date, endOfMonth)
           )
         )
         .returning({ id: transactions.id });
@@ -3228,7 +3233,7 @@ export class DBStorage implements IStorage {
       .where(
         and(
           eq(digitalAssets.status, "active"),
-          sql`${digitalAssets.expirationDate} <= ${futureDate}`
+          lte(digitalAssets.expirationDate, futureDate)
         )
       );
   }
