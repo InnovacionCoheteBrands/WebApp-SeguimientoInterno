@@ -33,7 +33,8 @@ El producto usa una experiencia visual oscura, premium y tecnologica, con compon
 
 - **Remediacion seguridad (auditoria production readiness, mayo 2026):**
   - **Migraciones (hallazgo 3.1):** `migrations/meta/_journal.json` alineado con los SQL versionados; `npm run predeploy:audit` ejecuta [`scripts/check-migration-journal.ts`](scripts/check-migration-journal.ts) antes de `audit-check`. La validacion contra la base de datos real (read-only) sigue siendo prerequisito antes de produccion; ver addendum en [`docs/audit/REPORTE_AUDITORIA_PRODUCTION_READINESS_2026-05-06.md`](docs/audit/REPORTE_AUDITORIA_PRODUCTION_READINESS_2026-05-06.md).
-  - **OAuth (hallazgo 2.1):** refresh token en cookie `HttpOnly` (no en URL ni `localStorage`); endpoints `/api/auth/session`, `/api/auth/refresh`, `/api/auth/logout`; `cookie-parser` en bootstrap; flags `AUTH_REFRESH_COOKIE_ENABLED` y `AUTH_LEGACY_REFRESH_BODY_ENABLED` en [`.env.example`](.env.example).
+  - **OAuth (hallazgo 2.1):** refresh token en cookie `HttpOnly` (no en URL ni `localStorage`); endpoints `/api/auth/session`, `/api/auth/refresh`, `/api/auth/logout`; `cookie-parser` en bootstrap; el body legacy queda deshabilitado por defecto.
+  - **Provisionamiento interno:** `/api/auth/register` exige sesion admin y Google OAuth solo autentica o vincula cuentas existentes.
   - **API keys (hallazgo 2.3):** generacion con CSPRNG, almacenamiento como hash `sha256:...:last4`, respuestas enmascaradas en settings; script [`scripts/invalidate-legacy-api-keys.ts`](scripts/invalidate-legacy-api-keys.ts) (dry-run por defecto; `--execute` solo tras backup y aviso a usuarios).
 - **Modulo Ads retirado:** se eliminaron pantallas, rutas API `/api/ads/*`, controlador y tablas asociadas. En bases existentes, aplicar la migracion SQL [`migrations/0007_remove_ads_module.sql`](migrations/0007_remove_ads_module.sql) (limpieza de datos, normalizacion de proyectos `service_type` y `DROP` de tablas Ads). Un respaldo declarativo opcional esta en `scripts/backup-ads-module.sql`.
 - **Finanzas y calendario de pagos:** el cliente usa `fetchPaymentCalendar` ([`client/src/lib/api.ts`](client/src/lib/api.ts)) contra `/api/finance/payment-calendar`; la logica de agregacion y permisos sigue en [`server/storage.ts`](server/storage.ts) y controladores en [`server/controllers/financial.ts`](server/controllers/financial.ts).
@@ -279,7 +280,7 @@ npm install
 4. Define `BASE_URL` (en produccion debe iniciar con `https://`).
 5. Si vas a usar login con Google, configura `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
 6. Si usas IA, define `AI_ENABLED`, `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_MODEL_AGENT`, `AI_MODEL_SUMMARY` y `AI_API_KEY`.
-7. MantÃ©n `AUTH_REFRESH_COOKIE_ENABLED=true`; deja `AUTH_LEGACY_REFRESH_BODY_ENABLED=true` durante migracion y cambialo a `false` al retirar clientes legacy.
+7. MantÃ©n `AUTH_REFRESH_COOKIE_ENABLED=true` y `AUTH_LEGACY_REFRESH_BODY_ENABLED=false`. Activa el modo legacy solo como excepcion temporal y controlada.
 8. Si necesitas probar flujos sin login en local, puedes habilitar `SKIP_AUTH=true` solo en desarrollo.
 9. Si heredas configuraciones antiguas, el sistema tambien reconoce alias legacy como `AI_INTEGRATIONS_OPENAI_API_KEY` y `AI_INTEGRATIONS_OPENAI_BASE_URL`.
 
@@ -292,11 +293,11 @@ HOST=0.0.0.0
 BASE_URL="http://localhost:5000"
 NODE_ENV=development
 LOG_LEVEL=info
-SESSION_SECRET="change-this-to-a-secure-random-string"
-JWT_SECRET="your-super-secret-jwt-key-min-32-characters-long"
-ENCRYPTION_KEY="your-32-byte-encryption-key-as-64-hex-chars"
+SESSION_SECRET=""
+JWT_SECRET=""
+ENCRYPTION_KEY=""
 AUTH_REFRESH_COOKIE_ENABLED=true
-AUTH_LEGACY_REFRESH_BODY_ENABLED=true
+AUTH_LEGACY_REFRESH_BODY_ENABLED=false
 AI_ENABLED=false
 AI_MODEL="grok-4-1-fast-reasoning"
 GOOGLE_CLIENT_ID=""

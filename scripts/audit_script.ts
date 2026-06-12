@@ -36,14 +36,17 @@ async function request(method: string, path: string, body: any = null) {
 }
 
 async function runAudit() {
+    const auditUsername = process.env.AUTH_USERNAME;
+    const auditPassword = process.env.AUTH_PASSWORD;
+    if (!auditUsername || !auditPassword) {
+        throw new Error("AUTH_USERNAME and AUTH_PASSWORD are required.");
+    }
+
     console.log("=== INICIANDO AUDITORIA FUNCIONAL (API) ===\n");
 
     // FASE 1: Autenticación
     console.log("1. Autenticando usuario de auditoría...");
-    let authRes = await request('POST', '/auth/login', { username: 'admin_audit', password: 'password123' });
-    if (authRes.status !== 200) {
-        authRes = await request('POST', '/auth/register', { username: 'admin_audit', password: 'password123' });
-    }
+    const authRes = await request('POST', '/auth/login', { username: auditUsername, password: auditPassword });
     
     token = authRes.data?.token;
     if (!token) {

@@ -1,32 +1,35 @@
+import "dotenv/config";
 import { storage } from "../server/storage";
 import { hashPassword } from "../server/utils/crypto";
 
 async function main() {
-    console.log("🔐 Mission Control - Admin Reset Utility");
+  const username = process.env.ADMIN_USERNAME?.trim();
+  const password = process.env.ADMIN_PASSWORD;
 
-    const username = "admin";
-    const password = "admin123";
-    const hashedPassword = await hashPassword(password);
+  if (!username || !password) {
+    throw new Error("ADMIN_USERNAME and ADMIN_PASSWORD are required.");
+  }
+  if (password.length < 12 || password.length > 100) {
+    throw new Error("ADMIN_PASSWORD must be between 12 and 100 characters.");
+  }
 
-    const existingUser = await storage.getUserByUsername(username);
+  const existingUser = await storage.getUserByUsername(username);
+  if (!existingUser) {
+    throw new Error("Admin user not found. No account was created.");
+  }
+  if (existingUser.role !== "admin") {
+    throw new Error("Target user is not an administrator. No role was changed.");
+  }
 
-    if (existingUser) {
-        console.log(`[Update] User '${username}' found. Updating password...`);
-        await storage.updateUserPassword(existingUser.id, hashedPassword);
-    } else {
-        console.log(`[Create] User '${username}' not found. Creating...`);
-        await storage.createUser({
-            username,
-            password: hashedPassword,
-            role: "admin"
-        });
-    }
+  const hashedPassword = await hashPassword(password);
+  await storage.updateUserPassword(existingUser.id, hashedPassword);
+  await storage.revokeAllUserRefreshTokens(existingUser.id);
 
-    console.log(`✅ Success! User '${username}' is now active with password '${password}'`);
-    process.exit(0);
+  console.log(`[admin-reset] Password updated and existing sessions revoked for '${username}'.`);
+  process.exit(0);
 }
 
-main().catch(err => {
-    console.error("❌ Reset failed:", err);
-    process.exit(1);
+main().catch((error) => {
+  console.error("[admin-reset] Reset failed:", error instanceof Error ? error.message : "Unknown error");
+  process.exit(1);
 });

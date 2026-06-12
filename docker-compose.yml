@@ -7,15 +7,15 @@ services:
     container_name: cohete-brands-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: cohete
-      POSTGRES_PASSWORD: cohete2024
-      POSTGRES_DB: cohete_brands
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cohete"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,8 +33,13 @@ services:
       NODE_ENV: production
       PORT: 5000
       HOST: 0.0.0.0
-      DATABASE_URL: postgresql://cohete:cohete2024@postgres:5432/cohete_brands
-      SESSION_SECRET: REDACTED_SESSION_SECRET
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      BASE_URL: ${BASE_URL:?BASE_URL is required}
+      AUTH_REFRESH_COOKIE_ENABLED: "true"
+      AUTH_LEGACY_REFRESH_BODY_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy

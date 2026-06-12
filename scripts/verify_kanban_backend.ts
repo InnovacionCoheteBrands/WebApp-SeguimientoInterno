@@ -1,6 +1,7 @@
 
-// Force set DATABASE_URL for debugging
-process.env.DATABASE_URL = "postgresql://postgres:REDACTED_DB_PASSWORD@localhost:4000/mission_control";
+if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required.");
+}
 
 import { db } from "../db";
 import { projects, updateProjectSchema } from "../shared/schema";

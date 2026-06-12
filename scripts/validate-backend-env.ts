@@ -18,6 +18,18 @@ function byteLength(value: string): number {
   return Buffer.byteLength(value, "utf8");
 }
 
+function isPlaceholder(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return [
+    "change-this",
+    "changeme",
+    "your-super-secret",
+    "your-32-byte",
+    "replace-me",
+    "redacted",
+  ].some((placeholder) => normalized.includes(placeholder));
+}
+
 function validateDatabaseUrl() {
   const value = process.env.DATABASE_URL;
   if (!value) {
@@ -40,6 +52,11 @@ function validateDatabaseUrl() {
 
   if (!parsed.hostname) {
     addCheck("DATABASE_URL", "error", "DATABASE_URL must include a database host.");
+    return;
+  }
+
+  if (parsed.password && isPlaceholder(parsed.password)) {
+    addCheck("DATABASE_URL", "error", "DATABASE_URL contains a placeholder password.");
     return;
   }
 
@@ -86,6 +103,11 @@ function validateSecretLength(key: "JWT_SECRET" | "SESSION_SECRET", minLength: n
     return;
   }
 
+  if (isPlaceholder(value)) {
+    addCheck(key, "error", `${key} must not use a documented placeholder value.`);
+    return;
+  }
+
   addCheck(key, "ok", `${key} is present and meets the minimum length requirement.`);
 }
 
@@ -93,6 +115,11 @@ function validateEncryptionKey() {
   const value = process.env.ENCRYPTION_KEY;
   if (!value) {
     addCheck("ENCRYPTION_KEY", "error", "ENCRYPTION_KEY is required.");
+    return;
+  }
+
+  if (isPlaceholder(value)) {
+    addCheck("ENCRYPTION_KEY", "error", "ENCRYPTION_KEY must not use a documented placeholder value.");
     return;
   }
 

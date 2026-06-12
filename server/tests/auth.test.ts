@@ -39,7 +39,7 @@ describe("Authentication Module", () => {
     process.env.NODE_ENV = "development";
     process.env.BASE_URL = "https://mission-control.example";
     process.env.AUTH_REFRESH_COOKIE_ENABLED = "true";
-    process.env.AUTH_LEGACY_REFRESH_BODY_ENABLED = "true";
+    delete process.env.AUTH_LEGACY_REFRESH_BODY_ENABLED;
     process.env.GOOGLE_CLIENT_ID = "client-id";
     process.env.GOOGLE_CLIENT_SECRET = "client-secret";
 
@@ -117,9 +117,67 @@ describe("Authentication Module", () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("token");
       expect(res.body).toHaveProperty("user");
+      expect(res.body).not.toHaveProperty("refreshToken");
       expect(res.headers["set-cookie"]?.join(";")).toContain("mc_refresh=");
       expect(storage.createRefreshToken).toHaveBeenCalled();
       expect(storage.createAuditLog).toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /api/auth/register", () => {
+    it("should reject anonymous registration before reading or writing users", async () => {
+      const res = await request(app)
+        .post("/api/auth/register")
+        .send({ username: "new_user", password: "password123" });
+
+      expect(res.status).toBe(401);
+      expect(storage.getUserByUsername).not.toHaveBeenCalled();
+      expect(storage.createUser).not.toHaveBeenCalled();
+    });
+
+    it("should reject registration by a non-admin user", async () => {
+      const userToken = generateToken({ id: "2", username: "operator", role: "user" });
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ username: "new_user", password: "password123" });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe("RegistrationForbidden");
+      expect(storage.getUserByUsername).not.toHaveBeenCalled();
+      expect(storage.createUser).not.toHaveBeenCalled();
+    });
+
+    it("should allow an admin to create a user without issuing auth tokens", async () => {
+      const adminToken = generateToken({ id: "1", username: "admin", role: "admin" });
+      vi.mocked(storage.getUserByUsername).mockResolvedValue(undefined);
+      vi.mocked(storage.createUser).mockResolvedValue({
+        id: "3",
+        username: "new_user",
+        password: "hashed-password",
+        role: "user",
+        email: null,
+        avatarUrl: null,
+        googleId: null,
+        settings: "{}",
+        apiKey: null,
+        webhookUrl: null,
+        createdAt: new Date(),
+      } as any);
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ username: "new_user", password: "password123" });
+
+      expect(res.status).toBe(201);
+      expect(res.body.user.username).toBe("new_user");
+      expect(res.body.user).not.toHaveProperty("password");
+      expect(res.body).not.toHaveProperty("token");
+      expect(res.body).not.toHaveProperty("refreshToken");
+      expect(res.headers["set-cookie"]).toBeUndefined();
+      expect(storage.createRefreshToken).not.toHaveBeenCalled();
     });
   });
 
@@ -172,10 +230,22 @@ describe("Authentication Module", () => {
     });
 
     it("should reject legacy body refresh without application/json", async () => {
+      process.env.AUTH_LEGACY_REFRESH_BODY_ENABLED = "true";
       const res = await request(app).post("/api/auth/refresh").type("form").send({ refreshToken: "abc" });
 
       expect(res.status).toBe(415);
       expect(res.body.error).toBe("UnsupportedContentType");
+    });
+
+    it("should ignore legacy body refresh when the opt-in flag is absent", async () => {
+      const res = await request(app)
+        .post("/api/auth/refresh")
+        .set("Content-Type", "application/json")
+        .send({ refreshToken: "legacy-token" });
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe("MissingRefreshCookie");
+      expect(storage.getRefreshToken).not.toHaveBeenCalled();
     });
 
     it("should rotate refresh token and set cookie on valid request", async () => {

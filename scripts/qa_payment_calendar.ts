@@ -1,13 +1,21 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = `${process.env.BASE_URL || 'http://localhost:5000'}/api`;
 
 async function runTests() {
+  const adminUsername = process.env.AUTH_USERNAME;
+  const adminPassword = process.env.AUTH_PASSWORD;
+  const userUsername = process.env.QA_USER_USERNAME;
+  const userPassword = process.env.QA_USER_PASSWORD;
+  if (!adminUsername || !adminPassword || !userUsername || !userPassword) {
+    throw new Error("AUTH_USERNAME, AUTH_PASSWORD, QA_USER_USERNAME and QA_USER_PASSWORD are required.");
+  }
+
   console.log("== Setting up tokens ==");
   
   let adminToken = '';
   try {
-    const loginRes = await axios.post(`${BASE_URL}/auth/login`, { username: 'admin', password: 'admin123' });
+    const loginRes = await axios.post(`${BASE_URL}/auth/login`, { username: adminUsername, password: adminPassword });
     adminToken = loginRes.data.token;
   } catch (err: any) {
     console.error("Failed to login as admin:", err.response?.data || err.message);
@@ -16,11 +24,10 @@ async function runTests() {
 
   let userToken = '';
   try {
-    const randomUser = `user_${Date.now()}`;
-    const registerRes = await axios.post(`${BASE_URL}/auth/register`, { username: randomUser, password: 'password123' });
-    userToken = registerRes.data.token;
+    const loginRes = await axios.post(`${BASE_URL}/auth/login`, { username: userUsername, password: userPassword });
+    userToken = loginRes.data.token;
   } catch (err: any) {
-    console.error("Failed to register normal user:", err.response?.data || err.message);
+    console.error("Failed to login as normal user:", err.response?.data || err.message);
     process.exit(1);
   }
 

@@ -69,7 +69,7 @@ function isRefreshCookieEnabled(): boolean {
 }
 
 function isLegacyRefreshBodyEnabled(): boolean {
-  return isFeatureEnabled("AUTH_LEGACY_REFRESH_BODY_ENABLED", true);
+  return process.env.AUTH_LEGACY_REFRESH_BODY_ENABLED?.toLowerCase() === "true";
 }
 
 /**
@@ -260,8 +260,15 @@ router.post("/login", async (req, res) => {
  * POST /api/auth/register
  * Create new user account
  */
-router.post("/register", registerLimiter, async (req, res) => {
+router.post("/register", requireAuth, registerLimiter, async (req, res) => {
   try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({
+        error: "RegistrationForbidden",
+        message: "Only administrators can create users.",
+      });
+    }
+
     const { username, password } = registerSchema.parse(req.body);
 
     // Check if username exists
@@ -280,20 +287,8 @@ router.post("/register", registerLimiter, async (req, res) => {
       password: hashedPassword,
     });
 
-    // Generate JWT
-    const token = generateToken({
-      id: user.id,
-      username: user.username,
-      role: user.role || "user",
-    });
-
-    // Generate Refresh Token
-    const refreshToken = await generateRefreshToken(user.id);
-    if (isRefreshCookieEnabled()) {
-      setRefreshTokenCookie(res, refreshToken);
-    }
-
-    return res.status(201).json(buildAuthResponse(token, user, refreshToken));
+    const { password: _password, ...sanitizedUser } = user;
+    return res.status(201).json({ user: sanitizedUser });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
