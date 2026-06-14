@@ -2181,6 +2181,7 @@ export class DBStorage implements IStorage {
     const now = new Date();
     const pending = await db
       .select()
+      .from(recurringTransactions)
       .where(
         and(
           eq(recurringTransactions.isActive, true),
