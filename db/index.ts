@@ -3,9 +3,18 @@ import postgres from "postgres";
 import * as schema from "@shared/schema";
 import { logger } from "../server/utils/logger";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is required");
+  throw new Error(
+    "DATABASE_URL is required: set it in WebApp-SeguimientoInterno/.env with your Supabase connection string (see SUPABASE_SETUP.md).",
+  );
+}
+
+if (!/^postgres(ql)?:\/\//i.test(databaseUrl)) {
+  throw new Error(
+    "DATABASE_URL must start with postgresql:// (not https://). In Supabase use Project Settings → Database → Connection string → URI. " +
+      "The value must not be the project URL (https://….supabase.co).",
+  );
 }
 
 /** Supabase transaction pooler (6543) requires prepared statements off (PgBouncer). */

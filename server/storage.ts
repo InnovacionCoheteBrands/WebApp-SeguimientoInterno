@@ -111,7 +111,7 @@ import {
   type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "../db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import { generateApiKey, toStoredApiKey } from "./utils/api-key";
 
@@ -1652,8 +1652,8 @@ export class DBStorage implements IStorage {
     return db.select()
       .from(installments)
       .where(and(
-        sql`${installments.dueDate} >= ${startDate}`,
-        sql`${installments.dueDate} <= ${endDate}`,
+        gte(installments.dueDate, startDate),
+        lte(installments.dueDate, endDate),
       ))
       .orderBy(installments.dueDate);
   }
@@ -2176,7 +2176,10 @@ export class DBStorage implements IStorage {
     const pending = await db
       .select()
       .from(recurringTransactions)
-      .where(sql`${recurringTransactions.isActive} = true AND ${recurringTransactions.nextExecutionDate} <= ${now}`);
+      .where(and(
+        eq(recurringTransactions.isActive, true),
+        lte(recurringTransactions.nextExecutionDate, now)
+      ));
 
     const created: Transaction[] = [];
     for (const recurring of pending) {
@@ -2430,8 +2433,8 @@ export class DBStorage implements IStorage {
         .where(
           and(
             eq(transactions.recurringTemplateId, templateId),
-            sql`${transactions.date} >= ${startOfMonth}`,
-            sql`${transactions.date} <= ${endOfMonth}`
+            gte(transactions.date, startOfMonth),
+            lte(transactions.date, endOfMonth)
           )
         )
         .returning({ id: transactions.id });
@@ -3143,7 +3146,7 @@ export class DBStorage implements IStorage {
       .where(
         and(
           eq(digitalAssets.status, "active"),
-          sql`${digitalAssets.expirationDate} <= ${futureDate}`
+          lte(digitalAssets.expirationDate, futureDate)
         )
       );
   }

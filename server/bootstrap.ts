@@ -113,12 +113,22 @@ export async function runServer(
     next();
   });
 
-  const revokedLegacyTokens = await storage.revokeLegacyRefreshTokens();
-  if (revokedLegacyTokens > 0) {
-    logger.warn(
-      { revokedLegacyTokens },
-      "Revoked legacy plaintext refresh tokens during startup",
+  try {
+    const revokedLegacyTokens = await storage.revokeLegacyRefreshTokens();
+    if (revokedLegacyTokens > 0) {
+      logger.warn(
+        { revokedLegacyTokens },
+        "Revoked legacy plaintext refresh tokens during startup",
+      );
+    }
+  } catch (error) {
+    logger.fatal(
+      { err: error },
+      "No se pudo conectar a PostgreSQL al iniciar. Revisa DATABASE_URL en .env: " +
+        "debe ser la URI completa de Supabase (Settings → Database → Connection string, formato postgresql://…). " +
+        "Si el error es ENOTFOUND, el host no coincide con tu proyecto o hay un problema de DNS; copia la cadena tal cual del panel.",
     );
+    process.exit(1);
   }
 
   const server = await registerRoutes(app);
