@@ -59,9 +59,9 @@ export default function AuthCallbackPage() {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-2xl font-display italic text-white tracking-tight">Syncing Node...</h2>
+              <h2 className="text-2xl font-display italic text-white tracking-tight">Sincronizando acceso...</h2>
               <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.4em] font-bold">
-                Establishing Secure Handshake Protocol
+                Estableciendo la conexion segura
               </p>
             </div>
 
@@ -75,7 +75,7 @@ export default function AuthCallbackPage() {
 
         <div className="mt-8 text-center">
           <p className="text-[8px] font-mono text-zinc-700 uppercase tracking-[0.3em]">
-            Redirecting to Command Center // Please Wait
+            Redirigiendo al centro de mando // Espera un momento
           </p>
         </div>
       </div>

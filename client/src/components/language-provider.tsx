@@ -17,7 +17,7 @@ type LanguageProviderState = {
 };
 
 const initialState: LanguageProviderState = {
-    language: "en",
+    language: "es",
     setLanguage: () => null,
     t: (key) => key,
 };
@@ -43,6 +43,7 @@ const translations: Record<Language, Record<string, string>> = {
         "create": "Create",
         "new": "New",
         "search": "Search",
+        "home": "Home",
         "filter": "Filter",
         "status": "Status",
         "actions": "Actions",
@@ -59,6 +60,12 @@ const translations: Record<Language, Record<string, string>> = {
         "timezone": "Timezone",
         "notifications": "Notifications",
         "api_integrations": "API & Integrations",
+        "search_mission_control": "Search in Mission Control...",
+        "command_placeholder": "Search actions or campaigns...",
+        "command_empty": "No results found.",
+        "active_campaigns": "Active campaigns",
+        "system_online": "System online",
+        "admin_access": "Admin access",
     },
     es: {
         "dashboard": "Panel de Control",
@@ -78,6 +85,7 @@ const translations: Record<Language, Record<string, string>> = {
         "create": "Crear",
         "new": "Nuevo",
         "search": "Buscar",
+        "home": "Inicio",
         "filter": "Filtrar",
         "status": "Estado",
         "actions": "Acciones",
@@ -94,6 +102,12 @@ const translations: Record<Language, Record<string, string>> = {
         "timezone": "Zona Horaria",
         "notifications": "Notificaciones",
         "api_integrations": "API e Integraciones",
+        "search_mission_control": "Buscar en Mission Control...",
+        "command_placeholder": "Buscar acciones o campanas...",
+        "command_empty": "No se encontraron resultados.",
+        "active_campaigns": "Campanas activas",
+        "system_online": "Sistema en linea",
+        "admin_access": "Acceso de administrador",
     },
     fr: {
         "dashboard": "Tableau de Bord",
@@ -204,7 +218,7 @@ const translations: Record<Language, Record<string, string>> = {
 
 export function LanguageProvider({
     children,
-    defaultLanguage = "en",
+    defaultLanguage = "es",
     storageKey = "app-language",
 }: LanguageProviderProps) {
     const [language, setLanguage] = useState<Language>(() => {

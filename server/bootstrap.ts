@@ -5,7 +5,6 @@ import cookieParser from "cookie-parser";
 import type { Server } from "http";
 import { registerRoutes } from "./routes";
 import { globalErrorHandler } from "./middleware/error-handler";
-import { storage } from "./storage";
 import { logAiConfigStatus } from "./utils/ai";
 import { logger } from "./utils/logger";
 
@@ -113,20 +112,22 @@ export async function runServer(
     next();
   });
 
+  // Verify database connectivity before starting
   try {
-    const revokedLegacyTokens = await storage.revokeLegacyRefreshTokens();
-    if (revokedLegacyTokens > 0) {
-      logger.warn(
-        { revokedLegacyTokens },
-        "Revoked legacy plaintext refresh tokens during startup",
+    const { checkDatabaseConnection } = await import("../db");
+    const isConnected = await checkDatabaseConnection();
+    if (!isConnected) {
+      logger.fatal(
+        "No se pudo conectar a PostgreSQL al iniciar. Revisa DATABASE_URL en .env: " +
+          "debe ser la URI completa de Supabase (Settings → Database → Connection string, formato postgresql://…). " +
+          "Si el error es ENOTFOUND, el host no coincide con tu proyecto o hay un problema de DNS; copia la cadena tal cual del panel.",
       );
+      process.exit(1);
     }
   } catch (error) {
     logger.fatal(
       { err: error },
-      "No se pudo conectar a PostgreSQL al iniciar. Revisa DATABASE_URL en .env: " +
-        "debe ser la URI completa de Supabase (Settings → Database → Connection string, formato postgresql://…). " +
-        "Si el error es ENOTFOUND, el host no coincide con tu proyecto o hay un problema de DNS; copia la cadena tal cual del panel.",
+      "Error fatal al verificar la conexión a la base de datos.",
     );
     process.exit(1);
   }

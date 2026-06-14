@@ -2,10 +2,38 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
-import { generateToken } from './middleware/auth';
-import { hashPassword } from './utils/crypto';
 import type { Express } from 'express';
 
+type GoogleProfile = {
+    id: string;
+    emails?: Array<{ value?: string | null }>;
+    photos?: Array<{ value?: string | null }>;
+};
+
+export async function resolveExistingGoogleUser(profile: GoogleProfile) {
+    const email = profile.emails?.[0]?.value;
+    const googleId = profile.id;
+    const avatarUrl = profile.photos?.[0]?.value;
+
+    if (!email) {
+        throw new Error("No email found in Google profile");
+    }
+
+    let user = await storage.getUserByGoogleId(googleId);
+    if (!user) {
+        user = await storage.getUserByUsername(email);
+    }
+
+    if (!user) {
+        return undefined;
+    }
+
+    if (!user.googleId) {
+        await storage.updateUser(user.id, { googleId, avatarUrl });
+    }
+
+    return user;
+}
 
 export function setupGoogleAuth(app: Express) {
     const hasCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.BASE_URL);
@@ -19,47 +47,13 @@ export function setupGoogleAuth(app: Express) {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
             callbackURL: `${process.env.BASE_URL!}/api/auth/google/callback`,
             scope: ['profile', 'email']
-        }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+        }, async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
             try {
-                const email = profile.emails?.[0]?.value;
-                const googleId = profile.id;
-                const avatarUrl = profile.photos?.[0]?.value;
-                const displayName = profile.displayName;
-
-                if (!email) {
-                    return done(new Error("No email found in Google profile"));
-                }
-
-                // 1. Try to find user by Google ID
-                let user = await storage.getUserByGoogleId(googleId);
-
+                const user = await resolveExistingGoogleUser(profile);
                 if (!user) {
-                    // 2. Try to find user by email (using username as fallback)
-                    user = await storage.getUserByUsername(email);
+                    return done(null, false, { message: "AccountNotProvisioned" });
                 }
-
-                if (user) {
-                    // Link Google ID if not linked
-                    if (!user.googleId) {
-                        await storage.updateUser(user.id, { googleId, avatarUrl });
-                    }
-                    return done(null, user);
-                }
-
-                // 3. Create new user
-                const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-                const hashedPassword = await hashPassword(randomPassword);
-
-                const newUser = await storage.createUser({
-                    username: email,
-                    password: hashedPassword,
-                    role: 'user',
-                    googleId,
-                    avatarUrl,
-                    email
-                });
-
-                return done(null, newUser);
+                return done(null, user);
             } catch (error) {
                 return done(error as Error);
             }

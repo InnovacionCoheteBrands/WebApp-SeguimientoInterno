@@ -83,14 +83,14 @@ const Settings = memo(function Settings() {
       setLanguage(normalized.language as any);
       setHasChanges(false);
       toast({
-        title: "Settings Saved",
-        description: "Your configuration has been updated successfully",
+        title: "Configuracion guardada",
+        description: "Los cambios se aplicaron correctamente.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to save settings. Please try again.",
+        description: "No fue posible guardar la configuracion. Intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -105,14 +105,14 @@ const Settings = memo(function Settings() {
       setHasChanges(false);
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
-        title: "New API Key Generated",
-        description: "Your previous key has been invalidated. Copy the new key now.",
+        title: "Nueva API key generada",
+        description: "La clave anterior se invalido. Copia la nueva clave ahora.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to generate API Key",
+        description: "No fue posible generar la API key.",
         variant: "destructive",
       });
     }
@@ -146,7 +146,7 @@ const Settings = memo(function Settings() {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading settings...</div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Cargando configuracion...</div>;
   }
 
   return (
@@ -165,9 +165,9 @@ const Settings = memo(function Settings() {
                 <div className="p-2 rounded-xl bg-primary/10 border border-white/10 text-primary">
                   <Plug className="size-5" />
                 </div>
-                <h1 className="text-4xl font-display italic tracking-tight text-white">System Nexus</h1>
+                <h1 className="text-4xl font-display italic tracking-tight text-white">Configuracion del sistema</h1>
               </div>
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.4em] pl-1 opacity-60">Global Application Configuration Vault</p>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.4em] pl-1 opacity-60">Centro global de preferencias y parametros</p>
             </div>
           </div>
           
@@ -178,7 +178,7 @@ const Settings = memo(function Settings() {
             data-testid="button-save-settings"
           >
             <Save className="size-4 mr-2" />
-            {saveMutation.isPending ? "Syncing..." : "Apply Configuration"}
+            {saveMutation.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
         </div>
 
@@ -195,14 +195,14 @@ const Settings = memo(function Settings() {
                   <Globe className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-display italic text-white tracking-tight">System Environment</CardTitle>
-                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Global UX Core Parameters</CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Entorno general</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Parametros base de experiencia y visualizacion</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="space-y-4">
-                <Label htmlFor="theme" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Interface Mode</Label>
+                <Label htmlFor="theme" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Modo de interfaz</Label>
                 <Select
                   value={localSettings.theme}
                   onValueChange={(value) => updateSetting("theme", value as ThemeSetting)}
@@ -211,16 +211,16 @@ const Settings = memo(function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
-                    <SelectItem value="dark" className="focus:bg-primary/10 focus:text-primary">DARK_STITCH</SelectItem>
-                    <SelectItem value="light" className="focus:bg-primary/10 focus:text-primary">BRIGHT_SHELL</SelectItem>
-                    <SelectItem value="system" className="focus:bg-primary/10 focus:text-primary">AUTO_SYNC</SelectItem>
+                    <SelectItem value="dark" className="focus:bg-primary/10 focus:text-primary">Oscuro</SelectItem>
+                    <SelectItem value="light" className="focus:bg-primary/10 focus:text-primary">Claro</SelectItem>
+                    <SelectItem value="system" className="focus:bg-primary/10 focus:text-primary">Seguir sistema</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                  <Label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Aura Coloration</Label>
+                  <Label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Color de acento</Label>
                   <span className="text-[10px] font-mono text-primary font-bold">
                     {presetOptions.find((option) => option.value === themeColor)?.label || "RAW_HEX"}
                   </span>
@@ -248,7 +248,7 @@ const Settings = memo(function Settings() {
               </div>
 
               <div className="space-y-4">
-                <Label htmlFor="language" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Neural Translation</Label>
+                <Label htmlFor="language" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Idioma</Label>
                 <Select
                   value={localSettings.language}
                   onValueChange={(value) => updateSetting("language", value as LanguageSetting)}
@@ -257,17 +257,17 @@ const Settings = memo(function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
-                    <SelectItem value="en" className="focus:bg-primary/10 focus:text-primary">ENGLISH_US</SelectItem>
-                    <SelectItem value="es" className="focus:bg-primary/10 focus:text-primary">ESPANOL_MX</SelectItem>
-                    <SelectItem value="fr" className="focus:bg-primary/10 focus:text-primary">FRANCAIS_FR</SelectItem>
-                    <SelectItem value="de" className="focus:bg-primary/10 focus:text-primary">DEUTSCH_DE</SelectItem>
-                    <SelectItem value="ja" className="focus:bg-primary/10 focus:text-primary">NIHONGO_JP</SelectItem>
+                    <SelectItem value="en" className="focus:bg-primary/10 focus:text-primary">Ingles (EE. UU.)</SelectItem>
+                    <SelectItem value="es" className="focus:bg-primary/10 focus:text-primary">Espanol (Mexico)</SelectItem>
+                    <SelectItem value="fr" className="focus:bg-primary/10 focus:text-primary">Frances</SelectItem>
+                    <SelectItem value="de" className="focus:bg-primary/10 focus:text-primary">Aleman</SelectItem>
+                    <SelectItem value="ja" className="focus:bg-primary/10 focus:text-primary">Japones</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-4">
-                <Label htmlFor="timezone" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Temporal Node Sync</Label>
+                <Label htmlFor="timezone" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Zona horaria</Label>
                 <Select
                   value={localSettings.timezone}
                   onValueChange={(value) => updateSetting("timezone", value)}
@@ -276,10 +276,10 @@ const Settings = memo(function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
-                    <SelectItem value="UTC" className="focus:bg-primary/10 focus:text-primary">UTC_UNIVERSAL</SelectItem>
-                    <SelectItem value="America/New_York" className="focus:bg-primary/10 focus:text-primary">EST_NEW_YORK</SelectItem>
-                    <SelectItem value="America/Los_Angeles" className="focus:bg-primary/10 focus:text-primary">PST_LOS_ANGELES</SelectItem>
-                    <SelectItem value="Europe/Paris" className="focus:bg-primary/10 focus:text-primary">CET_PARIS</SelectItem>
+                    <SelectItem value="UTC" className="focus:bg-primary/10 focus:text-primary">UTC</SelectItem>
+                    <SelectItem value="America/New_York" className="focus:bg-primary/10 focus:text-primary">Nueva York</SelectItem>
+                    <SelectItem value="America/Los_Angeles" className="focus:bg-primary/10 focus:text-primary">Los Angeles</SelectItem>
+                    <SelectItem value="Europe/Paris" className="focus:bg-primary/10 focus:text-primary">Paris</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -295,17 +295,17 @@ const Settings = memo(function Settings() {
                   <Bell className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Node Intelligence</CardTitle>
-                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Real-Time Alert Feed Configuration</CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Alertas</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Configuracion de avisos y seguimiento en tiempo real</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
               {[
-                { label: "Campaign Flux", sub: "Tactical operation updates", key: "campaignAlerts" },
-                { label: "Data Anomalies", sub: "Neural stream verification", key: "analyticsAlerts" },
-                { label: "Core Security", sub: "Infrastructure integrity", key: "systemAlerts" },
-                { label: "External Sync", sub: "Remote email relay", key: "emailNotifications" },
+                { label: "Alertas de campanas", sub: "Actualizaciones operativas clave", key: "campaignAlerts" },
+                { label: "Alertas analiticas", sub: "Cambios y anomalias en datos", key: "analyticsAlerts" },
+                { label: "Alertas del sistema", sub: "Eventos relevantes de integridad", key: "systemAlerts" },
+                { label: "Notificaciones por correo", sub: "Avisos enviados por email", key: "emailNotifications" },
               ].map((item, idx) => (
                 <div key={item.key} className="space-y-6">
                   <div className="flex items-center justify-between group/item">
@@ -334,14 +334,14 @@ const Settings = memo(function Settings() {
                   <Eye className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Stream Dynamics</CardTitle>
-                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Real-Time Visualization Parameters</CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Rendimiento visual</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Frecuencia y animaciones de la interfaz</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="space-y-4">
-                <Label htmlFor="refresh-rate" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Neural Refresh Frequency</Label>
+                <Label htmlFor="refresh-rate" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Frecuencia de actualizacion</Label>
                 <Select
                   value={localSettings.refreshRate}
                   onValueChange={(value) => updateSetting("refreshRate", value)}
@@ -350,19 +350,19 @@ const Settings = memo(function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-950 border-white/10 text-zinc-300 font-mono text-xs">
-                    <SelectItem value="1" className="focus:bg-primary/10 focus:text-primary">1 SEC (ULTRA)</SelectItem>
-                    <SelectItem value="5" className="focus:bg-primary/10 focus:text-primary">5 SEC (STANDARD)</SelectItem>
-                    <SelectItem value="10" className="focus:bg-primary/10 focus:text-primary">10 SEC (BALANCED)</SelectItem>
-                    <SelectItem value="30" className="focus:bg-primary/10 focus:text-primary">30 SEC (THROTTLE)</SelectItem>
-                    <SelectItem value="60" className="focus:bg-primary/10 focus:text-primary">60 SEC (EFFICIENT)</SelectItem>
+                    <SelectItem value="1" className="focus:bg-primary/10 focus:text-primary">1 segundo</SelectItem>
+                    <SelectItem value="5" className="focus:bg-primary/10 focus:text-primary">5 segundos</SelectItem>
+                    <SelectItem value="10" className="focus:bg-primary/10 focus:text-primary">10 segundos</SelectItem>
+                    <SelectItem value="30" className="focus:bg-primary/10 focus:text-primary">30 segundos</SelectItem>
+                    <SelectItem value="60" className="focus:bg-primary/10 focus:text-primary">60 segundos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between px-1">
                 <div className="space-y-1">
-                  <Label className="text-sm font-mono font-bold text-white tracking-wide">Motion Frames</Label>
-                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Fluid transitions</p>
+                  <Label className="text-sm font-mono font-bold text-white tracking-wide">Animaciones</Label>
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Transiciones fluidas</p>
                 </div>
                 <Switch
                   checked={localSettings.chartAnimations}
@@ -382,21 +382,21 @@ const Settings = memo(function Settings() {
                   <Plug className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-display italic text-white tracking-tight">Neural Handshake & Protocols</CardTitle>
-                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">API Key Management and Secure Webhooks</CardDescription>
+                  <CardTitle className="text-xl font-display italic text-white tracking-tight">API key y webhooks</CardTitle>
+                  <CardDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Gestion de credenciales y conexiones seguras</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-6">
-                  <Label htmlFor="api-key" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Primary Access Hash</Label>
+                  <Label htmlFor="api-key" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">API key principal</Label>
                   <div className="flex gap-3">
                     <Input
                       id="api-key"
                       value={localSettings.apiKey.masked ?? ""}
                       readOnly
-                      placeholder="NO_KEY_GENERATED"
+                      placeholder="SIN_CLAVE_GENERADA"
                       className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs focus:ring-primary/20 blur-[2px] hover:blur-none transition-all duration-300"
                       data-testid="input-api-key"
                     />
@@ -406,15 +406,15 @@ const Settings = memo(function Settings() {
                       className="h-12 px-8 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white/20 font-mono text-[10px] uppercase tracking-widest font-bold"
                       data-testid="button-regenerate-api-key"
                     >
-                      {regenerateKeyMutation.isPending ? "REGEN..." : "REGENERATE"}
+                      {regenerateKeyMutation.isPending ? "GENERANDO..." : "REGENERAR"}
                     </Button>
                   </div>
                   <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest leading-relaxed">
-                    CRITICAL: Use this cryptographic string for external node authentication. Keep encrypted.
+                    Usa esta clave para autenticar integraciones externas. Mantenla resguardada.
                   </p>
                   {latestGeneratedApiKey && (
                     <div className="space-y-2">
-                      <Label htmlFor="api-key-once" className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest pl-1">One-Time API Key View</Label>
+                      <Label htmlFor="api-key-once" className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest pl-1">Vista temporal de la API key</Label>
                       <Input
                         id="api-key-once"
                         value={latestGeneratedApiKey}
@@ -427,7 +427,7 @@ const Settings = memo(function Settings() {
                 </div>
 
                 <div className="space-y-6">
-                  <Label htmlFor="webhook-url" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Remote Webhook Listener</Label>
+                  <Label htmlFor="webhook-url" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">Webhook remoto</Label>
                   <Input
                     id="webhook-url"
                     type="url"
@@ -441,7 +441,7 @@ const Settings = memo(function Settings() {
                   <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
                     <div className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
                     <p className="text-[9px] font-mono text-amber-500/80 uppercase tracking-widest">
-                      Protocol under development: Webhook relay is currently in SANDBOX mode.
+                      Integracion en desarrollo: el relay de webhooks sigue en modo sandbox.
                     </p>
                   </div>
                 </div>
@@ -458,22 +458,22 @@ const Settings = memo(function Settings() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-3 text-rose-500 font-display italic text-2xl">
               <AlertTriangle className="size-6" />
-              Regenerate Neural Key?
+              Regenerar API key?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-6 pt-4">
               <p className="text-zinc-400 font-mono text-xs leading-relaxed">
-                <strong className="text-rose-400">CRITICAL_WARNING:</strong> This operation will immediately void current credentials. 
-                All active node integrations using this hash will lose synchronization instantly.
+                <strong className="text-rose-400">IMPORTANTE:</strong> Esta operacion invalida de inmediato la clave actual.
+                Todas las integraciones activas que la usan dejaran de funcionar hasta actualizarla.
               </p>
               <div className="space-y-3">
                 <Label htmlFor="confirm-regenerate" className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest pl-1">
-                  Type <code className="bg-rose-500/10 px-2 py-1 rounded text-rose-400 font-bold uppercase">REGENERAR</code> to verify authorization:
+                  Escribe <code className="bg-rose-500/10 px-2 py-1 rounded text-rose-400 font-bold uppercase">REGENERAR</code> para confirmar:
                 </Label>
                 <Input
                   id="confirm-regenerate"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                  placeholder="AUTHORIZE_COMMAND"
+                  placeholder="CONFIRMAR_ACCION"
                   className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-mono text-xs uppercase"
                   data-testid="input-confirm-regenerate"
                 />
@@ -482,7 +482,7 @@ const Settings = memo(function Settings() {
           </AlertDialogHeader>
           <AlertDialogFooter className="pt-6">
             <AlertDialogCancel onClick={() => setConfirmText("")} className="h-12 rounded-xl bg-white/5 border-white/10 text-white hover:bg-white/10 font-mono text-[10px] uppercase tracking-widest">
-              Abort Op
+              Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRegenerateApiKey}
@@ -490,7 +490,7 @@ const Settings = memo(function Settings() {
               className="h-12 rounded-xl bg-rose-600 text-white hover:bg-rose-700 font-mono text-[10px] uppercase tracking-widest font-bold shadow-[0_0_20px_rgba(225,29,72,0.3)] border-none"
               data-testid="button-confirm-regenerate"
             >
-              {regenerateKeyMutation.isPending ? "Syncing..." : "Execute Regeneration"}
+              {regenerateKeyMutation.isPending ? "Generando..." : "Confirmar regeneracion"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

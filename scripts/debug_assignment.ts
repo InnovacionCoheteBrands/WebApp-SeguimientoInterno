@@ -1,11 +1,14 @@
 
 
 
-const BASE_URL = "http://localhost:5000";
-const USERNAME = "francovvillegas79@gmail.com";
-const PASSWORD = "123456";
+const BASE_URL = process.env.BASE_URL || "http://localhost:5000";
+const USERNAME = process.env.AUTH_USERNAME;
+const PASSWORD = process.env.AUTH_PASSWORD;
 
 async function run() {
+    if (!USERNAME || !PASSWORD) {
+        throw new Error("AUTH_USERNAME and AUTH_PASSWORD are required.");
+    }
     console.log("🚀 Starting Debug Script for Team Allocation...");
 
     // 1. Login

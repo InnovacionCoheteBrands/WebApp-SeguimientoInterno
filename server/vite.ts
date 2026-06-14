@@ -23,7 +23,11 @@ export async function setupVite(app: Express, server: Server) {
       ...viteLogger,
       error: (msg, options) => {
         console.error("VITE ERROR DETECTED:", msg);
+        if (options?.error) {
+          console.error(options.error);
+        }
         viteLogger.error(msg, options);
+        // Avoid killing the server process on temporary client compilation errors in development
         // process.exit(1);
       },
     },

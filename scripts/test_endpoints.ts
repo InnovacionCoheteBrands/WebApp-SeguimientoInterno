@@ -2,14 +2,19 @@
 
 
 async function testEndpoints() {
-    const baseUrl = "http://localhost:5000";
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+    const username = process.env.AUTH_USERNAME;
+    const password = process.env.AUTH_PASSWORD;
+    if (!username || !password) {
+        throw new Error("AUTH_USERNAME and AUTH_PASSWORD are required.");
+    }
 
     // 1. Login
     console.log("Logging in...");
     const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: "admin", password: "admin123" })
+        body: JSON.stringify({ username, password })
     });
 
     if (!loginRes.ok) {

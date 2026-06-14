@@ -48,6 +48,58 @@ interface WidgetProps {
     loading?: boolean;
 }
 
+const inactiveLeadStatuses = new Set(["Ganado", "Perdido", "Descartado"]);
+
+function toNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatMoney(value: number): string {
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function isActiveLead(status?: string | null): boolean {
+    return !inactiveLeadStatuses.has(status || "");
+}
+
+function isActiveProjectStatus(status?: string | null): boolean {
+    return [
+        "active",
+        "Active",
+        "In Progress",
+        "En Curso",
+        "En Desarrollo",
+        "En Revision",
+        "En Revisión",
+        "Planificacion",
+        "Planificación",
+        "planning"
+    ].includes(status || "");
+}
+
+function isCompletedProjectStatus(status?: string | null): boolean {
+    return ["completed", "Completado", "Terminado"].includes(status || "");
+}
+
+function isBlockedProjectStatus(status?: string | null): boolean {
+    return ["on_hold", "Bloqueado", "Pausa", "Pausado"].includes(status || "");
+}
+
+function getProjectValue(project: any): number {
+    return toNumber(project?.quotationAmount || project?.budget);
+}
+
+function isActiveEmployee(employee: any): boolean {
+    return employee?.employeeStatus !== "Inactivo" && employee?.status !== "Inactive";
+}
+
+function getTopEntry(values?: Record<string, number>): [string, number] | null {
+    const entries = Object.entries(values || {});
+    if (entries.length === 0) return null;
+    return entries.sort((a, b) => b[1] - a[1])[0];
+}
+
 // ─────────────────────────────────────────────────────────────
 // Quick Actions
 // ─────────────────────────────────────────────────────────────
@@ -127,6 +179,13 @@ export function KpiCard({ title, value, subValue, icon: Icon, trend, trendUp, on
 export function CrmWidget({ data, loading }: WidgetProps) {
     const [, setLocation] = useLocation();
     const metrics = data?.metrics || {};
+    const leads = Array.isArray(data?.leads) ? data.leads : [];
+    const activeLeads = leads.filter((lead: any) => isActiveLead(lead.status));
+    const wonLeads = leads.filter((lead: any) => lead.status === "Ganado").length;
+    const lostLeads = leads.filter((lead: any) => lead.status === "Perdido").length;
+    const pipelineValue = activeLeads.reduce((acc: number, lead: any) => acc + toNumber(lead.estimatedValue), 0);
+    const topOrigin = getTopEntry(metrics.byOrigin);
+    const conversionRate = toNumber(metrics.conversionRate);
 
     return (
         <Card className="bg-zinc-950/40 backdrop-blur-md border-white/15 ring-1 ring-inset ring-white/10 shadow-sm h-full flex flex-col hover:bg-zinc-900/40 hover:border-white/30 transition-all duration-500">
@@ -157,20 +216,38 @@ export function CrmWidget({ data, loading }: WidgetProps) {
                         <div className="space-y-6">
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <p className="text-3xl font-display font-medium text-zinc-50 tracking-tight">{metrics.total || 0}</p>
+                                    <p className="text-3xl font-display font-medium text-zinc-50 tracking-tight">{metrics.total || leads.length}</p>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Total Leads</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xl font-medium text-primary">${(metrics.avgValue || 0).toLocaleString()}</p>
-                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Valor Estimado</p>
+                                    <p className="text-xl font-medium text-primary">{formatMoney(pipelineValue)}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Pipeline Activo</p>
                                 </div>
                             </div>
                             <div className="space-y-3 bg-white/[0.02] p-4 rounded-xl border border-white/[0.02]">
                                 <div className="flex justify-between text-xs text-zinc-400 font-medium">
                                     <span className="uppercase tracking-wider text-[10px]">Tasa de Cierre</span>
-                                    <span className="text-primary">{metrics.conversionRate || 0}%</span>
+                                    <span className="text-primary">{conversionRate.toFixed(1)}%</span>
                                 </div>
-                                <Progress value={metrics.conversionRate || 0} className="h-1 bg-white/5 [&>div]:bg-primary" />
+                                <Progress value={conversionRate} className="h-1 bg-white/5 [&>div]:bg-primary" />
+                                <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{activeLeads.length}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Activos</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{wonLeads}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Ganados</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{lostLeads}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Perdidos</p>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-xs text-zinc-400 pt-2 border-t border-white/[0.04]">
+                                    <span className="uppercase tracking-wider text-[10px]">Canal Principal</span>
+                                    <span className="text-zinc-300">{topOrigin ? `${topOrigin[0]} (${topOrigin[1]})` : "Sin datos"}</span>
+                                </div>
                             </div>
                         </div>
                         <Button className="w-full mt-6 bg-transparent hover:bg-white/5 border border-white/10 text-zinc-300 transition-all font-medium text-xs tracking-wider uppercase h-10" onClick={() => setLocation("/crm")}>
@@ -188,8 +265,15 @@ export function CrmWidget({ data, loading }: WidgetProps) {
 // ─────────────────────────────────────────────────────────────
 export function ProjectsWidget({ data, loading }: WidgetProps) {
     const [, setLocation] = useLocation();
-    const activeCount = data?.length || 0;
-    const totalBudget = data?.reduce((acc: number, curr: any) => acc + (curr.budget || 0), 0) || 0;
+    const projects = Array.isArray(data) ? data : [];
+    const totalCount = projects.length;
+    const activeCount = projects.filter((project: any) => isActiveProjectStatus(project.status)).length;
+    const completedCount = projects.filter((project: any) => isCompletedProjectStatus(project.status)).length;
+    const blockedCount = projects.filter((project: any) => isBlockedProjectStatus(project.status)).length;
+    const avgProgress = totalCount > 0
+        ? Math.round(projects.reduce((acc: number, project: any) => acc + toNumber(project.progress), 0) / totalCount)
+        : 0;
+    const totalBudget = projects.reduce((acc: number, curr: any) => acc + getProjectValue(curr), 0);
 
     const getStatusLabel = (status: string) => {
         const map: Record<string, string> = {
@@ -234,17 +318,41 @@ export function ProjectsWidget({ data, loading }: WidgetProps) {
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Proyectos Activos</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xl font-medium text-primary">${totalBudget.toLocaleString()}</p>
+                                    <p className="text-xl font-medium text-primary">{formatMoney(totalBudget)}</p>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Cotización Total</p>
                                 </div>
                             </div>
                             <div className="space-y-3 bg-white/[0.02] p-4 rounded-xl border border-white/[0.02]">
-                                {data?.slice(0, 3).map((proj: any, i: number) => (
+                                <div className="grid grid-cols-3 gap-3 text-xs">
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{totalCount}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Total</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{completedCount}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Terminados</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{blockedCount}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Pausados</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+                                    <div className="flex justify-between text-xs text-zinc-400 font-medium">
+                                        <span className="uppercase tracking-wider text-[10px]">Progreso Promedio</span>
+                                        <span className="text-primary">{avgProgress}%</span>
+                                    </div>
+                                    <Progress value={avgProgress} className="h-1 bg-white/5 [&>div]:bg-primary" />
+                                </div>
+                                {projects.slice(0, 3).map((proj: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between text-sm">
                                         <span className="text-zinc-300 font-medium truncate max-w-[150px]">{proj.name}</span>
                                         <Badge variant="outline" className="text-[9px] uppercase tracking-wider h-5 border-white/10 text-zinc-400 bg-white/5">{getStatusLabel(proj.status)}</Badge>
                                     </div>
                                 ))}
+                                {projects.length === 0 && (
+                                    <p className="text-xs text-zinc-500">Sin proyectos registrados</p>
+                                )}
                             </div>
                         </div>
                         <Button className="w-full mt-6 bg-transparent hover:bg-white/5 border border-white/10 text-zinc-300 transition-all font-medium text-xs tracking-wider uppercase h-10" onClick={() => setLocation("/proyectos")}>
@@ -262,7 +370,11 @@ export function ProjectsWidget({ data, loading }: WidgetProps) {
 // ─────────────────────────────────────────────────────────────
 export function FinanceWidget({ data, loading }: WidgetProps) {
     const [, setLocation] = useLocation();
-    const balance = data?.netProfit || 0;
+    const balance = toNumber(data?.netProfit);
+    const totalIncome = toNumber(data?.totalIncome);
+    const totalExpenses = toNumber(data?.totalExpenses);
+    const topIncomeCategory = getTopEntry(data?.incomeByCategory);
+    const topExpenseCategory = getTopEntry(data?.expensesByCategory);
 
     return (
         <Card className="bg-zinc-950/40 backdrop-blur-md border-white/15 ring-1 ring-inset ring-white/10 shadow-sm h-full flex flex-col hover:bg-zinc-900/40 hover:border-white/30 transition-all duration-500">
@@ -294,18 +406,28 @@ export function FinanceWidget({ data, loading }: WidgetProps) {
                         <div className="space-y-6">
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <p className="text-3xl font-display font-medium text-zinc-50 tracking-tight">${balance.toLocaleString()}</p>
+                                    <p className="text-3xl font-display font-medium text-zinc-50 tracking-tight">{formatMoney(balance)}</p>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Balance Actual</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.02]">
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Ingresos</p>
-                                    <p className="text-sm font-semibold text-primary mt-1">+${(data?.totalIncome || 0).toLocaleString()}</p>
+                                    <p className="text-sm font-semibold text-primary mt-1">+{formatMoney(totalIncome)}</p>
                                 </div>
                                 <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.02]">
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Gastos</p>
-                                    <p className="text-sm font-semibold text-red-400/90 mt-1">-${(data?.totalExpenses || 0).toLocaleString()}</p>
+                                    <p className="text-sm font-semibold text-red-400/90 mt-1">-{formatMoney(totalExpenses)}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/[0.02]">
+                                <div className="flex justify-between text-xs text-zinc-400">
+                                    <span className="uppercase tracking-wider text-[10px]">Ingreso Principal</span>
+                                    <span className="text-zinc-300">{topIncomeCategory ? `${topIncomeCategory[0]} ${formatMoney(topIncomeCategory[1])}` : "Sin datos"}</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-zinc-400">
+                                    <span className="uppercase tracking-wider text-[10px]">Gasto Principal</span>
+                                    <span className="text-zinc-300">{topExpenseCategory ? `${topExpenseCategory[0]} ${formatMoney(topExpenseCategory[1])}` : "Sin datos"}</span>
                                 </div>
                             </div>
                         </div>
@@ -324,8 +446,13 @@ export function FinanceWidget({ data, loading }: WidgetProps) {
 // ─────────────────────────────────────────────────────────────
 export function HrWidget({ data, loading }: WidgetProps) {
     const [, setLocation] = useLocation();
-    const count = data?.length || 0;
-    const payroll = count * 15000;
+    const team = Array.isArray(data) ? data : [];
+    const count = team.length;
+    const activeTeam = team.filter((member: any) => isActiveEmployee(member));
+    const inactiveCount = count - activeTeam.length;
+    const payroll = activeTeam.reduce((acc: number, member: any) => acc + toNumber(member.monthlySalary), 0);
+    const avgPayroll = activeTeam.length > 0 ? payroll / activeTeam.length : 0;
+    const weeklyCapacity = activeTeam.reduce((acc: number, member: any) => acc + toNumber(member.weeklyCapacity), 0);
 
     return (
         <Card className="bg-zinc-950/40 backdrop-blur-md border-white/15 ring-1 ring-inset ring-white/10 shadow-sm h-full flex flex-col hover:bg-zinc-900/40 hover:border-white/30 transition-all duration-500">
@@ -339,7 +466,7 @@ export function HrWidget({ data, loading }: WidgetProps) {
                         <ArrowRight className="h-4 w-4 text-zinc-400" />
                     </Button>
                 </div>
-                <CardDescription className="text-xs text-zinc-500 mt-1">Personal activo y nómina</CardDescription>
+                <CardDescription className="text-xs text-zinc-500 mt-1">Personal activo y nomina</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-between">
                 {loading ? (
@@ -358,26 +485,49 @@ export function HrWidget({ data, loading }: WidgetProps) {
                         <div className="space-y-6">
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <p className="text-3xl font-display font-medium text-zinc-50 tracking-tight">{count}</p>
-                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Total Empleados</p>
+                                    <p className="text-3xl font-display font-medium text-zinc-50 tracking-tight">{activeTeam.length}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Empleados Activos</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xl font-medium text-primary">${payroll.toLocaleString()}</p>
-                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Nómina Mensual</p>
+                                    <p className="text-xl font-medium text-primary">{formatMoney(payroll)}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Nomina Mensual</p>
                                 </div>
                             </div>
 
-                            <div className="flex -space-x-2 overflow-hidden bg-white/[0.02] p-4 rounded-xl border border-white/[0.02]">
-                                {data?.slice(0, 5).map((member: any, i: number) => (
+                            <div className="space-y-3 bg-white/[0.02] p-4 rounded-xl border border-white/[0.02]">
+                                <div className="grid grid-cols-3 gap-3 text-xs">
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{count}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Total</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{inactiveCount}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Inactivos</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-50 font-semibold">{weeklyCapacity}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Hrs/Sem</p>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-xs text-zinc-400 pt-2 border-t border-white/[0.04]">
+                                    <span className="uppercase tracking-wider text-[10px]">Sueldo Promedio</span>
+                                    <span className="text-zinc-300">{formatMoney(avgPayroll)}</span>
+                                </div>
+                                <div className="flex -space-x-2 overflow-hidden pt-1">
+                                {activeTeam.slice(0, 5).map((member: any, i: number) => (
                                     <div key={i} className="inline-flex h-8 w-8 rounded-full ring-2 ring-[#09090b] bg-white/10 items-center justify-center text-[10px] font-bold text-white">
                                         {member.name?.charAt(0) ?? "?"}
                                     </div>
                                 ))}
-                                {count > 5 && (
+                                {activeTeam.length > 5 && (
                                     <div className="inline-flex h-8 w-8 rounded-full ring-2 ring-[#09090b] bg-white/5 items-center justify-center text-[10px] text-muted-foreground">
-                                        +{count - 5}
+                                        +{activeTeam.length - 5}
                                     </div>
                                 )}
+                                    {activeTeam.length === 0 && (
+                                        <p className="text-xs text-zinc-500">Sin empleados activos</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <Button className="w-full mt-6 bg-transparent hover:bg-white/5 border border-white/10 text-zinc-300 transition-all font-medium text-xs tracking-wider uppercase h-10" onClick={() => setLocation("/equipo")}>
@@ -418,14 +568,14 @@ function StrategicInsights({ moduleName, data }: { moduleName: string, data: any
             case 'leads': {
                 if (!Array.isArray(data) || data.length === 0) return [];
 
-                const won = data.filter((l: any) => l.status === 'Won' || l.status === 'Converted').length;
-                const lost = data.filter((l: any) => l.status === 'Lost').length;
+                const won = data.filter((l: any) => l.status === 'Ganado').length;
+                const lost = data.filter((l: any) => l.status === 'Perdido').length;
                 const totalResolved = won + lost;
                 const winRate = totalResolved > 0 ? (won / totalResolved) * 100 : 0;
 
                 const valueOfActive = data
-                    .filter((l: any) => l.status !== 'Won' && l.status !== 'Lost')
-                    .reduce((acc: number, curr: any) => acc + (Number(curr.estimatedValue) || 0), 0);
+                    .filter((l: any) => isActiveLead(l.status))
+                    .reduce((acc: number, curr: any) => acc + toNumber(curr.estimatedValue), 0);
 
                 const origins = data.reduce((acc: Record<string, number>, curr: any) => {
                     const origin = curr.origin || 'Desconocido';
@@ -436,33 +586,38 @@ function StrategicInsights({ moduleName, data }: { moduleName: string, data: any
 
                 return [
                     { label: "Win Rate (Tasa de Cierre)", value: `${winRate.toFixed(1)}%`, highlight: winRate >= 20 },
-                    { label: "Valor del Pipeline (Leads Activos)", value: `$${valueOfActive.toLocaleString()}`, highlight: true },
+                    { label: "Valor del Pipeline (Leads Activos)", value: formatMoney(valueOfActive), highlight: true },
                     { label: "Mejor Canal de Adquisición", value: topOrigin ? `${topOrigin[0]} (${topOrigin[1]})` : 'N/A', highlight: false }
                 ];
             }
             case 'projects': {
                 if (!Array.isArray(data) || data.length === 0) return [];
 
-                const avgTicket = data.reduce((acc: number, curr: any) => acc + (Number(curr.budget) || 0), 0) / data.length;
-                const highValueProjects = data.filter((p: any) => (Number(p.budget) || 0) > avgTicket).length;
+                const activeProjects = data.filter((project: any) => isActiveProjectStatus(project.status)).length;
+                const completedProjects = data.filter((project: any) => isCompletedProjectStatus(project.status)).length;
+                const totalValue = data.reduce((acc: number, curr: any) => acc + getProjectValue(curr), 0);
+                const avgProgress = Math.round(data.reduce((acc: number, curr: any) => acc + toNumber(curr.progress), 0) / data.length);
 
                 return [
-                    { label: "Ticket Promedio (Proyectos Activos)", value: `$${avgTicket.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, highlight: true },
-                    { label: "Oportunidades High-Ticket", value: `${highValueProjects} proyectos`, highlight: highValueProjects > 0 },
-                    { label: "Health Score General", value: "Estable", highlight: true }
+                    { label: "Proyectos Activos", value: `${activeProjects} de ${data.length}`, highlight: activeProjects > 0 },
+                    { label: "Completados", value: `${completedProjects} proyectos`, highlight: completedProjects > 0 },
+                    { label: "Cotizacion Total", value: formatMoney(totalValue), highlight: true },
+                    { label: "Progreso Promedio", value: `${avgProgress}%`, highlight: avgProgress >= 50 }
                 ];
             }
             case 'hr': {
                 if (!Array.isArray(data) || data.length === 0) return [];
 
-                const totalPayroll = data.reduce((acc: number, curr: any) => acc + (Number(curr.monthlySalary) || 0), 0);
-                const avgPayroll = data.length > 0 ? totalPayroll / data.length : 0;
-                const activeTeam = data.filter((e: any) => e.employeeStatus !== 'Inactivo' && e.status !== 'Inactive').length;
+                const activeMembers = data.filter((e: any) => isActiveEmployee(e));
+                const totalPayroll = activeMembers.reduce((acc: number, curr: any) => acc + toNumber(curr.monthlySalary), 0);
+                const avgPayroll = activeMembers.length > 0 ? totalPayroll / activeMembers.length : 0;
+                const weeklyCapacity = activeMembers.reduce((acc: number, curr: any) => acc + toNumber(curr.weeklyCapacity), 0);
 
                 return [
-                    { label: "Fuerza Laboral Activa", value: `${activeTeam} personas`, highlight: true },
-                    { label: "Masa Salarial Base (Mensual)", value: `$${totalPayroll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, highlight: false },
-                    { label: "Sueldo Promedio", value: `$${avgPayroll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, highlight: false }
+                    { label: "Fuerza Laboral Activa", value: `${activeMembers.length} personas`, highlight: true },
+                    { label: "Masa Salarial Base (Mensual)", value: formatMoney(totalPayroll), highlight: false },
+                    { label: "Sueldo Promedio", value: formatMoney(avgPayroll), highlight: false },
+                    { label: "Capacidad Semanal", value: `${weeklyCapacity} horas`, highlight: weeklyCapacity > 0 }
                 ];
             }
             default:

@@ -13,22 +13,22 @@ export default function NotFound() {
             <AlertTriangle className="size-8 text-red-500" />
           </div>
           <CardTitle className="text-2xl font-display uppercase tracking-tight text-foreground">
-            404 - System Warning
+            404 - Recurso no disponible
           </CardTitle>
           <CardDescription className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            Resource Coordinates Not Found
+            La ruta solicitada no existe
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 text-center">
           <p className="text-sm text-muted-foreground font-mono leading-relaxed">
-            The requested sector is outside of the mapped operational zone.
-            Please return to the command center.
+            La seccion solicitada esta fuera del mapa operativo.
+            Vuelve al panel principal para continuar.
           </p>
 
           <Link href="/">
             <Button className="w-full gap-2 rounded-sm" variant="default">
               <Home className="size-4" />
-              Return to Dashboard
+              Volver al inicio
             </Button>
           </Link>
         </CardContent>

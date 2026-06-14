@@ -5,10 +5,13 @@ import { storage } from "../server/storage";
 async function run() {
     console.log("Verifying fix...");
     try {
-        let user = await storage.getUserByUsername("admin");
+        const username = process.env.AUTH_USERNAME;
+        if (!username) {
+            throw new Error("AUTH_USERNAME is required.");
+        }
+        const user = await storage.getUserByUsername(username);
         if (!user) {
-            console.log("Admin user not found, creating...");
-            user = await storage.createUser({ username: "admin", password: "password" });
+            throw new Error("Configured user was not found. No user was created.");
         }
         console.log("User found:", user.id);
         const settings = { theme: "light" };

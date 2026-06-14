@@ -8,12 +8,14 @@ Este archivo es la fuente de verdad del estado actual del proyecto. Cualquier ag
 - **Stack Principal:** React 19, TypeScript, Vite, Tailwind CSS 4, Express, Drizzle ORM, Supabase/Neon (PostgreSQL).
 - **Diseños:** Basado en componentes Radix UI y animaciones con Framer Motion.
 
-## 🚦 Estado Actual (Última actualización: 2026-06-05)
-- **Fase:** Listo para despliegue / Candidato para Smoke Test Interno.
-- **Últimos hitos:** 
-  - Estabilización del entorno de dependencias locales (`framer-motion` reinstalado vía `npm ci`).
-  - Validación del pipeline completo: Verificación de tipos (`check`), Build de Producción (`build`) y Auditoría Previa (`predeploy:audit`) operativas en verde (Ver [.agent/estabilizacion_entorno_2026-06-05.md](file:///C:/Users/Departamento%20AI/OneDrive/Documents/C%C3%B3digos/WebApp%20-%20Control/DesignSystemMissionControl/.agent/estabilizacion_entorno_2026-06-05.md)).
-- **Pendiente inmediato:** Lanzamiento de smoke test en el entorno de pruebas interno y verificación de flujos clave en staging.
+## 🚦 Estado Actual (Última actualización: 2026-06-09)
+- **Fase:** Implementación de Analíticas y Pruebas Unitarias / Lista para despliegue.
+- **Últimos hitos:**
+  - **Analítica Read-Only en Proyectos (2026-06-09):** Implementación de métricas financieras de proyectos en [proyectos.tsx](file:///C:/Users/Departamento%20AI/OneDrive/Documents/C%C3%B3digos/WebApp%20-%20Control/DesignSystemMissionControl/client/src/pages/proyectos.tsx) con lógica centralizada en [project-analytics-helpers.ts](file:///C:/Users/Departamento%20AI/OneDrive/Documents/C%C3%B3digos/WebApp%20-%20Control/DesignSystemMissionControl/client/src/components/projects/project-analytics-helpers.ts) y UI modularizada en [ProjectAnalyticsPanels.tsx](file:///C:/Users/Departamento%20AI/OneDrive/Documents/C%C3%B3digos/WebApp%20-%20Control/DesignSystemMissionControl/client/src/components/projects/ProjectAnalyticsPanels.tsx). Cobertura unitaria en [project-analytics-helpers.test.ts](file:///C:/Users/Departamento%20AI/OneDrive/Documents/C%C3%B3digos/WebApp%20-%20Control/DesignSystemMissionControl/server/tests/project-analytics-helpers.test.ts).
+  - **Estabilización del Entorno (2026-06-05):** Corrección y validación del pipeline completo en verde (tipos, build, auditoría previa).
+- **Pendiente inmediato:** 
+  - Verificación visual en el navegador integrado (pendiente debido a caída del runtime de Codex).
+  - Siguiente iteración recomendada: Reconciliar lecturas analíticas contra transacciones financieras reales en BD y crear un endpoint optimizado para evitar el fan-out de consultas.
 
 ## 📂 Estructura de Conocimiento
 Para más detalles técnicos, consulta los siguientes archivos en `.agent/context/`:

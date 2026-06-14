@@ -163,20 +163,20 @@ export function AppLayout({ children }: AppLayoutProps) {
                   {t("mission_control")}
                 </p>
               )}
-              <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" collapsed={isCollapsed} />
               <NavButton icon={FolderKanban} label={t("projects")} active={location === "/proyectos"} href="/proyectos" collapsed={isCollapsed} />
-              <NavButton icon={BarChart3} label="Control de Proyectos" active={location === "/control-proyectos"} href="/control-proyectos" collapsed={isCollapsed} />
-              <NavButton icon={Users} label={t("team")} active={location === "/equipo"} href="/equipo" collapsed={isCollapsed} />
-              <NavButton icon={TrendingUp} label={t("analytics")} active={location === "/kpis"} href="/kpis" collapsed={isCollapsed} />
+              <NavButton icon={BarChart3} label="Control Proyectos" active={location === "/control-proyectos"} href="/control-proyectos" collapsed={isCollapsed} />
+              <NavButton icon={CalendarDays} label="Calendario Pagos" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
+              <NavButton icon={Users} label="Empleados" active={location === "/equipo"} href="/equipo" collapsed={isCollapsed} />
               <NavButton icon={Target} label="CRM" active={location === "/crm"} href="/crm" collapsed={isCollapsed} />
-              <NavButton icon={Globe} label="Digital Assets" active={location === "/digital-assets"} href="/digital-assets" collapsed={isCollapsed} />
+              <NavButton icon={Building2} label={t("clients")} active={location === "/clientes"} href="/clientes" collapsed={isCollapsed} />
               <NavButton icon={Briefcase} label="Servicios" active={location === "/servicios"} href="/servicios" collapsed={isCollapsed} />
+              <NavButton icon={DollarSign} label="Finanzas" active={location === "/finanzas"} href="/finanzas" collapsed={isCollapsed} />
+              <NavButton icon={TrendingUp} label="KPIs" active={location === "/kpis"} href="/kpis" collapsed={isCollapsed} />
+              <NavButton icon={Globe} label="Activos Digitales" active={location === "/digital-assets"} href="/digital-assets" collapsed={isCollapsed} />
               <NavButton icon={Truck} label="Proveedores" active={location === "/proveedores"} href="/proveedores" collapsed={isCollapsed} />
-              <NavButton icon={DollarSign} label={t("finance")} active={location === "/finanzas"} href="/finanzas" collapsed={isCollapsed} />
               <NavButton icon={FileText} label="POES" active={location === "/poes"} href="/poes" collapsed={isCollapsed} />
-              <NavButton icon={CalendarDays} label="Calendario" active={location === "/calendario-pagos"} href="/calendario-pagos" collapsed={isCollapsed} />
-              <NavButton icon={Shield} label="Usuarios" active={location === "/usuarios"} href="/usuarios" collapsed={isCollapsed} />
               <NavButton icon={Activity} label="Actividad" active={location === "/actividad"} href="/actividad" collapsed={isCollapsed} />
+              <NavButton icon={Shield} label="Usuarios" active={location === "/usuarios"} href="/usuarios" collapsed={isCollapsed} />
             </div>
           </nav>
 
@@ -189,8 +189,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </div>
                   {!isCollapsed && (
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">Marketing Manager</p>
-                      <p className="text-[9px] text-muted-foreground truncate uppercase tracking-widest">Admin Access</p>
+                      <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">Responsable de marketing</p>
+                      <p className="text-[9px] text-muted-foreground truncate uppercase tracking-widest">{t("admin_access")}</p>
                     </div>
                   )}
                 </div>
@@ -243,7 +243,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Search className="size-4" />
               <input
                 type="text"
-                placeholder="Buscar en Mission Control..."
+                placeholder={t("search_mission_control")}
                 className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/50 pointer-events-none font-light"
                 readOnly
               />
@@ -259,7 +259,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              SYSTEM ONLINE
+              {t("system_online")}
             </div>
 
             <QuickCreateMenu />
@@ -290,10 +290,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Command Palette */}
       <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-        <CommandInput placeholder="Ejecutar comando..." />
+        <CommandInput placeholder={t("command_placeholder")} />
         <CommandList className="bg-background/95 backdrop-blur-xl">
-          <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-          <CommandGroup heading="Campañas Activas">
+          <CommandEmpty>{t("command_empty")}</CommandEmpty>
+          <CommandGroup heading={t("active_campaigns")}>
             {campaigns.map((campaign) => (
               <CommandItem
                 key={campaign.id}

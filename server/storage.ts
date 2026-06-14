@@ -114,6 +114,11 @@ import { db } from "../db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import { generateApiKey, toStoredApiKey } from "./utils/api-key";
+import {
+  buildProjectFinancialAnalytics,
+  type ProjectFinancialAnalyticsResponse,
+  type ProjectFinancialAnalyticsReadModel,
+} from "./services/project-financial-analytics";
 
 /**
  * Capa de persistencia (repositorio): encapsula Drizzle/M SQL y politicas de acceso por dominio.
@@ -253,6 +258,7 @@ export interface IStorage {
 
   // Project Details (Command Center)
   getProjectDetails(id: number): Promise<ProjectDetails | undefined>;
+  getProjectFinancialAnalytics(): Promise<ProjectFinancialAnalyticsResponse>;
 
   // ===========================================
   // 📇 CONTACTS MODULE
@@ -2175,11 +2181,12 @@ export class DBStorage implements IStorage {
     const now = new Date();
     const pending = await db
       .select()
-      .from(recurringTransactions)
-      .where(and(
-        eq(recurringTransactions.isActive, true),
-        lte(recurringTransactions.nextExecutionDate, now)
-      ));
+      .where(
+        and(
+          eq(recurringTransactions.isActive, true),
+          lte(recurringTransactions.nextExecutionDate, now)
+        )
+      );
 
     const created: Transaction[] = [];
     for (const recurring of pending) {
@@ -2982,6 +2989,85 @@ export class DBStorage implements IStorage {
         marginPercentage,
       },
     };
+  }
+
+  async getProjectFinancialAnalytics(): Promise<ProjectFinancialAnalyticsResponse> {
+    const [projectRows, installmentRows, transactionRows, serviceRows, employeeRows] = await Promise.all([
+      db.execute(sql`
+        SELECT
+          p.id,
+          p.name,
+          p.status,
+          p.client_id AS "clientId",
+          c.company_name AS "clientName",
+          p.quotation_amount AS "quotationAmount",
+          p.total_amount AS "totalAmount",
+          p.budget,
+          p.monthly_maintenance AS "monthlyMaintenance"
+        FROM ${projects} p
+        LEFT JOIN ${clientAccounts} c ON p.client_id = c.id
+        ORDER BY p.created_at DESC
+      `),
+      db.execute(sql`
+        SELECT
+          i.id,
+          i.project_id AS "projectId",
+          i.amount,
+          i.status,
+          i.is_paid AS "isPaid",
+          i.paid_date AS "paidDate",
+          i.transaction_id AS "transactionId"
+        FROM ${installments} i
+      `),
+      db.execute(sql`
+        SELECT
+          t.id,
+          t.type,
+          t.amount,
+          t.status,
+          t.is_paid AS "isPaid",
+          t.paid_date AS "paidDate",
+          t.project_id AS "projectId",
+          t.installment_id AS "installmentId",
+          t.description
+        FROM ${transactions} t
+        WHERE t.project_id IS NOT NULL OR t.installment_id IS NOT NULL
+      `),
+      db.execute(sql`
+        SELECT
+          ps.id,
+          ps.project_id AS "projectId",
+          ps.service_id AS "serviceId",
+          sc.name AS "serviceName",
+          ps.quantity,
+          ps.custom_cost AS "customCost",
+          sc.base_cost AS "baseCost"
+        FROM ${projectServices} ps
+        INNER JOIN ${serviceCatalog} sc ON ps.service_id = sc.id
+      `),
+      db.execute(sql`
+        SELECT
+          pta.id,
+          pta.project_id AS "projectId",
+          pta.team_member_id AS "teamMemberId",
+          COALESCE(t.name, CONCAT(COALESCE(t.first_name, ''), ' ', COALESCE(t.last_name, ''))) AS name,
+          pta.role_in_project AS "roleInProject",
+          pta.allocated_hours AS "allocatedHours",
+          t.internal_cost_hour AS "internalCostHour"
+        FROM ${projectTeamAssignments} pta
+        INNER JOIN ${team} t ON pta.team_member_id = t.id
+      `),
+    ]);
+
+    const readModel: ProjectFinancialAnalyticsReadModel = {
+      projects: projectRows as unknown as ProjectFinancialAnalyticsReadModel["projects"],
+      installments: installmentRows as unknown as ProjectFinancialAnalyticsReadModel["installments"],
+      transactions: transactionRows as unknown as ProjectFinancialAnalyticsReadModel["transactions"],
+      services: serviceRows as unknown as ProjectFinancialAnalyticsReadModel["services"],
+      employees: employeeRows as unknown as ProjectFinancialAnalyticsReadModel["employees"],
+    };
+
+    return buildProjectFinancialAnalytics(readModel);
   }
 
   // ===========================================

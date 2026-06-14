@@ -1189,15 +1189,38 @@ import type {
 
 export type { ServiceCatalog, InsertServiceCatalog, UpdateServiceCatalog, ProjectService };
 
+async function throwServiceApiError(res: Response, fallbackMessage: string): Promise<never> {
+  let message = fallbackMessage;
+
+  try {
+    const payload = await res.json();
+    const firstValidationMessage = Array.isArray(payload?.details)
+      ? payload.details.find((item: { message?: unknown }) => typeof item?.message === "string")?.message
+      : null;
+
+    if (firstValidationMessage) {
+      message = firstValidationMessage;
+    } else if (typeof payload?.message === "string") {
+      message = payload.message;
+    } else if (typeof payload?.error === "string" && payload.error !== "Validation failed") {
+      message = payload.error;
+    }
+  } catch {
+    // Keep the localized fallback when the response body is not JSON.
+  }
+
+  throw new Error(message);
+}
+
 export async function fetchServiceCatalog(): Promise<ServiceCatalog[]> {
   const res = await request("/api/services");
-  if (!res.ok) throw new Error("Failed to fetch service catalog");
+  if (!res.ok) return throwServiceApiError(res, "No se pudieron cargar los servicios");
   return res.json();
 }
 
 export async function fetchServiceById(id: number): Promise<ServiceCatalog> {
   const res = await request(`/api/services/${id}`);
-  if (!res.ok) throw new Error("Failed to fetch service");
+  if (!res.ok) return throwServiceApiError(res, "No se pudo cargar el servicio");
   return res.json();
 }
 
@@ -1207,7 +1230,7 @@ export async function createService(service: InsertServiceCatalog): Promise<Serv
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(service),
   });
-  if (!res.ok) throw new Error("Failed to create service");
+  if (!res.ok) return throwServiceApiError(res, "No se pudo crear el servicio");
   return res.json();
 }
 
@@ -1217,7 +1240,7 @@ export async function updateService(id: number, service: UpdateServiceCatalog): 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(service),
   });
-  if (!res.ok) throw new Error("Failed to update service");
+  if (!res.ok) return throwServiceApiError(res, "No se pudo actualizar el servicio");
   return res.json();
 }
 
@@ -1225,7 +1248,7 @@ export async function deleteService(id: number): Promise<void> {
   const res = await request(`/api/services/${id}`, {
     method: "DELETE",
   });
-  if (!res.ok) throw new Error("Failed to delete service");
+  if (!res.ok) return throwServiceApiError(res, "No se pudo eliminar el servicio");
 }
 
 // ===========================================
