@@ -8,10 +8,6 @@ import path from "node:path";
  * - This check only reconciles journal metadata against versioned SQL files in git.
  * - It does NOT validate applied migrations in the real database.
  * - Real DB validation with read-only credentials remains a release prerequisite.
- *
- * QA pending:
- * - `npm run predeploy:audit` must be executed in an environment where `tsx` can run.
- * - In the current sandbox, runtime validation was blocked by EPERM spawn.
  */
 
 type JournalEntry = {
@@ -46,13 +42,23 @@ async function main() {
     fs.readFile(journalPath, "utf8"),
   ]);
 
-  const sqlFiles = filesRaw
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".sql"))
-    .map((entry) => entry.name)
+  const versionedSqlCandidates = filesRaw.filter((entry) =>
+    isVersionedMigrationFile(entry.name)
+  );
+  const resolvedVersionedSqlFiles = await Promise.all(
+    versionedSqlCandidates.map(async (entry) => {
+      const filePath = path.join(migrationsDir, entry.name);
+      const stats = await fs.stat(filePath);
+      return stats.isFile() ? entry.name : null;
+    }),
+  );
+  const versionedSqlFiles = resolvedVersionedSqlFiles
+    .filter((fileName): fileName is string => fileName !== null)
     .sort((a, b) => a.localeCompare(b));
-
-  const versionedSqlFiles = sqlFiles.filter(isVersionedMigrationFile);
-  const nonVersionedSqlFiles = sqlFiles.filter((name) => !isVersionedMigrationFile(name));
+  const nonVersionedSqlFiles = filesRaw
+    .map((entry) => entry.name)
+    .filter((name) => name.toLowerCase().endsWith(".sql") && !isVersionedMigrationFile(name))
+    .sort((a, b) => a.localeCompare(b));
 
   const journal = JSON.parse(journalRaw) as Journal;
   if (!Array.isArray(journal.entries)) {
