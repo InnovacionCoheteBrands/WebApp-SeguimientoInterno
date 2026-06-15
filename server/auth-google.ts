@@ -3,6 +3,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 import type { Express } from 'express';
+import { logger } from './utils/logger';
 
 type GoogleProfile = {
     id: string;
@@ -39,8 +40,7 @@ export function setupGoogleAuth(app: Express) {
     const hasCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.BASE_URL);
 
     if (!hasCredentials) {
-        console.warn("⚠️  [Auth] Google OAuth credentials not configured. Google login will be disabled.");
-        console.warn("   Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and BASE_URL in your .env file.");
+        logger.warn("⚠️  [Auth] Google OAuth credentials not configured. Google login will be disabled. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and BASE_URL in your .env file.");
     } else {
         passport.use(new GoogleStrategy({
             clientID: process.env.GOOGLE_CLIENT_ID!,
