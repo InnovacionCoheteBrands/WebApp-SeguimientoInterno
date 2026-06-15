@@ -138,7 +138,9 @@ export async function runServer(
 
   await attachFrontend(app, server);
 
-  const host = process.env.HOST || "0.0.0.0";
+  const host = process.env.NODE_ENV === "production"
+    ? process.env.HOST || "0.0.0.0"
+    : process.env.DEV_HOST || "127.0.0.1";
   const port = parseInt(process.env.PORT || "5000", 10);
 
   if (isNaN(port) || port < 1 || port > 65535) {

@@ -11,9 +11,13 @@ const viteLogger = createLogger();
 /** Solo se importa este módulo en desarrollo (import dinámico) para que el bundle de producción no requiera el paquete `vite`. */
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
+    ...viteConfig.server,
     middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true as const,
+    hmr: {
+      server,
+      clientPort: Number(process.env.PORT || 5000),
+    },
+    allowedHosts: ["localhost"],
   };
 
   const vite = await createViteServer({

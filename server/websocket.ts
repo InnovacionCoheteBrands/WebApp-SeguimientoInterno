@@ -183,7 +183,21 @@ function isDbWebSocketError(error: unknown): boolean {
 }
 
 export function setupWebSocket(server: Server) {
-  wss = new WebSocketServer({ server, path: "/ws" });
+  if (process.env.NODE_ENV === "development") {
+    wss = new WebSocketServer({ noServer: true });
+    server.on("upgrade", (request, socket, head) => {
+      const pathname = new URL(request.url || "/", "http://localhost").pathname;
+      if (pathname !== "/ws" || !wss) {
+        return;
+      }
+
+      wss.handleUpgrade(request, socket, head, (webSocket) => {
+        wss?.emit("connection", webSocket, request);
+      });
+    });
+  } else {
+    wss = new WebSocketServer({ server, path: "/ws" });
+  }
 
   wss.on("connection", (ws: WebSocket, request: IncomingMessage) => {
     const auth = authenticateWebSocketRequest(request);

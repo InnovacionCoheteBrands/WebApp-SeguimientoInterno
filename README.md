@@ -289,7 +289,7 @@ Ejemplo minimo:
 ```env
 DATABASE_URL="postgresql://user:password@host:5432/database"
 PORT=5000
-HOST=0.0.0.0
+DEV_HOST=127.0.0.1
 BASE_URL="http://localhost:5000"
 NODE_ENV=development
 LOG_LEVEL=info
@@ -304,6 +304,8 @@ GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
 SKIP_AUTH=false
 ```
+
+En desarrollo, Vite y el WebSocket `/ws` comparten el servidor local sin exponerlo fuera de loopback. Usa `DEV_HOST=0.0.0.0` solo como opt-in explícito para pruebas de red.
 
 ## Comandos utiles
 

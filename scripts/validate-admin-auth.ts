@@ -103,6 +103,13 @@ async function main() {
     throw new Error(`Logout failed with status ${logout.status}.`);
   }
 
+  const sessionAfterLogout = await request(app)
+    .get("/api/auth/session")
+    .set("Cookie", [refreshCookie]);
+  if (sessionAfterLogout.status !== 401) {
+    throw new Error(`Revoked session remained valid with status ${sessionAfterLogout.status}.`);
+  }
+
   console.log("[admin-auth-validation] Login, session, secure refresh, logout and admin read access passed.");
 }
 
