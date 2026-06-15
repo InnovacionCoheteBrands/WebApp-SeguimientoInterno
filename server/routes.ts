@@ -1,4 +1,4 @@
-﻿import express, { type Express } from "express";
+import express, { type Express } from "express";
 import { type Server } from "http";
 import { createServer } from "http";
 import path from "path";
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       process.env.GOOGLE_CLIENT_SECRET &&
       process.env.BASE_URL
     );
-    const isHealthy = isDatabaseConnected && aiHealth.available && websocket.status === "up";
+    const isHealthy = isDatabaseConnected && (!aiHealth.enabled || aiHealth.available) && websocket.status === "up";
 
     res.status(isHealthy ? 200 : 503).json({
       status: isHealthy ? "ok" : "degraded",
